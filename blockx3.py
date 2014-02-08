@@ -1,4 +1,4 @@
-from math import *
+""" solve block """
 
 EMPTY = 0
 RED = 1
@@ -11,60 +11,58 @@ UP = 64
 RIGHT = 128
 DOWN = 256
 
-w = 5
-h = 7
-
-class Block:
+class Block(object):
+    """block class"""
     def __init__(self, attr, x, y):
-        """
-attr: block is BLUE or LEFT or something
-""" 
+        """attr: block is BLUE or LEFT or something"""
         self.color = attr & 0xf
         self.attr = attr >> 4
         self.x = x
         self.y = y
-        
-""" queue of block, record all block """
-qb = [
-    Block(BLUE, 2, 3),
-    Block(BLUE, 3, 4),
-    Block(BLUE, 4, 3),
-    ]
 
-def init_map(qb):
+
+def init_map(p_qb):
+    """init map"""
     # map of block
-    mb = []
-    # init a list[h][w]
-    for i in range(h):
-        t = []
-        for j in range(w):
-            t.append(EMPTY)
-        mb.append(t)
-        
-    for b in qb:
-        mb[b.x][b.y] = b.color | b.attr
-    return mb
+    l_mb = []
+    # init a list[H][W]
+    for _ in range(H):
+        l_t = []
+        for _ in range(W):
+            l_t.append(EMPTY)
+        l_mb.append(l_t)
 
-def print_map(mb):
-    for i in range(len(mb)):
-        for j in range(len(mb[i])):
-            s = block_str(mb[i][j])
-            print s,
+    for l_b in p_qb:
+        l_mb[l_b.x][l_b.y] = l_b.color | l_b.attr
+    return l_mb
+
+def print_map(p_mb):
+    """print map"""
+    for i in range(len(p_mb)):
+        for j in range(len(p_mb[i])):
+            l_s = block_str(p_mb[i][j])
+            print l_s,
         print
+    print '='*13
 
-def block_str(b):
-    color = b & 0xf
+def block_str(p_b):
+    """print a block attribute"""
     ret = ""
-    if color == RED:
+    color = p_b & 0xf
+    if color & RED == RED:
         ret = "R"
-    elif color == BLUE:
+    elif color & BLUE == BLUE:
         ret = "B"
-    elif color == WHITE:
+    elif color & WHITE == WHITE:
         ret = "W"
     else:
+# block is show 7x 8x
+        color = color - 70
         ret = "X"
+    color = color + 70
+    ret = "%02d" % color
 
-    attr = b >> 4
+    attr = p_b >> 4
 
     if attr == HOLD:
         ret = ret + "H"
@@ -75,58 +73,127 @@ def block_str(b):
     elif attr == RIGHT:
         ret = ret + ">"
     elif attr == DOWN:
-        ret.append("V")
+        ret = ret + "V"
     else:
         ret = ret + " "
     return ret
 
-"""
-check the map, whether there are some blocks line
-mb: map of block
-x,y: current two swap block for hint
-"""
-def check_map(mb, x1,y1, x2,y2):
-    remove1 = check_cross(mb,x1,y1)
-    remove2 = check_cross(mb,x2,y2)
-    for r in remove1:
-        mb[r[0]][r[1]] = EMPTY
-    for r in remove2:
-        mb[r[0]][r[1]] = EMPTY
-    return mb
+G_DX = {UP:-1, DOWN:1, LEFT:0, RIGHT:0}
+G_DY = {LEFT:-1, RIGHT:1, UP:0, DOWN: 0}
+def move(p_mb, p_x, p_y, p_dir):
+    """move a step
+    p_mb: matrix of block
+    p_x, p_y: need to move block
+    p_dir: UP,DOWN,LEFT,RIGHT
+    +------>y(5)
+    |
+    |
+    |
+    |
+    V
+    x(9)
+    """
+    if p_dir != UP and p_dir != DOWN and p_dir != LEFT and p_dir != RIGHT:
+        print "invalid move"
+        return p_mb
+    l_new_x = p_x + G_DX[p_dir]
+    l_new_y = p_y + G_DY[p_dir]
+    if p_mb[p_x][p_y] & HOLD == HOLD or p_mb[l_new_x][l_new_y] & HOLD == HOLD:
+        print "can not move HOLD"
+        return p_mb
+# need to swap x to y
+    if l_new_x < 0 or l_new_x >= H:
+        print "out of range y"
+        return p_mb
+    if l_new_y < 0 or l_new_y >= W:
+        print "out of range x"
+        return p_mb
 
-def check_cross(mb, x,y):
+    l_tmp_b = p_mb[p_x][p_y]
+    p_mb[p_x][p_y] = p_mb[l_new_x][l_new_y]
+    p_mb[l_new_x][l_new_y] = l_tmp_b
+    return p_mb
+
+def check_map(p_mb, p_x, p_y, p_dir):
+    """check the map, whether there are some blocks line
+    p_mb: map of block
+    x,y: current two swap block for hint
+"""
+    if p_dir != UP and p_dir != DOWN and p_dir != LEFT and p_dir != RIGHT:
+        print "invalid move"
+        return p_mb
+    p_x1 = p_x
+    p_y1 = p_y
+    p_x2 = p_x + G_DX[p_dir]
+    p_y2 = p_y + G_DY[p_dir]
+    remove1 = check_cross(p_mb, p_x1, p_y1)
+    remove2 = check_cross(p_mb, p_x2, p_y2)
+    for l_r in remove1:
+        p_mb[l_r[0]][l_r[1]] = EMPTY
+    for l_r in remove2:
+        p_mb[l_r[0]][l_r[1]] = EMPTY
+    return p_mb
+
+def check_cross(p_mb, p_x, p_y):
+    """check a block up,down,left,right for a line"""
     xcnt = 0
     ret = []
-    
-    color = mb[x][y] & 0xf
+
+    color = p_mb[p_x][p_y] & 0xf
     if color == EMPTY:
         return ret
-    for i in range(max(x-2,0),min(x+3,h)):
-        if mb[i][y] & 0xf == color:
-            xcnt = xcnt + 1
-            t = [i,y]
-            ret.append(t)
-        else:
-            xcnt = 0
-            ret = []
-    if xcnt < 3:
-        ret = []
-    ycnt = 0
+    retx = []
     rety = []
-    for j in range(max(y-2,0), min(y+3,w)):
-        if mb[x][j] & 0xf == color:
-            ycnt = ycnt + 1
-            t = [x,j]
-            rety.append(t)
+    while color:
+        # pick a color
+        t_color = color - (color & (color - 1))
+        color = color - t_color
+        for i in range(max(p_x-2, 0), min(p_x+3, H)):
+            if p_mb[i][p_y] & t_color == t_color:
+                xcnt = xcnt + 1
+                l_t = [i, p_y]
+                retx.append(l_t)
+            elif i > p_x:
+                break
+        if xcnt < 3:
+            retx = []
         else:
-            ycnt = 0
+            ret = ret + retx
+        ycnt = 0
+        rety = []
+        for j in range(max(p_y-2, 0), min(p_y+3, W)):
+            if p_mb[p_x][j] & t_color == t_color:
+                ycnt = ycnt + 1
+                l_t = [p_x, j]
+                rety.append(l_t)
+            elif j > p_y:
+                break
+        if ycnt < 3:
             rety = []
-    if ycnt >= 3:
-        ret = ret + rety
+        else:
+            ret = ret + rety
     return ret
-    
+
+W = 5
+H = 9
+
+def main():
+    """main function"""
+    # queue of block, record all block
+    g_qb = [
+        Block(BLUE, 1, 3),
+        Block(BLUE, 2, 3),
+        Block(BLUE|RED|WHITE, 3, 4),
+        Block(RED, 3, 2),
+        Block(RED, 3, 1),
+        Block(WHITE, 4, 3),
+        Block(WHITE, 5, 3),
+    ]
+    g_mb = init_map(g_qb)
+    g_mb = move(g_mb, 3, 4, LEFT)
+    print_map(g_mb)
+    g_mb = check_map(g_mb, 3, 4, LEFT)
+    print_map(g_mb)
 
 if __name__ == "__main__":
-    mb = init_map(qb)
-    print_map(mb)
-    check_map(mb,2,3,0,0)
+    main()
