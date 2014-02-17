@@ -1,10 +1,10 @@
 """solve block"""
 import copy
 
-DEBUG = 1
+DEBUG = 0
 # equal or greater WIPE_NUM block will wipe
 WIPE_NUM = 3
-COLOR_NUM = 4
+COLOR_NUM = 3
 
 EMPTY = 0
 RED = 1
@@ -17,24 +17,26 @@ LEFT = 32
 UP = 64
 RIGHT = 128
 DOWN = 256
+# STOP: this block can combine with EMPTY, and stop the direction block
+STOP = 512
 # MAX_POS: each block multiply this for hashing
 MAX_POW = 1024
 
 class Block(object):
     """block class"""
-    def __init__(self, attr, x, y):
-        """attr: block is BLUE or LEFT or something"""
-        self.color = attr & ALL_COLOR
-        self.attr = attr >> COLOR_NUM
+    def __init__(self, block_type, x, y):
+        """block_type: block is BLUE or LEFT or something"""
+        self.color = block_type & ALL_COLOR
+        self.attr = block_type & ~ALL_COLOR
         self.x = x
         self.y = y
 
 class Step(object):
     """record step"""
-    def __init__(self, x, y, dir):
+    def __init__(self, x, y, dirn):
         self.x = x
         self.y = y
-        self.dir = dir
+        self.dirn = dirn
 
 
 def init_map(p_qb):
@@ -61,21 +63,6 @@ def print_map(p_mb):
         print
     print '='*13
 
-def print_step(p_step):
-    """print step solved"""
-    while len(p_step) > 0:
-        cur_step = p_step.pop(0)
-        print cur_step.x, cur_step.y,
-        if UP == cur_step.dir:
-            print "UP"
-        elif DOWN == cur_step.dir:
-            print "DOWN"
-        elif LEFT == cur_step.dir:
-            print "LEFT"
-        elif RIGHT == cur_step.dir:
-            print "RIGHT"
-
-
 def block_str(p_b):
     """print a block attribute"""
     ret = ""
@@ -87,13 +74,10 @@ def block_str(p_b):
     elif color & WHITE == WHITE:
         ret = "W"
     else:
-# block is show 7x 8x
-        color = color - 70
         ret = "X"
-    color = color + 70
     ret = "%02d" % color
 
-    attr = p_b >> COLOR_NUM
+    attr = p_b & ~ALL_COLOR
 
     if attr == HOLD:
         ret = ret + "H"
@@ -104,10 +88,25 @@ def block_str(p_b):
     elif attr == RIGHT:
         ret = ret + ">"
     elif attr == DOWN:
-        ret = ret + "V"
+        ret = ret + "v"
     else:
         ret = ret + " "
     return ret
+
+def print_step(p_step):
+    """print step solved"""
+    while len(p_step) > 0:
+        cur_step = p_step.pop(0)
+        print cur_step.x, cur_step.y,
+        if UP == cur_step.dirn:
+            print "UP"
+        elif DOWN == cur_step.dirn:
+            print "DOWN"
+        elif LEFT == cur_step.dirn:
+            print "LEFT"
+        elif RIGHT == cur_step.dirn:
+            print "RIGHT"
+
 
 G_DX = {UP:-1, DOWN:1, LEFT:0, RIGHT:0}
 G_DY = {LEFT:-1, RIGHT:1, UP:0, DOWN: 0}
@@ -125,25 +124,31 @@ def move(p_mb, p_x, p_y, p_dir):
     x(9)
     """
     if p_dir != UP and p_dir != DOWN and p_dir != LEFT and p_dir != RIGHT:
-        print "invalid move"
+        if DEBUG:
+            print "invalid move"
         return p_mb
     l_new_x = p_x + G_DX[p_dir]
     l_new_y = p_y + G_DY[p_dir]
 # need to swap x to y
     if l_new_x < 0 or l_new_x >= H:
-        print "out of range y"
+        if DEBUG:
+            print "out of range y"
         return p_mb
     if l_new_y < 0 or l_new_y >= W:
-        print "out of range x"
+        if DEBUG:
+            print "out of range x"
         return p_mb
     if p_mb[p_x][p_y] & ALL_COLOR == EMPTY:
-        print "moved block is empty"
+        if DEBUG:
+            print "moved block is empty"
         return p_mb
     if p_mb[p_x][p_y] & HOLD == HOLD or p_mb[l_new_x][l_new_y] & HOLD == HOLD:
-        print "can not move HOLD"
+        if DEBUG:
+            print "can not move HOLD"
         return p_mb
     if p_mb[p_x][p_y] == p_mb[l_new_x][l_new_y]:
-        print "no need move same color"
+        if DEBUG:
+            print "no need move same color"
         return p_mb
 
     l_tmp_b = p_mb[p_x][p_y]
@@ -151,15 +156,17 @@ def move(p_mb, p_x, p_y, p_dir):
     p_mb[l_new_x][l_new_y] = l_tmp_b
     if DEBUG:
         print_map(p_mb)
-    p_mb = check_map(p_mb, 3, 4, LEFT)
+    p_mb = check_map(p_mb, p_x, p_y, p_dir)
     if DEBUG:
         print_map(p_mb)
+        raw_input()
     return p_mb
 
 def check_map(p_mb, p_x, p_y, p_dir):
-    """check the map, whether there are some blocks line
+    """check the map, whether there are some blocks line can be wipe
     p_mb: map of block
-    x,y: current two swap block for hint
+    p_x,p_y: current two swap block for hint
+    p_dir: direction for hint
 """
     if p_dir != UP and p_dir != DOWN and p_dir != LEFT and p_dir != RIGHT:
         print "invalid move"
@@ -251,11 +258,12 @@ def get_block(p_mb):
     ret = []
     for i in range(len(p_mb)):
         for j in range(len(p_mb[i])):
-            if p_mb[i][j] > 0:
+            if p_mb[i][j] > 0 and p_mb[i][j] & HOLD == 0:
                 ret.append(Block(p_mb[i][j], i, j))
     return ret
 
 def bfs(p_mb, p_step_max):
+    global DEBUG
     """bfs to solve"""
     l_queue = []
     l_queue.append(p_mb)
@@ -272,20 +280,55 @@ def bfs(p_mb, p_step_max):
 # get all block that can maybe moved
         l_qb = get_block(cur_mb)
         for cur_b in l_qb:
-            for dir in [LEFT, RIGHT, UP, DOWN]:
+            for dirn in [LEFT, RIGHT, UP, DOWN]:
                 tmp_mb = copy.deepcopy(cur_mb)
                 tmp_step = cur_step[:]
-                #print "step: ", cur_b.x, cur_b.y, dir
-                tmp_mb = move(tmp_mb, cur_b.x, cur_b.y, dir)
+                #print "step: ", cur_b.x, cur_b.y, dirn
+                tmp_mb = move(tmp_mb, cur_b.x, cur_b.y, dirn)
                 new_hash = hash_matrix(tmp_mb)
                 if new_hash not in l_vi:
-                    tmp_step.append(Step(cur_b.x, cur_b.y, dir))
+                    tmp_step.append(Step(cur_b.x, cur_b.y, dirn))
                     if check_done(tmp_mb):
                         print_step(tmp_step)
+                        print "solve space has ", len(l_vi), "elems"
                         return 
                     l_vi.append(new_hash)
                     l_q_step.append(tmp_step)
                     l_queue.append(tmp_mb)
+    print "solve space has ", len(l_vi), "elems"
+
+color2num = {'R': RED, 'B': BLUE, 'W': WHITE}
+type2num = {'H': HOLD, '<': LEFT, '^': UP, '>': RIGHT, 'v': DOWN, 's': STOP}
+def get_block_from_file(p_file_name):
+    """read game start from file
+    file format:
+        block_type(character) x   y
+        ...
+        block_type: color[color][type] e.g.: WBH WRG<
+        color: RBW
+        type: H<^>vs(Hold, Left, Up, Right, Down, Stop)
+        return queue of block
+        """
+    f_in = open(p_file_name, 'r')
+    ret = {}
+    ret['map'] = []
+    ret['step_max'] = int(f_in.readline())
+    for line in f_in:
+        word = line.split()
+        if len(word) < 3:
+            continue
+        block_type = 0
+        t_type = word[0][-1]
+        if t_type in type2num:
+            block_type = block_type | type2num[t_type]
+        for color in word[0]:
+            if color in color2num:
+                block_type = block_type | color2num[color]
+        x = int(word[1])
+        y = int(word[2])
+        ret['map'].append(Block(block_type, x, y))
+
+    return ret
 
 W = 5
 H = 9
@@ -293,6 +336,7 @@ H = 9
 def main():
     """main function"""
     # queue of block, record all block
+    """
     g_qb = [
         Block(BLUE, 1, 3),
         Block(BLUE, 2, 3),
@@ -302,8 +346,13 @@ def main():
         Block(WHITE, 4, 3),
         Block(WHITE, 5, 3),
     ]
-    step_max = 1
+    """
+    file_name = '160.lv'
+    ret = get_block_from_file(file_name)
+    g_qb = ret['map']
+    step_max = ret['step_max']
     g_mb = init_map(g_qb)
+    print_map(g_mb)
     bfs(g_mb, step_max)
 
 if __name__ == "__main__":
