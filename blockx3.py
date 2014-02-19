@@ -17,6 +17,8 @@ LEFT = 32
 UP = 64
 RIGHT = 128
 DOWN = 256
+# block with arrow
+ARROW = LEFT | UP | RIGHT | DOWN
 # STOP: this block can combine with EMPTY, and stop the direction block
 STOP = 512
 # MAX_POS: each block multiply this for hashing
@@ -156,11 +158,26 @@ def move(p_mb, p_x, p_y, p_dir):
     p_mb[l_new_x][l_new_y] = l_tmp_b
     if DEBUG:
         print_map(p_mb)
+    fail = do_move(p_mb)
     p_mb = check_map(p_mb, p_x, p_y, p_dir)
     if DEBUG:
         print_map(p_mb)
         raw_input()
     return p_mb
+
+def do_move(p_mb):
+    """simulate the status of all blocks with arrow
+    this func will update p_mb if the move valid and return True
+    otherwise return False
+    e.g: block move out of range, or two block crash
+    """
+# find all arrow block
+    arrow_blk = []
+    for i in range(len(p_mb)):
+        for j in range(len(p_mb[i])):
+            if p_mb[i][j] & ARROW > 0:
+                arrow_blk.append(p_mb[i][j])
+    return True
 
 def check_map(p_mb, p_x, p_y, p_dir):
     """check the map, whether there are some blocks line can be wipe
