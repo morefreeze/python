@@ -28,6 +28,7 @@ class Block(object):
     """block class"""
     def __init__(self, block_type, x, y):
         """block_type: block is BLUE or LEFT or something"""
+        self.block_type = block_type
         self.color = block_type & ALL_COLOR
         self.attr = block_type & ~ALL_COLOR
         self.x = x
@@ -91,6 +92,8 @@ def block_str(p_b):
         ret = ret + ">"
     elif attr == DOWN:
         ret = ret + "v"
+    elif attr == STOP:
+        ret = ret + "s"
     else:
         ret = ret + " "
     return ret
@@ -152,14 +155,33 @@ def move(p_mb, p_x, p_y, p_dir):
         if DEBUG:
             print "no need move same color"
         return p_mb
+    if p_mb[p_x][p_y] & ARROW + p_dir == (LEFT + RIGHT) \
+       or p_mb[p_x][p_y] & ARROW + p_dir == (UP + DOWN):
+        if DEBUG:
+            print "no need move arrow block to opponent direction"
+        return p_mb
 
-    l_tmp_b = p_mb[p_x][p_y]
-    p_mb[p_x][p_y] = p_mb[l_new_x][l_new_y]
-    p_mb[l_new_x][l_new_y] = l_tmp_b
+# notion: DO NOT swap the STOP attribute of block
+    l_tmp_b = p_mb[p_x][p_y] & ~STOP
+    p_mb[p_x][p_y] = (p_mb[p_x][p_y]&STOP) | (p_mb[l_new_x][l_new_y] & ~STOP)
+    p_mb[l_new_x][l_new_y] = (p_mb[l_new_x][l_new_y]&STOP) | l_tmp_b
     if DEBUG:
         print_map(p_mb)
-    fail = do_move(p_mb)
-    p_mb = check_map(p_mb, p_x, p_y, p_dir)
+    succ = do_move(p_mb)
+    if not succ:
+        return False
+    while True:
+        has_wipe = False
+        for i in range(H):
+            for j in range(W):
+                if p_mb[i][j] & ALL_COLOR > 0:
+                    if check_map(p_mb, i, j):
+                        has_wipe = True
+                        break
+            if has_wipe:
+                break
+        if not has_wipe:
+            break
     if DEBUG:
         print_map(p_mb)
         raw_input()
@@ -175,30 +197,47 @@ def do_move(p_mb):
     arrow_blk = []
     for i in range(len(p_mb)):
         for j in range(len(p_mb[i])):
-            if p_mb[i][j] & ARROW > 0:
-                arrow_blk.append(p_mb[i][j])
+            if p_mb[i][j] & ARROW > 0 and p_mb[i][j] & HOLD == 0:
+                arrow_blk.append(Block(p_mb[i][j], i, j))
+    while True:
+# this round at least one block moved, otherwise break
+        move_flag = False
+        for t_blk in arrow_blk:
+            old_x = t_blk.x
+            old_y = t_blk.y
+            if p_mb[old_x][old_y] & STOP == STOP:
+                continue
+            new_x = t_blk.x + G_DX[t_blk.attr & ARROW]
+            new_y = t_blk.y + G_DY[t_blk.attr & ARROW]
+# block lost
+            if new_x < 0 or new_x >= H or new_y < 0 or new_y >= W:
+                if DEBUG:
+                    print "block lost at [", new_x, new_y, "]"
+                return False
+            if p_mb[new_x][new_y] & ALL_COLOR == 0 \
+               and p_mb[new_x][new_y] & HOLD == 0:
+# this block can move
+                move_flag = True
+                p_mb[old_x][old_y] = EMPTY
+                p_mb[new_x][new_y] = p_mb[new_x][new_y] | t_blk.block_type
+                t_blk.x = new_x
+                t_blk.y = new_y
+        if not move_flag:
+            break
     return True
 
-def check_map(p_mb, p_x, p_y, p_dir):
+def check_map(p_mb, p_x, p_y):
     """check the map, whether there are some blocks line can be wipe
     p_mb: map of block
     p_x,p_y: current two swap block for hint
     p_dir: direction for hint
+    return whether wipe happened
 """
-    if p_dir != UP and p_dir != DOWN and p_dir != LEFT and p_dir != RIGHT:
-        print "invalid move"
-        return p_mb
-    p_x1 = p_x
-    p_y1 = p_y
-    p_x2 = p_x + G_DX[p_dir]
-    p_y2 = p_y + G_DY[p_dir]
-    remove1 = check_cross(p_mb, p_x1, p_y1)
-    remove2 = check_cross(p_mb, p_x2, p_y2)
-    for l_r in remove1:
-        p_mb[l_r[0]][l_r[1]] = EMPTY
-    for l_r in remove2:
-        p_mb[l_r[0]][l_r[1]] = EMPTY
-    return p_mb
+    remove = check_cross(p_mb, p_x, p_y)
+    for l_r in remove:
+# keep STOP attribute
+        p_mb[l_r[0]][l_r[1]] = p_mb[l_r[0]][l_r[1]] & STOP
+    return len(remove) > 0
 
 def check_cross(p_mb, p_x, p_y):
     """check a block up,down,left,right for a line"""
@@ -275,7 +314,7 @@ def get_block(p_mb):
     ret = []
     for i in range(len(p_mb)):
         for j in range(len(p_mb[i])):
-            if p_mb[i][j] > 0 and p_mb[i][j] & HOLD == 0:
+            if p_mb[i][j] & ALL_COLOR > 0 and p_mb[i][j] & HOLD == 0:
                 ret.append(Block(p_mb[i][j], i, j))
     return ret
 
@@ -301,7 +340,9 @@ def bfs(p_mb, p_step_max):
                 tmp_mb = copy.deepcopy(cur_mb)
                 tmp_step = cur_step[:]
                 #print "step: ", cur_b.x, cur_b.y, dirn
-                tmp_mb = move(tmp_mb, cur_b.x, cur_b.y, dirn)
+                succ = move(tmp_mb, cur_b.x, cur_b.y, dirn)
+                if not succ:
+                    continue
                 new_hash = hash_matrix(tmp_mb)
                 if new_hash not in l_vi:
                     tmp_step.append(Step(cur_b.x, cur_b.y, dirn))
@@ -364,7 +405,7 @@ def main():
         Block(WHITE, 5, 3),
     ]
     """
-    file_name = '160.lv'
+    file_name = '162.lv'
     ret = get_block_from_file(file_name)
     g_qb = ret['map']
     step_max = ret['step_max']
