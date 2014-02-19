@@ -83,7 +83,7 @@ def block_str(p_b):
     attr = p_b & ~ALL_COLOR
 
     if attr == HOLD:
-        ret = ret + "H"
+        ret = ret + "h"
     elif attr == LEFT:
         ret = ret + "<"
     elif attr == UP:
@@ -167,10 +167,10 @@ def move(p_mb, p_x, p_y, p_dir):
     p_mb[l_new_x][l_new_y] = (p_mb[l_new_x][l_new_y]&STOP) | l_tmp_b
     if DEBUG:
         print_map(p_mb)
-    succ = do_move(p_mb)
-    if not succ:
-        return False
     while True:
+        succ = do_move(p_mb)
+        if not succ:
+            return False
         has_wipe = False
         for i in range(H):
             for j in range(W):
@@ -184,7 +184,6 @@ def move(p_mb, p_x, p_y, p_dir):
             break
     if DEBUG:
         print_map(p_mb)
-        raw_input()
     return p_mb
 
 def do_move(p_mb):
@@ -253,7 +252,8 @@ def check_cross(p_mb, p_x, p_y):
 # check UP
         xcnt = 0
         retx = []
-        for i in range(p_x, 0, -1):
+# [p_x, 0]
+        for i in range(p_x, -1, -1):
             if p_mb[i][p_y] & t_color == t_color:
                 xcnt = xcnt + 1
                 l_t = [i, p_y]
@@ -274,7 +274,8 @@ def check_cross(p_mb, p_x, p_y):
 # check LEFT
         ycnt = 0
         rety = []
-        for j in range(p_y, 0, -1):
+# [p_y, 0]
+        for j in range(p_y, -1, -1):
             if p_mb[p_x][j] & t_color == t_color:
                 ycnt = ycnt + 1
                 l_t = [p_x, j]
@@ -339,8 +340,11 @@ def bfs(p_mb, p_step_max):
             for dirn in [LEFT, RIGHT, UP, DOWN]:
                 tmp_mb = copy.deepcopy(cur_mb)
                 tmp_step = cur_step[:]
-                #print "step: ", cur_b.x, cur_b.y, dirn
+                #if len(tmp_step) == 1 and tmp_step[0].x == 2 and tmp_step[0].y == 3 and tmp_step[0].dirn == LEFT and cur_b.x == 4 and cur_b.y == 1 and dirn == RIGHT:
+                #    DEBUG = 1
                 succ = move(tmp_mb, cur_b.x, cur_b.y, dirn)
+                #if len(tmp_step) == 1 and tmp_step[0].x == 2 and tmp_step[0].y == 3 and tmp_step[0].dirn == LEFT and cur_b.x == 4 and cur_b.y == 1 and dirn == RIGHT:
+                #    raw_input()
                 if not succ:
                     continue
                 new_hash = hash_matrix(tmp_mb)
@@ -356,7 +360,7 @@ def bfs(p_mb, p_step_max):
     print "solve space has ", len(l_vi), "elems"
 
 color2num = {'R': RED, 'B': BLUE, 'W': WHITE}
-type2num = {'H': HOLD, '<': LEFT, '^': UP, '>': RIGHT, 'v': DOWN, 's': STOP}
+type2num = {'h': HOLD, '<': LEFT, '^': UP, '>': RIGHT, 'v': DOWN, 's': STOP}
 def get_block_from_file(p_file_name):
     """read game start from file
     file format:
@@ -391,6 +395,7 @@ def get_block_from_file(p_file_name):
 W = 5
 H = 9
 
+# tofix: do not handle two arrow go into the same grid
 def main():
     """main function"""
     # queue of block, record all block
@@ -405,7 +410,7 @@ def main():
         Block(WHITE, 5, 3),
     ]
     """
-    file_name = '162.lv'
+    file_name = '239.lv'
     ret = get_block_from_file(file_name)
     g_qb = ret['map']
     step_max = ret['step_max']
