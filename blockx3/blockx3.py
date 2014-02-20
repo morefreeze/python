@@ -216,6 +216,26 @@ def do_move(p_mb):
             if p_mb[new_x][new_y] & ALL_COLOR == 0 \
                and p_mb[new_x][new_y] & HOLD == 0:
 # this block can move
+# but another block maybe move into new block
+                crash_cnt = 0
+                for op_dirn in [LEFT, RIGHT]:
+                    op_x = new_x + G_DX[op_dirn]
+                    op_y = new_y + G_DY[op_dirn]
+# another block will move into new block, so they crash
+                    if 0 <= op_x and op_x < H and 0 <= op_y and op_y < W \
+                       and ((p_mb[op_x][op_y] & ARROW) + op_dirn == LEFT+RIGHT):
+                        crash_cnt = crash_cnt + 1
+                for op_dirn in [UP, DOWN]:
+                    op_x = new_x + G_DX[op_dirn]
+                    op_y = new_y + G_DY[op_dirn]
+# another block will move into new block, so they crash
+                    if 0 <= op_x and op_x < H and 0 <= op_y and op_y < W \
+                       and ((p_mb[op_x][op_y] & ARROW) + op_dirn == UP+DOWN):
+                        crash_cnt = crash_cnt + 1
+                if crash_cnt > 1:
+                    if DEBUG:
+                        print "block crash at[", new_x, new_y, "]"
+                    return False
                 move_flag = True
                 p_mb[old_x][old_y] = EMPTY
                 p_mb[new_x][new_y] = p_mb[new_x][new_y] | t_blk.block_type
@@ -340,11 +360,17 @@ def bfs(p_mb, p_step_max):
             for dirn in [LEFT, RIGHT, UP, DOWN]:
                 tmp_mb = copy.deepcopy(cur_mb)
                 tmp_step = cur_step[:]
-                #if len(tmp_step) == 1 and tmp_step[0].x == 2 and tmp_step[0].y == 3 and tmp_step[0].dirn == LEFT and cur_b.x == 4 and cur_b.y == 1 and dirn == RIGHT:
-                #    DEBUG = 1
+                if False and len(tmp_step) == 3 and tmp_step[0].x == 2 and tmp_step[0].y == 2 and tmp_step[0].dirn == LEFT \
+                   and tmp_step[1].x == 2 and tmp_step[1].y == 1 and tmp_step[1].dirn == DOWN \
+                   and tmp_step[2].x == 2 and tmp_step[2].y == 4 and tmp_step[2].dirn == DOWN \
+                   and cur_b.x == 3 and cur_b.y == 3 and dirn == LEFT:
+                    DEBUG = 1
                 succ = move(tmp_mb, cur_b.x, cur_b.y, dirn)
-                #if len(tmp_step) == 1 and tmp_step[0].x == 2 and tmp_step[0].y == 3 and tmp_step[0].dirn == LEFT and cur_b.x == 4 and cur_b.y == 1 and dirn == RIGHT:
-                #    raw_input()
+                if False and len(tmp_step) == 3 and tmp_step[0].x == 2 and tmp_step[0].y == 2 and tmp_step[0].dirn == LEFT \
+                   and tmp_step[1].x == 2 and tmp_step[1].y == 1 and tmp_step[1].dirn == DOWN \
+                   and tmp_step[2].x == 2 and tmp_step[2].y == 4 and tmp_step[2].dirn == DOWN \
+                   and cur_b.x == 3 and cur_b.y == 3 and dirn == LEFT:
+                    raw_input()
                 if not succ:
                     continue
                 new_hash = hash_matrix(tmp_mb)
