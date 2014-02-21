@@ -173,13 +173,27 @@ def move(p_mb, p_x, p_y, p_dir):
             return False
         has_wipe = False
         remove = []
+# judge only normal block
         for i in range(H):
             for j in range(W):
-                if p_mb[i][j] & ALL_COLOR > 0:
+                if p_mb[i][j] & ALL_COLOR > 0 and p_mb[i][j] & ARROW == 0:
                     t_remove = check_map(p_mb, i, j)
+                    for t_r in t_remove:
+                        if p_mb[t_r[0]][t_r[1]] & ARROW > 0:
+                            t_remove = []
+                            break
                     if len(t_remove) > len(remove):
                         remove = t_remove
                         has_wipe = True
+# normal block do not wipe then judge moved block
+        if not has_wipe:
+            for i in range(H):
+                for j in range(W):
+                    if p_mb[i][j] & ALL_COLOR > 0 and p_mb[i][j] & ARROW > 0:
+                        t_remove = check_map(p_mb, i, j)
+                        if len(t_remove) > len(remove):
+                            remove = t_remove
+                            has_wipe = True
         if not has_wipe:
             break
         for l_r in remove:
@@ -215,6 +229,7 @@ def do_move(p_mb):
 # block lost
             if new_x < 0 or new_x >= H or new_y < 0 or new_y >= W:
                 if DEBUG:
+                    print_map(p_mb)
                     print "block lost at [", new_x, new_y, "]"
                 return False
             if p_mb[new_x][new_y] & ALL_COLOR == 0 \
@@ -443,7 +458,7 @@ def main():
         Block(WHITE, 5, 3),
     ]
     """
-    file_name = 'x29.lv'
+    file_name = 'x60.lv'
     ret = get_block_from_file(file_name)
     g_qb = ret['map']
     step_max = ret['step_max']
