@@ -172,16 +172,20 @@ def move(p_mb, p_x, p_y, p_dir):
         if not succ:
             return False
         has_wipe = False
+        remove = []
         for i in range(H):
             for j in range(W):
                 if p_mb[i][j] & ALL_COLOR > 0:
-                    if check_map(p_mb, i, j):
+                    t_remove = check_map(p_mb, i, j)
+                    if len(t_remove) > len(remove):
+                        remove = t_remove
                         has_wipe = True
-                        break
-            if has_wipe:
-                break
         if not has_wipe:
             break
+        for l_r in remove:
+# keep STOP attribute
+            p_mb[l_r[0]][l_r[1]] = p_mb[l_r[0]][l_r[1]] & STOP
+
     if DEBUG:
         print_map(p_mb)
     return p_mb
@@ -250,13 +254,15 @@ def check_map(p_mb, p_x, p_y):
     p_mb: map of block
     p_x,p_y: current two swap block for hint
     p_dir: direction for hint
-    return whether wipe happened
+    return remove block
 """
     remove = check_cross(p_mb, p_x, p_y)
+    """
     for l_r in remove:
 # keep STOP attribute
         p_mb[l_r[0]][l_r[1]] = p_mb[l_r[0]][l_r[1]] & STOP
-    return len(remove) > 0
+    """
+    return remove
 
 def check_cross(p_mb, p_x, p_y):
     """check a block up,down,left,right for a line"""
@@ -360,16 +366,17 @@ def bfs(p_mb, p_step_max):
             for dirn in [LEFT, RIGHT, UP, DOWN]:
                 tmp_mb = copy.deepcopy(cur_mb)
                 tmp_step = cur_step[:]
-                if False and len(tmp_step) == 3 and tmp_step[0].x == 2 and tmp_step[0].y == 2 and tmp_step[0].dirn == LEFT \
-                   and tmp_step[1].x == 2 and tmp_step[1].y == 1 and tmp_step[1].dirn == DOWN \
-                   and tmp_step[2].x == 2 and tmp_step[2].y == 4 and tmp_step[2].dirn == DOWN \
-                   and cur_b.x == 3 and cur_b.y == 3 and dirn == LEFT:
+# for debug
+                if False and len(tmp_step) == 3 and tmp_step[0].x == 4 and tmp_step[0].y == 2 and tmp_step[0].dirn == DOWN \
+                   and tmp_step[1].x == 4 and tmp_step[1].y == 3 and tmp_step[1].dirn == RIGHT \
+                   and tmp_step[2].x == 5 and tmp_step[2].y == 2 and tmp_step[2].dirn == RIGHT \
+                   and cur_b.x == 5 and cur_b.y == 3 and dirn == UP:
                     DEBUG = 1
                 succ = move(tmp_mb, cur_b.x, cur_b.y, dirn)
-                if False and len(tmp_step) == 3 and tmp_step[0].x == 2 and tmp_step[0].y == 2 and tmp_step[0].dirn == LEFT \
-                   and tmp_step[1].x == 2 and tmp_step[1].y == 1 and tmp_step[1].dirn == DOWN \
-                   and tmp_step[2].x == 2 and tmp_step[2].y == 4 and tmp_step[2].dirn == DOWN \
-                   and cur_b.x == 3 and cur_b.y == 3 and dirn == LEFT:
+                if False and len(tmp_step) == 3 and tmp_step[0].x == 4 and tmp_step[0].y == 2 and tmp_step[0].dirn == DOWN \
+                   and tmp_step[1].x == 4 and tmp_step[1].y == 3 and tmp_step[1].dirn == RIGHT \
+                   and tmp_step[2].x == 5 and tmp_step[2].y == 2 and tmp_step[2].dirn == RIGHT \
+                   and cur_b.x == 5 and cur_b.y == 3 and dirn == UP:
                     raw_input()
                 if not succ:
                     continue
@@ -436,7 +443,7 @@ def main():
         Block(WHITE, 5, 3),
     ]
     """
-    file_name = '239.lv'
+    file_name = 'x29.lv'
     ret = get_block_from_file(file_name)
     g_qb = ret['map']
     step_max = ret['step_max']
