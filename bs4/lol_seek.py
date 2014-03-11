@@ -7,6 +7,7 @@ import bs4
 import sys
 import re
 import json
+import datetime
 
 def post(url, data):
     ''' copy from web post method '''
@@ -21,22 +22,37 @@ def post(url, data):
 def get(url, data):
     ''' url get method '''
     data = urllib.urlencode(data)
-    url = url + "?" + data
+    url += "?" + data
     return post(url, None)
 
-def getPlayerMatch(server, player):
-    ''' function main write jb comment '''
+def getPlayerMatch(p_server, p_player, 
+                   start_date=(datetime.date.today() - datetime.timedelta(days=1)).__str__().replace('-',''),
+                   end_date=datetime.date.today().__str__().replace('-','')):
+    ''' start_date: only get data between [start_date, end_date) '''
     url = 'http://lolbox.duowan.com/matchList.php'
     data = {
-        'serverName': server,
-        'playerName': player
+        'serverName': p_server,
+        'playerName': p_player
     }
     raw_content = post(url, data)
     soup = bs4.BeautifulSoup(raw_content, from_encoding='utf-8')
-    match_arr = []
     for t in soup.find_all(id=re.compile('cli*')):
+        t_id = t['id'].encode('utf-8').strip('cli')
+        dates = t.find_all(class_=re.compile('info'))
+        if len(dates) > 0:
+            t_date = dates[0].get_text().encode('utf-8')
+            t_date = re.search('\d\d-\d\d', t_date).group()
+        else:
+            t_date = '00-00'
+        t_date = t_date.replace('-', '')
+        # make format to yyyyMMdd
+        if len(t_date) <= 4:
+            t_date = `datetime.date.today().year` + t_date
+        if t_date < start_date or t_date >= end_date:
+            break
+        # e.g.: loadMatchDetail(6348303271,'BOT','网通四','我该拿掉谁的头颅');
+        t_queue = t['onclick'].encode('utf-8').split("'")[1]
         t_hero = t.img['title'].encode('utf-8')
-        t_id = t['id'].encode('utf-8')
         wins = t.find_all(class_=re.compile('green|red'))
         if len(wins) > 0:
             if wins[0].get_text() == u'胜利':
@@ -45,12 +61,22 @@ def getPlayerMatch(server, player):
                 t_win = 0
             else:
                 t_win = -1
-        # e.g.: loadMatchDetail(6348303271,'BOT','网通四','我该拿掉谁的头颅');
-        t_mode = t['onclick'].encode('utf-8').split("'")[1]
-        t_match = {'id':t_id, 'hero':t_hero, 'win':t_win, 'mode':t_mode}
-        #print type(t_match['hero'])
-        match_arr.append(t_match)
-    print json.dumps(match_arr, ensure_ascii=False, encoding='utf-8')
+        t_match = {'id':t_id, 'date':t_date, 'hero':t_hero, 'win':t_win, 'queue':t_queue, 'player':p_player, 'server':p_server}
+        print json.dumps(t_match, ensure_ascii=False, encoding='utf-8')
+
+def getMatchDetail(p_match_id):
+    ''' get match detail with id '''
+    url = 'http://api.lolbox.duowan.com/lol/match/detail'
+    data = {
+        'matchId':p_match_id
+    }
+    raw_content = get(url, data)
+    match_arr = json.loads(raw_content)
+    if match_arr['code'] != '0':
+        print "get match detail failed id[%d]" % p_match_id
+        return False
+    print json.dumps(match_arr['matchDetail'])
 
 if __name__ == '__main__':
-    getPlayerMatch('网通四', '我该拿掉谁的头颅')
+    getPlayerMatch('网通四', '我该拿掉谁的头颅', '20140309')
+    #getMatchDetail(6337944362)
