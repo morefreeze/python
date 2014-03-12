@@ -27,8 +27,11 @@ def get(url, data):
 
 def getPlayerMatch(p_server, p_player, 
                    start_date=(datetime.date.today() - datetime.timedelta(days=1)).__str__().replace('-',''),
-                   end_date=datetime.date.today().__str__().replace('-','')):
-    ''' start_date: only get data between [start_date, end_date) '''
+                   end_date=datetime.date.today().__str__().replace('-',''),
+                   ret_type='arr'):
+    ''' start_date: only get data between [start_date, end_date) 
+    ret_type: arr|json return type
+    '''
     url = 'http://lolbox.duowan.com/matchList.php'
     data = {
         'serverName': p_server,
@@ -36,6 +39,7 @@ def getPlayerMatch(p_server, p_player,
     }
     raw_content = post(url, data)
     soup = bs4.BeautifulSoup(raw_content, from_encoding='utf-8')
+    match_arr = []
     for t in soup.find_all(id=re.compile('cli*')):
         t_id = t['id'].encode('utf-8').strip('cli')
         dates = t.find_all(class_=re.compile('info'))
@@ -62,10 +66,18 @@ def getPlayerMatch(p_server, p_player,
             else:
                 t_win = -1
         t_match = {'id':t_id, 'date':t_date, 'hero':t_hero, 'win':t_win, 'queue':t_queue, 'player':p_player, 'server':p_server}
-        print json.dumps(t_match, ensure_ascii=False, encoding='utf-8')
+        match_arr.append(t_match)
+    if ret_type == 'arr':
+        return match_arr
+    elif ret_type == 'json':
+        return json.dumps(match_arr, ensure_ascii=False, encoding='utf-8')
+    else:
+        return json.dumps(match_arr, ensure_ascii=False, encoding='utf-8')
 
-def getMatchDetail(p_match_id):
-    ''' get match detail with id '''
+def getMatchDetail(p_match_id, ret_type = 'arr'):
+    ''' get match detail with id 
+    ret_type: arr|json return type
+    '''
     url = 'http://api.lolbox.duowan.com/lol/match/detail'
     data = {
         'matchId':p_match_id
@@ -75,8 +87,13 @@ def getMatchDetail(p_match_id):
     if match_arr['code'] != '0':
         print "get match detail failed id[%d]" % p_match_id
         return False
-    print json.dumps(match_arr['matchDetail'])
+    if ret_type == 'arr':
+        return match_arr['matchDetail']
+    elif ret_type == 'json':
+        return json.dumps(match_arr['matchDetail'])
+    else:
+        return json.dumps(match_arr['matchDetail'])
 
-if __name__ == '__main__':
-    getPlayerMatch('网通四', '我该拿掉谁的头颅', '20140309')
+#if __name__ == '__main__':
+    #getPlayerMatch('网通四', '我该拿掉谁的头颅', '20140309')
     #getMatchDetail(6337944362)
