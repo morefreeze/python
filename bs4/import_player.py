@@ -6,12 +6,11 @@ from urllib import urlencode
 from pymongo import MongoClient
 
 if __name__ == '__main__':
-    start_ply = lol_seek.getPlayerMatch('网通五', 'w4ppsxy')
     client = MongoClient()
     db = client.lol
     import_cnt = 0
     for t in start_ply:
-        pm_id = db.pm.update({'player':t['player'], 'id':t['id']}, t, upsert=True)
+        pm_id = db.player.update({'player':t['player'], 'id':t['id']}, t, upsert=True)
         if pm_id['updatedExisting'] == False:
             import_cnt += 1
-    print 'total import '+`import_cnt`+' player/match'
+    print 'total import '+`import_cnt`+' player'

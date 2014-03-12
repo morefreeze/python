@@ -9,7 +9,7 @@ if __name__ == '__main__':
     client = MongoClient()
     db = client.lol
     while True:
-        cursor = db.player.find({'_import': None}, fields={'_id': False, 'id': True}, limit = 100, snapshot = True)
+        cursor = db.pm.find({'_import': None}, fields={'_id': False, 'id': True}, limit = 100, snapshot = True)
         if cursor.count() <= 0:
             break
         for t in cursor:
@@ -21,5 +21,5 @@ if __name__ == '__main__':
             # import every player into db
             for ply in match_detail['player']:
                 if ply['botPlayer'] != True:
-                    db.pm.update({'userId': ply['userId'], 'gameId': ply['gameId']}, ply, upsert = True)
-            db.player.update({'id' : t['id']}, {'$set': {'_import': True}}, multi = True)
+                    db.match.update({'userId': ply['userId'], 'gameId': ply['gameId']}, ply, upsert = True)
+            db.pm.update({'id' : t['id']}, {'$set': {'_import': True}}, multi = True)
