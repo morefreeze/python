@@ -58,7 +58,11 @@ def getPlayerMatch(p_server, p_player,
             t_date = t_date.replace('-', '')
             # make format to yyyyMMdd
             if len(t_date) <= 4:
-                t_date = `datetime.date.today().year` + t_date
+                t_new_date = `datetime.date.today().year` + t_date
+                # e.g.: 20141211, but today is 20140312, it may be 20131211
+                if t_new_date > datatime.date.today().__str__().replace('-',''):
+                    t_new_date = `datetime.date.today().year-1` + t_date
+                t_date = t_new_date
             if t_date < end_date:
                 in_date = True
             if t_date < start_date:
@@ -99,7 +103,7 @@ def getMatchDetail(p_match_id, ret_type = 'arr'):
     raw_content = get(url, data)
     match_arr = json.loads(raw_content)
     if match_arr['code'] != '0':
-        print "get match detail failed id[%d]" % p_match_id
+        print "get match detail failed id[%s]" % p_match_id
         return False
     if ret_type == 'arr':
         return match_arr['matchDetail']
