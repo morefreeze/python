@@ -13,13 +13,14 @@ if __name__ == '__main__':
     player_cnt = 0
     pm_cnt = 0
     while True:
-        cursor = db.pm.find({'_import': None}, fields={'_id': False, 'id': True}, limit = 100, snapshot = True)
+        cursor = db.pm.find({'_import': None}, fields={'_id': False, 'id': True}, limit = 20, snapshot = True)
         if cursor.count() <= 0:
             break
         pm_cnt += cursor.count(True)
         print `pm_cnt`+'/'+`cursor.count()`
         for t in cursor:
             t_id = t['id'].encode('utf-8')
+            print t['id']
             match_detail = lol_seek.getMatchDetail(t_id)
             if match_detail == False or len(match_detail) <= 0:
                 print 'import match detail error id['+t['id']+']'
@@ -27,14 +28,13 @@ if __name__ == '__main__':
                 players = match_detail['player']
                 del match_detail['player']
                 ret_match = db.match.update({'gameId': match_detail['gameId']}, {'$set': match_detail}, upsert = True)
+                print match_detail['gameId']
                 # import every player into db
                 for ply in players:
                     if ply['botPlayer'] != True:
-                        db.match.update({'userId': ply['userId'], 'gameId': ply['gameId']}, ply, upsert = True)
+                        db.match.update({'userId': ply['userId'], 'gameId': ply['gameId']}, {'$set': ply}, upsert = True)
                         player_cnt += 1
                 ret_pm = db.pm.update({'id' : t['id']}, {'$set': {'_import': True}}, multi = True)
-                print t['id']
                 match_cnt += 1
-            ret_pm = db.pm.update({'id' : t['id']}, {'$set': {'_import': True}}, multi = True)
         time.sleep(1)
     print 'total import '+`match_cnt`+' matchs, '+`player_cnt`+' players'

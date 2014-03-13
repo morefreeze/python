@@ -16,8 +16,13 @@ def post(url, data):
         data = urllib.urlencode(data)
     #enable cookie
     opener = urllib2.build_opener(urllib2.HTTPCookieProcessor())
-    response = opener.open(req, data)
-    return response.read()
+    try:
+        response = opener.open(req, data, 10)
+        ret = response.read()
+    except:
+        print 'read timeout'
+        return ''
+    return ret
 
 def get(url, data):
     ''' url get method '''
@@ -101,6 +106,9 @@ def getMatchDetail(p_match_id, ret_type = 'arr'):
         'matchId': p_match_id
     }
     raw_content = get(url, data)
+    if raw_content == '':
+        print "get match detail(empty) failed id[%s]" % p_match_id
+        return False
     match_arr = json.loads(raw_content)
     if match_arr['code'] != '0':
         print "get match detail failed id[%s]" % p_match_id
