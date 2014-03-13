@@ -11,7 +11,7 @@ if __name__ == '__main__':
     db = client.lol
     import_cnt = 0
     for t in start_ply:
-        pm_id = db.pm.update({'player':t['player'], 'id':t['id']}, t, upsert=True)
-        if pm_id['updatedExisting'] == False:
+        pm_ret = db.pm.update({'id':t['id']}, t, upsert=True)
+        if pm_ret['updatedExisting'] == False:
             import_cnt += 1
     print 'total import '+`import_cnt`+' player/match'
