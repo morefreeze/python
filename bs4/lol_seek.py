@@ -17,7 +17,7 @@ def post(url, data):
     #enable cookie
     opener = urllib2.build_opener(urllib2.HTTPCookieProcessor())
     try:
-        response = opener.open(req, data, 10)
+        response = opener.open(req, data, timeout=5)
         ret = response.read()
     except:
         print 'read timeout'
@@ -65,7 +65,7 @@ def getPlayerMatch(p_server, p_player,
             if len(t_date) <= 4:
                 t_new_date = `datetime.date.today().year` + t_date
                 # e.g.: 20141211, but today is 20140312, it may be 20131211
-                if t_new_date > datatime.date.today().__str__().replace('-',''):
+                if t_new_date > datetime.date.today().__str__().replace('-',''):
                     t_new_date = `datetime.date.today().year-1` + t_date
                 t_date = t_new_date
             if t_date < end_date:
@@ -111,8 +111,8 @@ def getMatchDetail(p_match_id, ret_type = 'arr'):
         return False
     match_arr = json.loads(raw_content)
     if match_arr['code'] != '0':
-        print "get match detail failed id[%s]" % p_match_id
-        return False
+        print "get match detail failed id[%s] error_code[%s]" % (p_match_id,match_arr['code'])
+        return {'gameId':-1, 'player':[]}
     if ret_type == 'arr':
         return match_arr['matchDetail']
     elif ret_type == 'json':
@@ -137,4 +137,4 @@ def getPlayerDetail(p_server, p_player, ret_type = 'arr'):
 #if __name__ == '__main__':
     #getPlayerDetail('网通四', '我该拿掉谁的头颅')
     #getPlayerMatch('网通四', '我该拿掉谁的头颅', '20140301')
-    #getMatchDetail(6337944362)
+    #getMatchDetail(772317144)
