@@ -13,6 +13,8 @@ if __name__ == '__main__':
     while True:
         cursor = db.match.find({'_import': None, 'serverName': {'$ne': None}}, 
                                fields = {'_id': False, 'gameId': True, 'serverName': True}).limit(1)
+        # lock this data for concurrency
+        ret_match = db.match.update({'gameId': cursor[0]['gameId']}, {'$set': {'_import': False}})
         if cursor.count() <= 0:
             break
         game_id = int(cursor[0]['gameId'])
@@ -29,5 +31,5 @@ if __name__ == '__main__':
                     player_cnt += 1
         match_cnt += 1
         # watch out int and str of gameId
-        ret_match = db.match.update({'gameId': cursor[0]['gameId']}, {'$set': {'_import': True}}, multi = True)
+        ret_match = db.match.update({'gameId': cursor[0]['gameId']}, {'$set': {'_import': True}})
     print 'total import '+`match_cnt`+' matches '+`player_cnt`+' players'

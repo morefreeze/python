@@ -14,6 +14,10 @@ if __name__ == '__main__':
     pm_cnt = 0
     while True:
         cursor = db.pm.find({'_import': None}, fields={'_id': False, 'id': True}, limit = 20, snapshot = True)
+        # lock this data for concurrency
+        t_cursor = cursor.clone()
+        for t in t_cursor:
+            ret_pm = db.pm.update({'id' : t['id']}, {'$set': {'_import': False}})
         if cursor.count() <= 0:
             break
         pm_cnt += cursor.count(True)
@@ -35,7 +39,7 @@ if __name__ == '__main__':
                     if ply['botPlayer'] != True:
                         db.match.update({'userId': ply['userId'], 'gameId': ply['gameId']}, {'$set': ply}, upsert = True)
                         player_cnt += 1
-                ret_pm = db.pm.update({'id' : t['id']}, {'$set': {'_import': True}}, multi = True)
+                ret_pm = db.pm.update({'id' : t['id']}, {'$set': {'_import': True}})
                 match_cnt += 1
         time.sleep(1)
     print 'total import '+`match_cnt`+' matchs, '+`player_cnt`+' players'
