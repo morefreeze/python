@@ -21,10 +21,10 @@ if __name__ == '__main__':
         print game_id
         server_name = cursor[0]['serverName'].encode('utf-8')
         # select summoners in a game
-        sum_cursor = db.match.find({'_import': None, 'gameId': game_id})
+        sum_cursor = db.match.find({'_import': None, 'summonerName': {'$ne':None}})
         for ply in sum_cursor:
             player_name = ply['summonerName'].encode('utf-8')
-            print player_name
+            # print player_name
             start_ply = lol_seek.getPlayerMatch(server_name, player_name)
             for t in start_ply:
                 ret_pm = db.pm.update({'id':t['id']}, {'$set': t}, upsert=True)

@@ -40,7 +40,7 @@ if __name__ == '__main__':
         if cursor.count() <= 0:
             break
         match_cnt += cursor.count(True)
-        print `match_cnt`+'/'+`cursor.count()`
+        print `match_cnt`+'|'+`cursor.count()-cursor.count(True)`
         # iterator each match info
         for t in cursor:
             game_id = int(t['gameId'])
