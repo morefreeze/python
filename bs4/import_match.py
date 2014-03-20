@@ -21,7 +21,7 @@ if __name__ == '__main__':
         if cursor.count() <= 0:
             break
         pm_cnt += cursor.count(True)
-        print `pm_cnt`+'/'+`cursor.count()`
+        print `pm_cnt`+'|'+`cursor.count()-cursor.count(True)`
         # iterator each player match info
         for t in cursor:
             t_id = t['id'].encode('utf-8')

@@ -29,14 +29,14 @@ if __name__ == '__main__':
         if cursor.count() <= 0:
             break
         pm_cnt += cursor.count(True)
-        print `pm_cnt`+'/'+`cursor.count()`
+        print `pm_cnt`+'|'+`cursor.count()-cursor.count(True)`
         # iterator each player match info
         for t in cursor:
             db[new_pm].insert(t)
             db.pm.remove({'_id':t['_id']})
     # archive match by date (match end time)
     while True:
-        cursor = db.match.find({'_import': True, 'endTimestamp': {'$gte': dt_timestamp, '$lt': dt_timestamp_end}}, limit = 1000, snapshot = True)
+        cursor = db.match.find({'_import': True, 'endTimestamp': {'$gte': dt_timestamp, '$lt': dt_timestamp_end}}, limit = 10, snapshot = True)
         if cursor.count() <= 0:
             break
         match_cnt += cursor.count(True)
