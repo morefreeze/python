@@ -24,9 +24,11 @@ if __name__ == '__main__':
         sum_cursor = db.match.find({'_import': None, 'gameId': game_id})
         for ply in sum_cursor:
             player_name = ply['summonerName'].encode('utf-8')
+            print player_name
             start_ply = lol_seek.getPlayerMatch(server_name, player_name)
             for t in start_ply:
                 ret_pm = db.pm.update({'id':t['id']}, {'$set': t}, upsert=True)
+                print t['id']
                 if ret_pm['updatedExisting'] == False:
                     player_cnt += 1
         match_cnt += 1

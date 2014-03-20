@@ -42,4 +42,4 @@ if __name__ == '__main__':
                 ret_pm = db.pm.update({'id' : t['id']}, {'$set': {'_import': True}})
                 match_cnt += 1
         time.sleep(1)
-    print 'total import '+`match_cnt`+' matchs, '+`player_cnt`+' players'
+    print 'total import '+`match_cnt`+' matches, '+`player_cnt`+' players'
