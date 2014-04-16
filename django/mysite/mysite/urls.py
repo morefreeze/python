@@ -2,7 +2,7 @@ from django.conf.urls import patterns, include, url
 
 from django.contrib import admin
 
-from mysite.views import hello, current_datetime, fake_ssh
+from mysite.views import fake_ssh, encode_qid
 admin.autodiscover()
 
 urlpatterns = patterns('',
@@ -11,7 +11,6 @@ urlpatterns = patterns('',
     # url(r'^blog/', include('blog.urls')),
 
     url(r'^admin/', include(admin.site.urls)),
-    url(r'^hello/$', hello),
-    url(r'^time/$', current_datetime),
     url(r'^fake_ssh/$', fake_ssh),
+    url(r'^encode_qid/$', encode_qid),
 )

@@ -1,7 +1,8 @@
 from django.template.loader import get_template
 from django.template import Context
 from django.http import HttpResponse
-from django.shortcuts import render
+from django.shortcuts import render, render_to_response
+from mysite.forms import EncodeForm
 from subprocess import check_output, STDOUT, CalledProcessError
 import os
 import json
@@ -43,3 +44,9 @@ def fake_ssh(request):
         break
     return HttpResponse(json.dumps(ret, ensure_ascii=False))
 
+def encode_qid(requst):
+    if requst.method == 'POST':
+        form = EncodeForm(request.POST)
+    else:
+        form = EncodeForm()
+    return render_to_response('encode_form.html', {'form': form})
