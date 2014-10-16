@@ -2,7 +2,7 @@ from django.conf.urls import patterns, include, url
 
 from django.contrib import admin
 
-from mysite.views import fake_ssh, encode_qid
+from mysite.views import fake_ssh, register
 admin.autodiscover()
 
 urlpatterns = patterns('',
@@ -12,5 +12,5 @@ urlpatterns = patterns('',
 
     url(r'^admin/', include(admin.site.urls)),
     url(r'^fake_ssh/$', fake_ssh),
-    url(r'^encode_qid/$', encode_qid),
+    url(r'^register/$', register),
 )

@@ -1,8 +1,9 @@
 from django.template.loader import get_template
 from django.template import Context
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, render_to_response
 from mysite.forms import EncodeForm
+from mysite.user_info import UserInfo
 from subprocess import check_output, STDOUT, CalledProcessError
 import os
 import json
@@ -44,9 +45,22 @@ def fake_ssh(request):
         break
     return HttpResponse(json.dumps(ret, ensure_ascii=False))
 
-def encode_qid(requst):
-    if requst.method == 'POST':
+def encode_qid(request):
+    if request.method == 'POST':
         form = EncodeForm(request.POST)
     else:
         form = EncodeForm()
     return render_to_response('encode_form.html', {'form': form})
+
+def register(request):
+    if request.method == 'GET':
+        user_info = UserInfo(request.GET)
+        if user_info.is_valid():
+            user_info.gen_token()
+            ret = {'token':user_info.s_token}
+        else:
+            ret = {'errmsg':'%s %s' %(user_info.s_token, user_info.s_token)}
+    else:
+        ret = {'errmsg':'only for GET'}
+
+    return JsonResponse(ret)
