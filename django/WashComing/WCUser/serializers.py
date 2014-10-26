@@ -4,4 +4,4 @@ from WCUser.models import User
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('uid', 'name', 'token', 'last_time', 'score', 'phone', 'email')
+        fields = ('uid', 'name', 'token', 'last_time', 'score', 'member', 'phone', 'email')

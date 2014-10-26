@@ -2,31 +2,33 @@
 from django.forms import ValidationError
 from django.db import models
 from jsonfield import JSONField
-from WCLogistics.models import Address
 import base64
 import hashlib
 
 # Create your models here.
-class User(models.Model):
-    uid = models.AutoField(primary_key=True)
-    name = models.CharField(unique=True,max_length=255)
-    token = models.CharField(max_length=32)
-    openauth = models.CharField(max_length=255)
-    phone = models.CharField(max_length=11,default='')
-    email = models.CharField(max_length=128,default='')
-    default_adr = models.OneToOneField(Address,null=True)
-    create_time = models.DateTimeField(auto_now_add=True)
-    last_time = models.DateTimeField(auto_now=True)
-    score = models.IntegerField(default=0)
-    member = models.IntegerField(default=0)
-    invited_uid = models.IntegerField(default=0)
+"""
+cloth tree, include category which is branch,
+cloth is leaf
+"""
+class Cloth(models.Model):
+    cid = models.AutoField(primary_key=True)
+    is_leaf = models.BooleanField(default=True)
+    fa_cid = models.IntegerField(default=0)
+    name = models.CharField(unique=True,max_length=32)
+    detail = models.CharField(max_length=255)
+    price = models.FloatField()
     deleted = models.BooleanField(default=False)
     ext = JSONField(default={})
 
     @classmethod
     def create(cls, d_request):
-        s_name = d_request.get('username')
-        return cls(uid=None, name=s_name, token='')
+        b_is_leaf = d_request.get('is_leaf')
+        i_fa_cid = d_request.get('fa_cid')
+        s_name = d_request.get('name')
+        s_detail = d_request.get('detail')
+        f_price = d_request.get('price')
+        return cls(cid=None, fa_cid=i_fa_cid, name=s_name, detail=s_detail,
+                  price=f_price)
 # gen_token will assisn token field
 
     def gen_token(self, d_request):
@@ -45,7 +47,7 @@ class User(models.Model):
         s_token = hashlib.md5(s_token).hexdigest().upper()
         return s_token
 
-# if vali pass return User obj else return None
+# if vali pass return Cloth obj else return None
     def vali_passwd(self, d_request):
         s_token = self.gen_token(d_request)
         s_name = self.name
@@ -58,13 +60,20 @@ class User(models.Model):
         return mo_user
 
     @classmethod
-    def get_user(cls, name, token):
+    def get_category(cls):
+        """
+        return first category
+        """
+        try:
+            a_category = cls.objects.filter(fa_cid=0, deleted=False, is_leaf=False)
+        except (cls.DoesNotExist) as e:
+            return None
+
+    @classmethod
+    def get_cloth(cls, name):
         try:
             mo_user = cls.objects.get(name=name, token=token)
         except (cls.DoesNotExist) as e:
             return None
         return mo_user
 
-    @staticmethod
-    def gen_level(i_score):
-        return 42
