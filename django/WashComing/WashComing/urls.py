@@ -8,4 +8,8 @@ urlpatterns = patterns('',
 
     #url(r'^admin/', include(admin.site.urls)),
     url(r'^user/', include('WCUser.urls')),
+    url(r'^bill/', include('WCBill.urls')),
+    url(r'^cloth/', include('WCCloth.urls')),
+    url(r'^logistics/', include('WCLogistics.urls_lg')),
+    url(r'^address/', include('WCLogistics.urls_adr')),
 )
