@@ -6,7 +6,7 @@ urlpatterns = patterns('',
     # url(r'^$', 'WashComing.views.home', name='home'),
     # url(r'^blog/', include('blog.urls')),
 
-    #url(r'^admin/', include(admin.site.urls)),
+    url(r'^admin/', include(admin.site.urls)),
     url(r'^user/', include('WCUser.urls')),
     url(r'^bill/', include('WCBill.urls')),
     url(r'^cloth/', include('WCCloth.urls')),

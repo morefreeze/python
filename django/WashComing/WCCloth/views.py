@@ -25,58 +25,62 @@ def category(request):
     d_response['data'] = []
     if None != a_category:
         for it_category in a_category:
-            d_response['data'].append(ClothSerializer(it_category).data)
+            se_category = ClothSerializer(it_category)
+# replace cid to gid
+            se_category.data['gid'] = se_category.data['cid']
+            del se_category.data['cid']
+            d_response['data'].append(se_category.data)
     d_response['errno'] = 0
     return JSONResponse(d_response)
 
 def list(request):
-    if request.method == 'GET':
-        fo_cloth = ClothLoginForm(request.GET)
-        if fo_cloth.is_valid():
-            mo_user = Cloth.create(fo_cloth.cleaned_data)
-            mo_user = mo_user.vali_passwd(fo_cloth.cleaned_data)
+    if request.method != 'GET':
+        return JSONResponse({'errmsg':'method error'})
+    fo_cloth = ClothListForm(request.GET)
+    if not fo_cloth.is_valid():
         return JSONResponse({'errmsg':fo_cloth.errors})
-    return JSONResponse({'errmsg':'method error'})
+    d_data = fo_cloth.cleaned_data
+    s_name = d_data.get('username')
+    s_token = d_data.get('token')
+    mo_user = User.get_user(s_name, s_token)
+    if None == mo_user:
+        return JSONResponse({'errmsg':'username or password error'})
+    i_gid = d_data.get('gid')
+    a_cloth = Cloth.objects.filter(fa_cid=i_gid, is_leaf=True, deleted=False)
+    d_response = dict()
+    d_response['data'] = []
+    if None != a_cloth:
+        for it_cloth in a_cloth:
+            se_cloth = ClothSerializer(it_cloth)
+            d_response['data'].append(se_cloth.data)
+    d_response['count'] = len(d_response['data'])
+    d_response['errno'] = 0
+    return JSONResponse(d_response)
 
 def info(request):
-    if request.method == 'GET':
-        fo_cloth = ClothInfoForm(request.GET)
-        if fo_cloth.is_valid():
-            s_name = fo_cloth.cleaned_data.get('username')
-            s_token = fo_cloth.cleaned_data.get('token')
-            try:
-                mo_user = Cloth.objects.get(name=s_name, token=s_token)
-                se_user = ClothSerializer(mo_user)
-                d_response = dict()
-                d_response['uid'] = se_user.data['uid']
-                d_response['username'] = se_user.data['name']
-                d_response['token'] = se_user.data['token']
-                d_response['score'] = se_user.data['score']
-                d_response['level'] = Cloth.gen_level(d_response['score'])
-                d_response['errno'] = 0
-                return JSONResponse(d_response)
-            except (Cloth.DoesNotExist) as e:
-                return JSONResponse({'errmsg':'username or token error'})
+    if request.method != 'GET':
+        return JSONResponse({'errmsg':'method error'})
+    fo_cloth = ClothInfoForm(request.GET)
+    if not fo_cloth.is_valid():
         return JSONResponse({'errmsg':fo_cloth.errors})
-    return JSONResponse({'errmsg':'method error'})
-
-def bind_email(request):
-    if request.method == 'GET':
-        fo_cloth = ClothBindEmailForm(request.GET)
-        if fo_cloth.is_valid():
-            s_name = fo_cloth.cleaned_data.get('username')
-            s_token = fo_cloth.cleaned_data.get('token')
-            s_email = fo_cloth.cleaned_data.get('email')
-            try:
-                mo_user = Cloth.objects.get(name=s_name, token=s_token)
-                mo_user.email = s_email
-                mo_user.save()
-                d_response = {'errno':0}
-                return JSONResponse(d_response)
-            except (Cloth.DoesNotExist) as e:
-                return JSONResponse({'errmsg':'username or token error'})
-        return JSONResponse({'errmsg':fo_cloth.errors})
-    return JSONResponse({'errmsg':'method error'})
+    s_name = fo_cloth.cleaned_data.get('username')
+    s_token = fo_cloth.cleaned_data.get('token')
+    mo_user = User.get_user(s_name, s_token)
+    if None == mo_user:
+        return JSONResponse({'errmsg':'username or password error'})
+    d_data = fo_cloth.cleaned_data
+    i_cid = d_data.get('cid')
+    mo_cloth = Cloth.get_cloth(i_cid)
+    if None == mo_cloth:
+        return JSONResponse({'errmsg':'get cloth error'})
+    se_cloth = ClothSerializer(mo_cloth)
+    d_response = dict()
+    d_response['cid'] = se_cloth.data['cid']
+    d_response['name'] = se_cloth.data['name']
+    d_response['detail'] = se_cloth.data['detail']
+    d_response['price'] = se_cloth.data['price']
+    d_response['errno'] = 0
+    return JSONResponse(d_response)
 
 """ method template (7 lines)
 def info(request):
