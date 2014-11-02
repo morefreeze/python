@@ -9,8 +9,8 @@ class ClothCategoryForm(forms.Form):
 class ClothListForm(forms.Form):
     username = forms.CharField(required = True,
                            min_length=3,max_length=255)
-    password = forms.CharField(required = True,
-                             max_length=255)
+    token = forms.CharField(required = True,
+                             max_length=32)
     gid = forms.IntegerField(required = True)
 
 class ClothInfoForm(forms.Form):
