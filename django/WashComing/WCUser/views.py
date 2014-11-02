@@ -115,6 +115,8 @@ def update(request):
         mo_user.token = User.gen_token(d_data)
     mo_user.save()
     d_response = {'errno':0}
+    d_response['username'] = mo_user.name
+    d_response['token'] = mo_user.token
     return JSONResponse(d_response)
 
 """ method template (12 lines)
