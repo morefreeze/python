@@ -9,16 +9,18 @@ from WCCloth.models import Cloth
 class Bill(models.Model):
     bid = models.AutoField(primary_key=True)
     create_time = models.DateTimeField(auto_now_add=True)
-    get_time = models.DateTimeField()
-    return_time = models.DateTimeField()
+    get_time_0 = models.DateTimeField()
+    get_time_1 = models.DateTimeField()
+    return_time_0 = models.DateTimeField()
+    return_time_1 = models.DateTimeField()
     own = models.ForeignKey(User) # own_id in db
     lg = models.ForeignKey(RFD,null=True) # lg_id in db
     adr = models.ForeignKey(Address) # adr_id in db
     shop = models.ForeignKey(Shop,null=True)
     status = models.IntegerField(default=0)
     deleted = models.BooleanField(default=False)
-    clothes = JSONField(default=None)
-    ext = JSONField(default=None)
+    clothes = JSONField(default={})
+    ext = JSONField(default={})
 
     def __unicode__(self):
         return self.bid

@@ -8,8 +8,10 @@ class BillSubmitForm(forms.Form):
                              max_length=32)
     clothes = forms.CharField(required = True,
                              max_length=65535)
-    get_time = forms.DateTimeField(required = True)
-    return_time = forms.DateTimeField(required = True)
+    get_time_0 = forms.DateTimeField(required = True)
+    get_time_1 = forms.DateTimeField(required = True)
+    return_time_0 = forms.DateTimeField(required = True)
+    return_time_1 = forms.DateTimeField(required = True)
     aid = forms.IntegerField(required = True)
 
 class BillListForm(forms.Form):
