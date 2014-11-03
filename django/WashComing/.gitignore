@@ -31,3 +31,9 @@ pip-log.txt
 
 # Migrate
 migrations
+
+# RSA private key
+*.pem
+
+# nohup file output
+nohup.out
