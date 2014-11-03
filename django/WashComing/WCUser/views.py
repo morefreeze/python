@@ -9,28 +9,28 @@ from WCUser.forms import UserRegisterForm, UserLoginForm, UserInfoForm, \
 # Create your views here.
 
 def register(request):
-    if request.method == 'GET':
-        fo_user = UserRegisterForm(request.GET)
-        if not fo_user.is_valid():
-            return JSONResponse({'errmsg':fo_user.errors})
-        mo_user = User.create(fo_user.cleaned_data)
-        d_data = fo_user.cleaned_data
-        s_token = User.gen_token(d_data)
-        s_phone = d_data.get('phone')
-        try:
-            int(s_phone)
-        except (ValueError, TypeError):
-            return JSONResponse({'errmsg':'phone must be number'})
-        mo_user.token = s_token
-        mo_user.phone = s_phone
-        try:
-            mo_user.save()
-            se_user = UserSerializer(mo_user)
-            return JSONResponse(se_user.data)
+    if request.method != 'GET':
+        return JSONResponse({'errmsg':'method error'})
+    fo_user = UserRegisterForm(request.GET)
+    if not fo_user.is_valid():
+        return JSONResponse({'errmsg':fo_user.errors})
+    mo_user = User.create(fo_user.cleaned_data)
+    d_data = fo_user.cleaned_data
+    s_token = User.gen_token(d_data)
+    s_phone = d_data.get('phone')
+    try:
+        int(s_phone)
+    except (ValueError, TypeError):
+        return JSONResponse({'errmsg':'phone must be number'})
+    mo_user.token = s_token
+    mo_user.phone = s_phone
+    try:
+        mo_user.save()
+        se_user = UserSerializer(mo_user)
+        return JSONResponse({'errno':0, 'uid':se_user.data.get('uid')})
 # duplicate username
-        except IntegrityError as e:
-            return JSONResponse({'errmsg':'username has been registered'})
-    return JSONResponse({'errmsg':'method error'})
+    except IntegrityError as e:
+        return JSONResponse({'errmsg':'username has been registered'})
 
 def login(request):
     if request.method != 'GET':

@@ -14,7 +14,7 @@ class User(models.Model):
     openauth = models.CharField(max_length=255,default='')
     phone = models.CharField(max_length=12,default='')
     email = models.CharField(max_length=128,default='')
-    default_adr = models.OneToOneField(Address,null=True)
+    default_adr = models.OneToOneField('WCLogistics.Address',null=True)
     create_time = models.DateTimeField(auto_now_add=True)
     last_time = models.DateTimeField(auto_now=True)
     score = models.IntegerField(default=0)
@@ -57,7 +57,7 @@ class User(models.Model):
             mo_user = cls.objects.get(name=s_name)
             if mo_user.token != s_token:
                 raise ValidationError('password does not match username')
-        except (self.__class__.DoesNotExist, ValidationError) as e:
+        except (cls.DoesNotExist, ValidationError) as e:
             return None
         return mo_user
 
