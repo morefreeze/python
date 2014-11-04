@@ -18,7 +18,7 @@ class RFD(models.Model):
     def ImportOrders(self):
         pass
 
-    def AddFetchOrder(self, mo_address):
+    def AddFetchOrder(self, mo_address, mo_bill):
         SM_TEMPLATE = '''<?xml version="1.0" encoding="UTF-8"?>
 <SOAP-ENV:Envelope
 xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
@@ -41,7 +41,7 @@ xmlns:ns1="http://tempuri.org/">
             "SendCityName": mo_address.city,
             "SendAreaName": mo_address.area,
             "SendAddress": mo_address.address,
-            "NeedAmount": "32.4",
+            "NeedAmount": mo_bill.total,
             "ProtectPrice": 0
         }
 

@@ -22,7 +22,7 @@ class Cloth(models.Model):
     ext = JSONField(default={})
 
     def __unicode__(self):
-        return "%s(%d)" % (self.name, self.is_leaf)
+        return "%s(%d %d)" % (self.name, self.cid, self.price)
 
     @classmethod
     def create(cls, d_request):

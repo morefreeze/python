@@ -158,8 +158,9 @@ def lg_info(request):
 
 def test_sign(request):
     mo_address = Address.objects.get(aid=request.GET.get('aid'))
+    mo_bill = Address.objects.get(bid=request.GET.get('bid'))
     tt = RFD()
-    s_s = tt.AddFetchOrder(mo_address)
+    s_s = tt.AddFetchOrder(mo_address, mo_bill)
     #s_s = request.GET.get('s')
     return JSONResponse({'res':s_s})
 

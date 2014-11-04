@@ -37,6 +37,7 @@ def submit(request):
             mo_bill.deleted = 0
             mo_bill.clothes = d_data.get('clothes')
             mo_bill.ext = None
+            mo_bill.calc_total()
             mo_bill.save()
             se_bill = BillSerializer(mo_bill)
             return JSONResponse({'errno':0, 'bid':se_bill.data.get('bid')})
@@ -87,6 +88,11 @@ def info(request):
             if None == mo_user:
                 return JSONResponse({'errmsg':'username or password error'})
             mo_bill = Bill.get_bill(mo_user.uid, d_data.get('bid'))
+            if None == mo_bill:
+                return JSONResponse({'errmsg':'bill not exist'})
+            if eq_zero(mo_bill.total):
+                mo_bill.calc_total()
+                mo_bill.save()
             se_bill = BillSerializer(mo_bill)
             return JSONResponse(se_bill.data)
         return JSONResponse({'errmsg':fo_bill.errors})
