@@ -2,7 +2,7 @@
 from django.shortcuts import render
 
 from WCLib.views import *
-from WCLogistics.models import Address
+from WCLogistics.models import RFD, Address
 from WCLogistics.forms import AddressAddForm, AddressUpdateForm, AddressDeleteForm, \
         AddressListForm, AddressSetDefaultForm
 from WCLogistics.serializers import AddressSerializer
@@ -157,15 +157,18 @@ def lg_info(request):
     # todo
 
 def test_sign(request):
-    s_s = request.GET.get('s')
-    return JSONResponse({'res':sign_data(s_s)})
+    mo_address = Address.objects.get(aid=request.GET.get('aid'))
+    tt = RFD()
+    s_s = tt.AddFetchOrder(mo_address)
+    #s_s = request.GET.get('s')
+    return JSONResponse({'res':s_s})
 
 def sign_data(js_data):
     if None == js_data:
         return None
-    s_hash = base64.b64encode(hashlib.md5(js_data).digest())
+    s_hash = base64.b64encode(hashlib.md5(json.dumps(js_data)).digest())
     pk_prikey = ct.load_privatekey(ct.FILETYPE_PEM, open('rfd.pem').read())
-    s_res = base64.b64encode(ct.sign(pk_prikey, s_hash, 'sha1'))
+    s_res = s_json + ',' + base64.b64encode(ct.sign(pk_prikey, s_hash, 'sha1'))
     return s_res
 
 """
