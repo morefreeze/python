@@ -8,4 +8,4 @@ class BillSerializer(serializers.ModelSerializer):
         fields = ('bid', 'create_time', 'get_time_0', 'get_time_1', \
                   'return_time_0', 'return_time_1', \
                   'own', 'lg', 'adr', 'status', 'deleted', \
-                 'clothes')
+                 'clothes', 'total')

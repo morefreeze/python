@@ -4,6 +4,7 @@ from jsonfield import JSONField
 from WCUser.models import User, Shop
 from WCLogistics.models import RFD, Address
 from WCCloth.models import Cloth
+import json
 
 # Create your models here.
 class Bill(models.Model):
@@ -19,11 +20,39 @@ class Bill(models.Model):
     shop = models.ForeignKey(Shop,null=True)
     status = models.IntegerField(default=0)
     deleted = models.BooleanField(default=False)
-    clothes = JSONField(default={})
+    total = models.FloatField(default=0.0)
+    clothes = JSONField(default=[])
     ext = JSONField(default={})
 
     def __unicode__(self):
         return self.bid
+
+# update total field
+    def calc_total(self):
+        f_total = 0.0
+        try:
+            js_cloth = self.clothes
+            for it_cloth in js_cloth:
+                try:
+                    i_cid = it_cloth.get('cid')
+                    i_num = it_cloth.get('number')
+                    mo_cloth = Cloth.objects.get(cid=i_cid)
+                    f_price = mo_cloth.price
+                except (AttributeError, Cloth.DoesNotExist) as e:
+                    self.ext['error'] = "%s%s(it_cloth:%s);" \
+                        %(self.ext.get('error', ''), e.__str__(), it_cloth.__str__())
+                    continue
+                if i_num * f_price <= 0:
+                    self.ext['error'] = "%s%s(it_cloth:%s);" \
+                        %(self.ext.get('error', ''), 'num*price<0', it_cloth.__str__())
+                else:
+                    f_total += i_num * f_price
+        except (ValueError) as e:
+            self.ext['error'] = "%s%s(it_cloth:%s);" \
+                %(self.ext.get('error', ''), e.__str__(), it_cloth.__str__())
+            f_total = 0.0
+        self.total = f_total
+        return f_total
 
     @classmethod
     def get_bill(cls, own_id, bid):
