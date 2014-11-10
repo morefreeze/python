@@ -7,5 +7,6 @@ class BillSerializer(serializers.ModelSerializer):
         model = Bill
         fields = ('bid', 'create_time', 'get_time_0', 'get_time_1', \
                   'return_time_0', 'return_time_1', \
-                  'own', 'lg', 'adr', 'status', 'deleted', \
-                 'clothes', 'total')
+                  'own', 'lg', 'address', 'real_name', 'phone', \
+                  'status', 'deleted', \
+                  'clothes', 'total', 'comment', 'feedback')

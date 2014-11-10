@@ -4,7 +4,7 @@ from django.shortcuts import render
 from WCLib.views import *
 from WCLogistics.models import RFD, Address
 from WCLogistics.forms import AddressAddForm, AddressUpdateForm, AddressDeleteForm, \
-        AddressListForm, AddressSetDefaultForm
+        AddressListForm, AddressSetDefaultForm, AddressInfoForm
 from WCLogistics.serializers import AddressSerializer
 from WCUser.models import User
 from WCUser.serializers import UserSerializer
@@ -55,6 +55,8 @@ def update(request):
         mo_adr.provice = d_data.get('provice')
     if '' != d_data.get('city'):
         mo_adr.city = d_data.get('city')
+    if '' != d_data.get('area'):
+        mo_adr.area = d_data.get('area')
     if '' != d_data.get('address'):
         mo_adr.address = d_data.get('address')
     mo_adr.save()
@@ -125,6 +127,29 @@ def set_default(request):
     mo_user.default_adr = mo_adr
     mo_user.save()
     return JSONResponse({'errno':0})
+
+def info(request):
+    if request.method != 'GET':
+        return JSONResponse({'errmsg':'method error'})
+    fo_adr = AddressInfoForm(request.GET)
+    if not fo_adr.is_valid():
+        return JSONResponse({'errmsg':fo_adr.errors})
+    d_data = fo_adr.cleaned_data
+    s_name = d_data.get('username')
+    s_token = d_data.get('token')
+    mo_user = User.get_user(s_name, s_token)
+    if None == mo_user:
+        return JSONResponse({'errmsg':'username or password error'})
+    i_aid = d_data.get('aid')
+    mo_adr = Address.get_adr(mo_user.uid, i_aid)
+    if None == mo_adr:
+        return JSONResponse({'errmsg':'address not exist'})
+    se_adr = AddressSerializer(mo_adr)
+    d_response = dict()
+    d_response = se_adr.data
+    d_response['default'] = (mo_user.default_adr.aid == mo_adr.aid)
+    d_response['errno'] = 0
+    return JSONResponse(d_response)
 
 #==============RFD method
 def lg_list(request):

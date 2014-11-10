@@ -15,11 +15,11 @@ class Cloth(models.Model):
     is_leaf = models.BooleanField(default=True)
     fa_cid = models.IntegerField(default=0)
     name = models.CharField(unique=True,max_length=32)
-    image = models.CharField(max_length=255,default='')
-    detail = models.CharField(max_length=255)
+    image = models.CharField(max_length=255,default='',blank=True)
+    detail = models.CharField(max_length=255,default='',blank=True)
     price = models.FloatField(default=0.)
     deleted = models.BooleanField(default=False)
-    ext = JSONField(default={})
+    ext = JSONField(default={},blank=True)
 
     def __unicode__(self):
         return "%s(%d %d)" % (self.name, self.cid, self.price)

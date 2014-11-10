@@ -27,7 +27,7 @@ def register(request):
     try:
         mo_user.save()
         se_user = UserSerializer(mo_user)
-        return JSONResponse({'errno':0, 'uid':se_user.data.get('uid')})
+        return JSONResponse({'errno':0, 'uid':se_user.data.get('uid'), 'token':s_token})
 # duplicate username
     except IntegrityError as e:
         return JSONResponse({'errmsg':'username has been registered'})
