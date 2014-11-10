@@ -3,7 +3,7 @@ from django import forms
 
 class BillSubmitForm(forms.Form):
     username = forms.CharField(required = True,
-                           min_length=3,max_length=255)
+                           min_length=2,max_length=255)
     token = forms.CharField(required = True,
                              max_length=32)
     clothes = forms.CharField(required = True,
@@ -13,10 +13,13 @@ class BillSubmitForm(forms.Form):
     return_time_0 = forms.DateTimeField(required = True)
     return_time_1 = forms.DateTimeField(required = True)
     aid = forms.IntegerField(required = True)
+    comment = forms.CharField(required = False,
+                              max_length=1023)
+    score = forms.IntegerField(required = False)
 
 class BillListForm(forms.Form):
     username = forms.CharField(required = True,
-                           min_length=3,max_length=255)
+                           min_length=2,max_length=255)
     token = forms.CharField(required = True,
                              max_length=32)
     pn = forms.IntegerField(required=False)
@@ -31,15 +34,24 @@ class BillListForm(forms.Form):
 
 class BillInfoForm(forms.Form):
     username = forms.CharField(required = True,
-                           min_length=3,max_length=255)
+                           min_length=2,max_length=255)
     token = forms.CharField(required = True,
                              max_length=32)
     bid = forms.IntegerField(required = True)
 
 class BillCancelForm(forms.Form):
     username = forms.CharField(required = True,
-                           min_length=3,max_length=255)
+                           min_length=2,max_length=255)
     token = forms.CharField(required = True,
                              max_length=32)
     bid = forms.IntegerField(required = True)
+
+class BillSendFeedbackForm(forms.Form):
+    username = forms.CharField(required = True,
+                           min_length=2,max_length=255)
+    token = forms.CharField(required = True,
+                             max_length=32)
+    bid = forms.IntegerField(required = True)
+    feedback = forms.CharField(required = True,
+                               max_length=1023)
 
