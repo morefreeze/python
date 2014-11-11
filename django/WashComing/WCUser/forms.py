@@ -7,6 +7,8 @@ class UserRegisterForm(forms.Form):
                              max_length=255)
     phone = forms.CharField(required = True,
                              min_length=11,max_length=12)
+    invited_username = forms.CharField(required = False,
+                           min_length=2,max_length=255)
 
 class UserLoginForm(forms.Form):
     username = forms.CharField(required = True,
@@ -33,7 +35,9 @@ class UserUpdateForm(forms.Form):
                            min_length=2,max_length=255)
     token = forms.CharField(required = True,
                              max_length=32)
-    password = forms.CharField(required = True,
+    password = forms.CharField(required = False,
                              max_length=255)
+    phone = forms.CharField(required = False,
+                             min_length=11,max_length=12)
 
 
