@@ -24,6 +24,12 @@ def register(request):
         return JSONResponse({'errmsg':'phone must be number'})
     mo_user.token = s_token
     mo_user.phone = s_phone
+    s_invited_name = d_data.get('invited_username')
+    if None != s_invited_name and '' != s_invited_name:
+        mo_inv_user = User.query_user(s_invited_name)
+        if None == mo_inv_user:
+            return JSONResponse({'errmsg':"invited user[%s] not found" %(s_invited_name)})
+        mo_user.invited = mo_inv_user
     try:
         mo_user.save()
         se_user = UserSerializer(mo_user)
@@ -111,8 +117,11 @@ def update(request):
     mo_user = User.get_user(s_name, s_token)
     if None == mo_user:
         return JSONResponse({'errmsg':'username or password error'})
-    if '' != d_data.get('password'):
+    if None != d_data.get('password') and '' != d_data.get('password'):
         mo_user.token = User.gen_token(d_data)
+    s_phone = d_data.get('phone')
+    if None != s_phone and '' != s_phone:
+        mo_user.phone = s_phone
     mo_user.save()
     d_response = {'errno':0}
     d_response['username'] = mo_user.name

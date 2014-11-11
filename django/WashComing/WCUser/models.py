@@ -19,7 +19,7 @@ class User(models.Model):
     last_time = models.DateTimeField(auto_now=True)
     score = models.IntegerField(default=0)
     exp = models.IntegerField(default=0)
-    invited_uid = models.IntegerField(default=0)
+    invited = models.ForeignKey('self')
     deleted = models.BooleanField(default=False)
     ext = JSONField(default={})
 
@@ -65,6 +65,14 @@ class User(models.Model):
     def get_user(cls, name, token):
         try:
             mo_user = cls.objects.get(name=name, token=token)
+        except (cls.DoesNotExist) as e:
+            return None
+        return mo_user
+
+    @classmethod
+    def query_user(cls, name):
+        try:
+            mo_user = cls.objects.get(name=name)
         except (cls.DoesNotExist) as e:
             return None
         return mo_user
