@@ -128,8 +128,5 @@ class UserTest(TestCase):
         res = self.client.get(u'/user/update', {'username':'unittest14', 'token':s_token})
         se_new_user = UserSerializer(User.objects.get(name='unittest14'))
         self.assertEqual(res.status_code, 200)
-        print se_new_user.data
-        json.loads(se_new_user.data)
-        json.loads(se_old_user.data)
         self.assertEqual(se_old_user.data, se_new_user.data)
 
