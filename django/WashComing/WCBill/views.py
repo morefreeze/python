@@ -1,5 +1,6 @@
 # coding=utf-8
 from django.shortcuts import render
+from django.core.paginator import Paginator
 from WCLib.views import *
 from WCBill.serializers import BillSerializer
 from WCBill.models import Bill
@@ -75,6 +76,8 @@ def list(request):
             if None == mo_user:
                 return JSONResponse({'errmsg':'username or password error'})
             i_pn = d_data.get('pn')
+            if None == i_pn:
+                i_pn = 1
             i_rn = 5
             i_deleted = d_data.get('deleted')
             i_offset = (i_pn-1)*i_rn
@@ -83,15 +86,22 @@ def list(request):
             if i_deleted == 2:
 # query all include deleted
                 a_bills = Bill.objects.filter(own=mo_user)\
-                    .order_by('get_time_0', 'return_time_0', '-bid')[i_offset:i_offset+i_limit]
+                    .order_by('get_time_0', 'return_time_0', '-bid')#[i_offset:i_offset+i_limit]
             else:
                 a_bills = Bill.objects.filter(own=mo_user,deleted=i_deleted)\
-                    .order_by('get_time_0', 'return_time_0', '-bid')[i_offset:i_offset+i_limit]
+                    .order_by('get_time_0', 'return_time_0', '-bid')#[i_offset:i_offset+i_limit]
+            try:
+                paginator = Paginator(a_bills, i_rn)
+                p_bills = paginator.page(i_pn)
+            except EmptyPage:
+                p_bills = list()
             d_response = dict()
             d_response['errno'] = 0
             d_response['data'] = []
-            for mo_bill in a_bills:
+            for mo_bill in p_bills.object_list:
                 d_response['data'].append(BillSerializer(mo_bill).data)
+            d_response['pages'] = paginator.page_range
+            d_response['cur_page'] = p_bills.number
             d_response['count'] = len(d_response['data'])
             return JSONResponse(d_response)
         return JSONResponse({'errmsg':fo_bill.errors})
