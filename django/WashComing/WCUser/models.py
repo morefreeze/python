@@ -3,6 +3,7 @@ from django.forms import ValidationError
 from django.db import models
 from jsonfield import JSONField
 from WCLogistics.models import Address
+import django.contrib.auth.hashers as hasher
 import base64
 import hashlib
 
@@ -10,7 +11,7 @@ import hashlib
 class User(models.Model):
     uid = models.AutoField(primary_key=True)
     name = models.CharField(unique=True,max_length=255)
-    token = models.CharField(max_length=32)
+    token = models.CharField(max_length=255)
     openauth = models.CharField(max_length=255,default='')
     phone = models.CharField(max_length=12,default='')
     email = models.CharField(max_length=128,default='')
@@ -33,29 +34,16 @@ class User(models.Model):
 
     @classmethod
     def gen_token(cls, d_request):
-        d_user_args = dict()
-        d_user_args['username'] = d_request.get('username')
-        d_user_args['password'] = d_request.get('password')
-        d_user_args['secret'] = 'Keep It Simple, Stupid'
-        s_user_args = ''
-        sorted(d_user_args.items(), key=lambda e:e[0])
-# generate string like 'username=123&password=abc'
-        for k, v in d_user_args.items():
-            s_user_args += '%s=%s&' %(k, v)
-        s_user_args = s_user_args[:-1].encode('utf-8')
-# generate token with md5(bash64())
-        s_token = base64.b64encode(s_user_args)
-        s_token = hashlib.md5(s_token).hexdigest().upper()
+        s_token = hasher.make_password(d_request.get('password'))
         return s_token
 
 # if vali pass return User obj else return None
     @classmethod
     def vali_passwd(cls, d_request):
-        s_token = cls.gen_token(d_request)
         s_name = d_request.get('username')
         try:
             mo_user = cls.objects.get(name=s_name)
-            if mo_user.token != s_token:
+            if not hasher.check_password(d_request.get('password'), mo_user.token):
                 raise ValidationError('password does not match username')
         except (cls.DoesNotExist, ValidationError) as e:
             return None
