@@ -1,8 +1,8 @@
 from django import forms
 
 class UserRegisterForm(forms.Form):
-    username = forms.CharField(required = True,
-                           min_length=2,max_length=255)
+    email = forms.CharField(required = True,
+                           min_length=3,max_length=128)
     password = forms.CharField(required = True,
                              max_length=255)
     phone = forms.CharField(required = True,
