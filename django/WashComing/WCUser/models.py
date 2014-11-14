@@ -29,8 +29,9 @@ class User(models.Model):
 
     @classmethod
     def create(cls, d_request):
-        s_name = d_request.get('username')
-        return cls(uid=None, name=s_name, token='')
+        s_email = d_request.get('email')
+        s_name = s_email
+        return cls(uid=None, name=s_name, token='', email=s_email)
 
     @classmethod
     def gen_token(cls, d_request):

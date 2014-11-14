@@ -6,7 +6,7 @@ class ClothCategoryForm(forms.Form):
     username = forms.CharField(required = True,
                            min_length=2,max_length=255)
     token = forms.CharField(required = True,
-                             max_length=32)
+                             max_length=255)
                              """
 
 class ClothListForm(forms.Form):
@@ -15,7 +15,7 @@ class ClothListForm(forms.Form):
     username = forms.CharField(required = True,
                            min_length=2,max_length=255)
     token = forms.CharField(required = True,
-                             max_length=32)
+                             max_length=255)
                              """
     gid = forms.IntegerField(required = True)
 
@@ -25,7 +25,7 @@ class ClothInfoForm(forms.Form):
     username = forms.CharField(required = True,
                            min_length=2,max_length=255)
     token = forms.CharField(required = True,
-                             max_length=32)
+                             max_length=255)
                              """
     cid = forms.IntegerField(required = True)
 

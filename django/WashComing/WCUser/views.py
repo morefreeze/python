@@ -7,7 +7,6 @@ from WCUser.forms import UserRegisterForm, UserLoginForm, UserInfoForm, \
         UserBindEmailForm, UserUpdateForm
 
 # Create your views here.
-
 def register(request):
     if request.method != 'GET':
         return JSONResponse({'errmsg':'method error'})

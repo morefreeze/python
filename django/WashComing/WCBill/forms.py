@@ -5,7 +5,7 @@ class BillSubmitForm(forms.Form):
     username = forms.CharField(required = True,
                            min_length=2,max_length=255)
     token = forms.CharField(required = True,
-                             max_length=32)
+                             max_length=255)
     clothes = forms.CharField(required = True,
                              max_length=65535)
     get_time_0 = forms.DateTimeField(required = True)
@@ -21,7 +21,7 @@ class BillListForm(forms.Form):
     username = forms.CharField(required = True,
                            min_length=2,max_length=255)
     token = forms.CharField(required = True,
-                             max_length=32)
+                             max_length=255)
     pn = forms.IntegerField(required=False)
     deleted = forms.IntegerField(required=False)
 
@@ -36,21 +36,21 @@ class BillInfoForm(forms.Form):
     username = forms.CharField(required = True,
                            min_length=2,max_length=255)
     token = forms.CharField(required = True,
-                             max_length=32)
+                             max_length=255)
     bid = forms.IntegerField(required = True)
 
 class BillCancelForm(forms.Form):
     username = forms.CharField(required = True,
                            min_length=2,max_length=255)
     token = forms.CharField(required = True,
-                             max_length=32)
+                             max_length=255)
     bid = forms.IntegerField(required = True)
 
 class BillSendFeedbackForm(forms.Form):
     username = forms.CharField(required = True,
                            min_length=2,max_length=255)
     token = forms.CharField(required = True,
-                             max_length=32)
+                             max_length=255)
     bid = forms.IntegerField(required = True)
     feedback = forms.CharField(required = True,
                                max_length=1023)
