@@ -42,3 +42,21 @@ class UserActiveForm(forms.Form):
     active_token = forms.CharField(required = True,
                              max_length=32)
 
+class UserResetPasswordForm(forms.Form):
+    email = forms.CharField(required = True,
+                           min_length=2,max_length=255)
+
+class UserResendResetForm(forms.Form):
+    email = forms.CharField(required = True,
+                           min_length=2,max_length=255)
+
+class UserResetPasswordConfirmForm(forms.Form):
+    username = forms.CharField(required = True,
+                           min_length=2,max_length=255, widget=forms.HiddenInput())
+    reset_token = forms.CharField(required = True,
+                             max_length=32, widget=forms.HiddenInput())
+    password1 = forms.CharField(required = False,
+                             max_length=255)
+    password2 = forms.CharField(required = False,
+                             max_length=255)
+

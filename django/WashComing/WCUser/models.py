@@ -97,6 +97,27 @@ class User(models.Model):
 
         return t_active.render(c_active)
 
+    def send_reset(self, d_request):
+        d_active = dict()
+        d_active['username'] = self.name
+        d_active['time'] = dt.datetime.now().strftime('%Y%m%d %H:%M:%S')
+        d_active['uuid'] = "%s" %(uuid.uuid4())
+        s_token = hashlib.md5(
+            json.dumps(d_active, sort_keys=True, separators=(',', ': '))
+        ).hexdigest().upper()
+        s_url = "http://" + d_request.get_host() + "/user/reset_password_confirm?username=%s&reset_token=%s" %(self.name, s_token)
+        t_active = loader.get_template('reset/send_reset.html')
+        c_active = Context({
+            'email': self.name,
+            'reset_url': s_url,
+        })
+        self.ext['reset_token'] = s_token
+        self.ext['reset_expire'] = (dt.datetime.now()+dt.timedelta(days=1))\
+            .strftime('%Y%m%d %H:%M:%S')
+        self.save()
+
+        return t_active.render(c_active)
+
 #=============User end
 
 class Shop(models.Model):
