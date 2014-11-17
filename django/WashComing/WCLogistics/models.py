@@ -1,5 +1,6 @@
 # coding=utf-8
 from django.db import models
+from WCLib.models import *
 import ConfigParser
 import OpenSSL.crypto as ct
 import sys, json, base64, hashlib, httplib
@@ -50,7 +51,7 @@ class RFD(models.Model):
             "Telephone": mo_address.phone,
             "PostCode": s_default_zipcode,
             "Company": s_company,
-            "SendProvinceName": mo_address.provice,
+            "SendProvinceName": mo_address.province,
             "SendCityName": mo_address.city,
             "SendAreaName": mo_address.area,
             "SendAddress": mo_address.address,
@@ -104,9 +105,9 @@ class Address(models.Model):
     own = models.ForeignKey('WCUser.User')
     real_name = models.CharField(max_length=255,default='')
     phone = models.CharField(max_length=12,default='')
-    provice = models.CharField(max_length=15,default='')
-    city = models.CharField(max_length=63,default='')
-    area = models.CharField(max_length=15,default='')
+    province = models.CharField(max_length=15,default='',choices=Province_Choice)
+    city = models.CharField(max_length=63,default='',choices=City_Choice)
+    area = models.CharField(max_length=15,default='',choices=Area_Choice)
     address = models.CharField(max_length=255,default='')
     deleted = models.BooleanField(default=False)
 
@@ -114,12 +115,12 @@ class Address(models.Model):
         return "%d(%s)" % (self.aid, self.real_name)
 
     def get_full_address(self):
-        return self.provice + self.city + self.area + " " + self.address
+        return self.province + self.city + self.area + " " + self.address
 
     @classmethod
     def create(cls, mo_user, d_data):
         return cls(aid=None,own=mo_user, real_name=d_data.get('real_name'), \
-                            provice=d_data.get('provice'),city=d_data.get('city'), \
+                            province=d_data.get('province'),city=d_data.get('city'), \
                             area=d_data.get('area'), address=d_data.get('address'), \
                             phone=d_data.get('phone') )
 

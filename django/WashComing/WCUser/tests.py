@@ -68,7 +68,7 @@ class UserTest(TestCase):
         s_uid = json.loads(res.content)["uid"]
         res = self.client.get(u'/user/info', {'username':'unittest7@qq.com', 'token':s_token})
         self.assertEqual(res.status_code, 200)
-        self.assertJSONEqual(res.content, {'email':'unittest7@qq.com','exp':0,'level':42,'score':0,'token':s_token,'uid':s_uid,'username':'unittest7@qq.com','errno':0})
+        self.assertJSONEqual(res.content, {'email':'unittest7@qq.com','exp':0,'level':42,'score':0,'token':s_token,'uid':s_uid,'username':'unittest7@qq.com','is_active':1, 'errno':0})
 
     def test_info_failed(self):
         res = self.client.get(u'/user/register', {'email':'unittest8@qq.com', 'password':'abcdef', 'phone':'12345678901'})

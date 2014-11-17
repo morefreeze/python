@@ -4,8 +4,10 @@ from django.db import models
 from jsonfield import JSONField
 from WCLogistics.models import Address
 import django.contrib.auth.hashers as hasher
-import base64
-import hashlib
+from django.template import loader, Context
+import base64, hashlib, uuid
+import datetime as dt
+import json
 
 # Create your models here.
 class User(models.Model):
@@ -21,6 +23,7 @@ class User(models.Model):
     score = models.IntegerField(default=0)
     exp = models.IntegerField(default=0)
     invited = models.ForeignKey('self')
+    is_active = models.BooleanField(default=True)
     deleted = models.BooleanField(default=False)
     ext = JSONField(default={})
 
@@ -51,9 +54,9 @@ class User(models.Model):
         return mo_user
 
     @classmethod
-    def get_user(cls, name, token):
+    def get_user(cls, name, token, is_active=True):
         try:
-            mo_user = cls.objects.get(name=name, token=token)
+            mo_user = cls.objects.get(name=name, token=token, is_active=is_active)
         except (cls.DoesNotExist) as e:
             return None
         return mo_user
@@ -70,13 +73,34 @@ class User(models.Model):
     def gen_level(i_score):
         return 42
 
+    def send_active(self, d_request):
+        d_active = dict()
+        d_active['username'] = self.name
+        d_active['time'] = dt.datetime.now().strftime('%Y%m%d %H:%M:%S')
+        d_active['uuid'] = "%s" %(uuid.uuid4())
+        s_token = hashlib.md5(
+            json.dumps(d_active, sort_keys=True, separators=(',', ': '))
+        ).hexdigest().upper()
+        s_url = "http://" + d_request.get_host() + "/user/active?username=%s&active_token=%s" %(self.name, s_token)
+        t_active = loader.get_template('active/send_active.html')
+        c_active = Context({
+            'email': self.name,
+            'active_url': s_url,
+        })
+        self.ext['active_token'] = s_token
+        self.ext['active_expire'] = (dt.datetime.now()+dt.timedelta(days=2))\
+            .strftime('%Y%m%d %H:%M:%S')
+        self.save()
+
+        return t_active.render(c_active)
+
 #=============User end
 
 class Shop(models.Model):
     sid = models.AutoField(primary_key=True)
     name = models.CharField(unique=True,max_length=255,default='')
     real_name = models.CharField(max_length=255,default='')
-    provice = models.CharField(max_length=15,default='')
+    province = models.CharField(max_length=15,default='')
     city = models.CharField(max_length=63,default='')
     address = models.CharField(max_length=255,default='')
     phone = models.CharField(max_length=12,default='')

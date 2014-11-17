@@ -51,8 +51,8 @@ def update(request):
         return JSONResponse({'errmsg':'address not exist'})
     if '' != d_data.get('real_name'):
         mo_adr.real_name = d_data.get('real_name')
-    if '' != d_data.get('provice'):
-        mo_adr.provice = d_data.get('provice')
+    if '' != d_data.get('province'):
+        mo_adr.province = d_data.get('province')
     if '' != d_data.get('city'):
         mo_adr.city = d_data.get('city')
     if '' != d_data.get('area'):

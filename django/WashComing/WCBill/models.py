@@ -17,7 +17,7 @@ class Bill(models.Model):
     return_time_1 = models.DateTimeField()
     own = models.ForeignKey(User) # own_id in db
     lg = models.ForeignKey(RFD,null=True) # lg_id in db
-# joint provice, city, area, address together
+# joint province, city, area, address together
     address = models.CharField(max_length=511, default='')
     phone = models.CharField(max_length=12,default='')
     real_name = models.CharField(max_length=255,default='')
