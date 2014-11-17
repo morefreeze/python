@@ -1,4 +1,5 @@
 from django import forms
+from WCLib.models import *
 
 class AddressAddForm(forms.Form):
     username = forms.CharField(required = True,
@@ -7,12 +8,9 @@ class AddressAddForm(forms.Form):
                              max_length=255)
     real_name = forms.CharField(required = True,
                              min_length=3,max_length=255)
-    provice = forms.CharField(required = True,
-                             min_length=2,max_length=15)
-    city = forms.CharField(required = True,
-                             min_length=2,max_length=63)
-    area = forms.CharField(required = True,
-                             min_length=2,max_length=15)
+    province = forms.ChoiceField(required = True,choices=Province_Choice)
+    city = forms.ChoiceField(required = True,choices=City_Choice)
+    area = forms.ChoiceField(required = True,choices=Area_Choice)
     phone = forms.CharField(required = True,
                              min_length=7,max_length=12)
     address = forms.CharField(required = True,
@@ -27,7 +25,7 @@ class AddressUpdateForm(forms.Form):
     aid = forms.IntegerField(required = True)
     real_name = forms.CharField(required = False,
                              min_length=3,max_length=255)
-    provice = forms.CharField(required = False,
+    province = forms.CharField(required = False,
                              min_length=2,max_length=16)
     city = forms.CharField(required = False,
                              min_length=2,max_length=63)

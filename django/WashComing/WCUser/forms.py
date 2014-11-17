@@ -22,14 +22,6 @@ class UserInfoForm(forms.Form):
     token = forms.CharField(required = True,
                              max_length=255)
 
-class UserBindEmailForm(forms.Form):
-    username = forms.CharField(required = True,
-                           min_length=2,max_length=255)
-    token = forms.CharField(required = True,
-                             max_length=255)
-    email = forms.CharField(required = True,
-                           min_length=3,max_length=128)
-
 class UserUpdateForm(forms.Form):
     username = forms.CharField(required = True,
                            min_length=2,max_length=255)
@@ -40,4 +32,13 @@ class UserUpdateForm(forms.Form):
     phone = forms.CharField(required = False,
                              min_length=11,max_length=12)
 
+class UserResendActiveForm(forms.Form):
+    username = forms.CharField(required = True,
+                           min_length=2,max_length=255)
+
+class UserActiveForm(forms.Form):
+    username = forms.CharField(required = True,
+                           min_length=2,max_length=255)
+    active_token = forms.CharField(required = True,
+                             max_length=32)
 

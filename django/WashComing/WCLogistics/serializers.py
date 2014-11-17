@@ -4,4 +4,4 @@ from WCLogistics.models import RFD, Address
 class AddressSerializer(serializers.ModelSerializer):
     class Meta:
         model = Address
-        fields = ('aid', 'own', 'provice', 'city', 'area', 'address', 'real_name', 'phone')
+        fields = ('aid', 'own', 'province', 'city', 'area', 'address', 'real_name', 'phone')

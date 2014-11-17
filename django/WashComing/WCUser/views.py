@@ -4,7 +4,8 @@ from WCLib.views import *
 from WCUser.serializers import UserSerializer
 from WCUser.models import User
 from WCUser.forms import UserRegisterForm, UserLoginForm, UserInfoForm, \
-        UserBindEmailForm, UserUpdateForm
+        UserUpdateForm, UserResendActiveForm, UserActiveForm
+import datetime as dt
 
 # Create your views here.
 def register(request):
@@ -78,30 +79,8 @@ def info(request):
     d_response['score'] = se_user.data['score']
     d_response['level'] = User.gen_level(d_response['score'])
     d_response['email'] = se_user.data['email']
+    d_response['is_active'] = se_user.data['is_active']
     d_response['errno'] = 0
-    return JSONResponse(d_response)
-
-def bind_email(request):
-    if request.method != 'GET':
-        return JSONResponse({'errmsg':'method error'})
-    fo_user = UserBindEmailForm(request.GET)
-    if not fo_user.is_valid():
-        return JSONResponse({'errmsg':fo_user.errors})
-    d_data = fo_user.cleaned_data
-    s_name = d_data.get('username')
-    s_token = d_data.get('token')
-    mo_user = User.get_user(s_name, s_token)
-    if None == mo_user:
-        return JSONResponse({'errmsg':'username or password error'})
-    if '' != mo_user.email:
-        return JSONResponse({'errmsg':'user has email, can not bind again'})
-    s_name = d_data.get('username')
-    s_token = d_data.get('token')
-    s_email = d_data.get('email')
-    mo_user = User.objects.get(name=s_name, token=s_token)
-    mo_user.email = s_email
-    mo_user.save()
-    d_response = {'errno':0}
     return JSONResponse(d_response)
 
 def update(request):
@@ -126,6 +105,50 @@ def update(request):
     d_response['username'] = mo_user.name
     d_response['token'] = mo_user.token
     return JSONResponse(d_response)
+
+def resend_active(request):
+    if request.method != 'GET':
+        return JSONResponse({'errmsg':'method error'})
+    fo_user = UserResendActiveForm(request.GET)
+    if not fo_user.is_valid():
+        return JSONResponse({'errmsg':fo_user.errors})
+    d_data = fo_user.cleaned_data
+    s_name = d_data.get('username')
+    mo_user = User.query_user(s_name)
+    if None == mo_user:
+        return JSONResponse({'errmsg':'active failed'})
+    if mo_user.is_active:
+        return JSONResponse({'errmsg':'user has been actived'})
+    s_html = mo_user.send_active(request)
+    d_response = {'errno':0, 'html':s_html}
+    return JSONResponse(d_response)
+
+def active(request):
+    if request.method != 'GET':
+        return JSONResponse({'errmsg':'method error'})
+    fo_user = UserActiveForm(request.GET)
+    if not fo_user.is_valid():
+        return JSONResponse({'errmsg':fo_user.errors})
+    d_data = fo_user.cleaned_data
+    s_name = d_data.get('username')
+    mo_user = User.query_user(s_name)
+    if None == mo_user:
+        return JSONResponse({'errmsg':'active failed'})
+    if mo_user.is_active:
+        return JSONResponse({'errmsg':'user has been actived'})
+    js_ext = mo_user.ext
+    s_active_token = js_ext.get('active_token')
+    if None == s_active_token or '' == s_active_token or d_data.get('active_token') != s_active_token:
+        return JSONResponse({'errmsg':'active failed'})
+    tm_expire = dt.datetime.strptime(js_ext.get('active_expire'), "%Y%m%d %H:%M:%S")
+    tm_now = dt.datetime.now()
+    if None == tm_expire or tm_now > tm_expire:
+        return JSONResponse({'errmsg':'token expire, reactive!'})
+    mo_user.is_active = True
+    del mo_user.ext['active_token']
+    del mo_user.ext['active_expire']
+    mo_user.save()
+    return JSONResponse({'errno':0})
 
 """ method template (12 lines)
 def info(request):

@@ -15,13 +15,6 @@ def category(request):
     if not fo_cloth.is_valid():
         return JSONResponse({'errmsg':fo_cloth.errors})
     d_data = fo_cloth.cleaned_data
-    """
-    s_name = d_data.get('username')
-    s_token = d_data.get('token')
-    mo_user = User.get_user(s_name, s_token)
-    if None == mo_user:
-        return JSONResponse({'errmsg':'username or password error'})
-    """
     a_category = Cloth.get_category()
     d_response = dict()
     d_response['data'] = []
@@ -42,13 +35,6 @@ def list(request):
     if not fo_cloth.is_valid():
         return JSONResponse({'errmsg':fo_cloth.errors})
     d_data = fo_cloth.cleaned_data
-    """
-    s_name = d_data.get('username')
-    s_token = d_data.get('token')
-    mo_user = User.get_user(s_name, s_token)
-    if None == mo_user:
-        return JSONResponse({'errmsg':'username or password error'})
-    """
     i_gid = d_data.get('gid')
     a_cloth = Cloth.objects.filter(fa_cid=i_gid, is_leaf=True, deleted=False)
     d_response = dict()
@@ -68,13 +54,6 @@ def info(request):
     if not fo_cloth.is_valid():
         return JSONResponse({'errmsg':fo_cloth.errors})
     d_data = fo_cloth.cleaned_data
-    """
-    s_name = d_data.get('username')
-    s_token = d_data.get('token')
-    mo_user = User.get_user(s_name, s_token)
-    if None == mo_user:
-        return JSONResponse({'errmsg':'username or password error'})
-    """
     i_cid = d_data.get('cid')
     mo_cloth = Cloth.get_cloth(i_cid)
     if None == mo_cloth:
