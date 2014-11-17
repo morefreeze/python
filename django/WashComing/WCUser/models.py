@@ -54,9 +54,12 @@ class User(models.Model):
         return mo_user
 
     @classmethod
-    def get_user(cls, name, token, is_active=True):
+    def get_user(cls, name, token, is_active=None):
         try:
-            mo_user = cls.objects.get(name=name, token=token, is_active=is_active)
+            if None == is_active:
+                mo_user = cls.objects.get(name=name, token=token)
+            else:
+                mo_user = cls.objects.get(name=name, token=token, is_active=is_active)
         except (cls.DoesNotExist) as e:
             return None
         return mo_user
