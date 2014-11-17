@@ -1,8 +1,10 @@
 # coding=utf-8
-from django.shortcuts import render
+from django.core.context_processors import csrf
+from django.shortcuts import render, render_to_response
 from django.http import HttpResponse
 from rest_framework.renderers import JSONRenderer
 from rest_framework.parsers import JSONParser
+from django.template import loader, Context
 import math
 
 # Create your views here.

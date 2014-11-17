@@ -1,10 +1,10 @@
 from django.db import IntegrityError
-from django.shortcuts import render
 from WCLib.views import *
 from WCUser.serializers import UserSerializer
 from WCUser.models import User
 from WCUser.forms import UserRegisterForm, UserLoginForm, UserInfoForm, \
-        UserUpdateForm, UserResendActiveForm, UserActiveForm
+        UserUpdateForm, UserResendActiveForm, UserActiveForm, \
+        UserResendResetForm, UserResetPasswordForm, UserResetPasswordConfirmForm
 import datetime as dt
 
 # Create your views here.
@@ -149,6 +149,62 @@ def active(request):
     del mo_user.ext['active_expire']
     mo_user.save()
     return JSONResponse({'errno':0})
+
+def reset_password(request):
+    return render_to_response('reset/reset_password.html', {'form':UserResetPasswordForm})
+
+def resend_reset(request):
+    if request.method != 'GET':
+        return JSONResponse({'errmsg':'method error'})
+    fo_user = UserResendResetForm(request.GET)
+    if not fo_user.is_valid():
+        return JSONResponse({'errmsg':fo_user.errors})
+    d_data = fo_user.cleaned_data
+    s_email = d_data.get('email')
+    mo_user = User.query_user(s_email)
+    if None == mo_user:
+        return JSONResponse({'errmsg':'reset failed'})
+    s_html = mo_user.send_reset(request)
+    d_response = {'errno':0, 'html':s_html}
+    return JSONResponse(d_response)
+
+def reset_password_confirm(request):
+    if request.method != 'GET':
+        return render(request, 'reset/reset_password_confirm.html', {'validlink':0})
+        #return JSONResponse({'errmsg':'method error'})
+    fo_user = UserResetPasswordConfirmForm(request.GET)
+    if not fo_user.is_valid():
+        return render(request, 'reset/reset_password_confirm.html', {'validlink':0})
+        return JSONResponse({'errmsg':fo_user.errors})
+    d_data = fo_user.cleaned_data
+    s_name = d_data.get('username')
+    mo_user = User.query_user(s_name)
+    if None == mo_user:
+        return render(request, 'reset/reset_password_confirm.html', {'validlink':0})
+        return JSONResponse({'errmsg':'reset password failed'})
+    js_ext = mo_user.ext
+    s_reset_token = js_ext.get('reset_token')
+    if None == s_reset_token or '' == s_reset_token or d_data.get('reset_token') != s_reset_token:
+        return render(request, 'reset/reset_password_confirm.html', {'validlink':0})
+        return JSONResponse({'errmsg':'reset failed'})
+    tm_expire = dt.datetime.strptime(js_ext.get('reset_expire'), "%Y%m%d %H:%M:%S")
+    tm_now = dt.datetime.now()
+    if None == tm_expire or tm_now > tm_expire:
+        return render(request, 'reset/reset_password_confirm.html', {'validlink':0})
+        return JSONResponse({'errmsg':'token expire, resend reset!'})
+    s_password = d_data.get('password1')
+    s_password2 = d_data.get('password2')
+    if s_password != s_password2:
+        return JSONResponse({'errmsg':'password does not match'})
+    if None == s_password or '' == s_password:
+        return render(request, 'reset/reset_password_confirm.html', {'validlink':1, 'form':fo_user})
+    del mo_user.ext['reset_token']
+    del mo_user.ext['reset_expire']
+    mo_user.save()
+    return render(request, 'reset/reset_password_complete.html')
+
+def reset_password_complete(request):
+    return render_to_response('reset/reset_password.html')
 
 """ method template (12 lines)
 def info(request):
