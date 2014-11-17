@@ -72,7 +72,7 @@ def list(request):
             d_data = fo_bill.cleaned_data
             s_name = d_data.get('username')
             s_token = d_data.get('token')
-            mo_user = User.get_user(s_name, s_token, is_active=False)
+            mo_user = User.get_user(s_name, s_token, is_active=True)
             if None == mo_user:
                 return JSONResponse({'errmsg':'username or password error'})
             i_pn = d_data.get('pn')
@@ -114,7 +114,7 @@ def info(request):
             d_data = fo_bill.cleaned_data
             s_name = d_data.get('username')
             s_token = d_data.get('token')
-            mo_user = User.get_user(s_name, s_token, is_active=False)
+            mo_user = User.get_user(s_name, s_token, is_active=True)
             if None == mo_user:
                 return JSONResponse({'errmsg':'username or password error'})
             mo_bill = Bill.get_bill(mo_user.uid, d_data.get('bid'))
