@@ -93,14 +93,19 @@ def update(request):
     s_name = d_data.get('username')
     s_token = d_data.get('token')
     mo_user = User.get_user(s_name, s_token)
+    b_modify = False
     if None == mo_user:
         return JSONResponse({'errmsg':'username or password error'})
     if None != d_data.get('password') and '' != d_data.get('password'):
         mo_user.token = User.gen_token(d_data)
+        b_modify = True
     s_phone = d_data.get('phone')
     if None != s_phone and '' != s_phone:
         mo_user.phone = s_phone
-    mo_user.save()
+        b_modify = True
+    # if nothing to modify then do not update, or last_time will be updated
+    if b_modify:
+        mo_user.save()
     d_response = {'errno':0}
     d_response['username'] = mo_user.name
     d_response['token'] = mo_user.token

@@ -46,12 +46,13 @@ class BillCancelForm(forms.Form):
                              max_length=255)
     bid = forms.IntegerField(required = True)
 
-class BillSendFeedbackForm(forms.Form):
+class BillFeedbackForm(forms.Form):
     username = forms.CharField(required = True,
                            min_length=2,max_length=255)
     token = forms.CharField(required = True,
                              max_length=255)
     bid = forms.IntegerField(required = True)
-    feedback = forms.CharField(required = True,
+    rate = forms.IntegerField(required = True)
+    content = forms.CharField(required = False,
                                max_length=1023)
 

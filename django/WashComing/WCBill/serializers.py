@@ -1,6 +1,6 @@
 # coding=utf-8
-from rest_framework import serializers
-from WCBill.models import Bill
+from WCLib.serializers import *
+from WCBill.models import Bill, Feedback
 
 class BillSerializer(serializers.ModelSerializer):
     class Meta:
@@ -9,4 +9,11 @@ class BillSerializer(serializers.ModelSerializer):
                   'return_time_0', 'return_time_1', \
                   'own', 'lg', 'address', 'real_name', 'phone', \
                   'status', 'deleted', \
-                  'clothes', 'total', 'comment', 'feedback')
+                  'clothes', 'total', 'comment')
+
+class FeedbackSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Feedback
+        fields = ('fid', 'create_time', 'bill', 'rate', 'content')
+    def transform_create_time(self, obj, value):
+        return value.strftime(DATETIME_FORMAT)
