@@ -56,3 +56,10 @@ class BillFeedbackForm(forms.Form):
     content = forms.CharField(required = False,
                                max_length=1023)
 
+class BillGetFeedbackForm(forms.Form):
+    username = forms.CharField(required = True,
+                           min_length=2,max_length=255)
+    token = forms.CharField(required = True,
+                             max_length=255)
+    bid = forms.IntegerField(required = True)
+

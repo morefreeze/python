@@ -2,10 +2,10 @@
 from django.shortcuts import render
 from django.core.paginator import Paginator
 from WCLib.views import *
-from WCBill.serializers import BillSerializer
+from WCBill.serializers import BillSerializer, FeedbackSerializer
 from WCBill.models import Bill, Feedback
 from WCBill.forms import BillSubmitForm, BillListForm, BillInfoForm, BillCancelForm, \
-        BillFeedbackForm
+        BillFeedbackForm, BillGetFeedbackForm
 from WCUser.models import User
 from WCLogistics.models import Address
 import json
@@ -169,13 +169,29 @@ def feedback(request):
     s_content = d_data.get('content')
     if None == s_content:
         s_content = ''
+    mo_fb, created = Feedback.objects.get_or_create(bill=mo_bill, create_time=None, rate=i_rate, content=s_content)
+    return JSONResponse({'fid':mo_fb.fid, 'errno':0})
+
+def get_feedback(request):
+    if request.method != 'GET':
+        return JSONResponse({'errmsg':'method error'})
+    fo_bill = BillGetFeedbackForm(request.GET)
+    if not fo_bill.is_valid():
+        return JSONResponse({'errmsg':fo_bill.errors})
+    d_data = fo_bill.cleaned_data
+    s_name = d_data.get('username')
+    s_token = d_data.get('token')
+    mo_user = User.get_user(s_name, s_token)
+    if None == mo_user:
+        return JSONResponse({'errmsg':'username or password or permission error'})
+    mo_bill = Bill.get_bill(mo_user.uid, d_data.get('bid'))
+    if None == mo_bill:
+        return JSONResponse({'errmsg':'bill not exist'})
     mo_fb = Feedback.objects.get(bill=mo_bill)
-    if None == mo_fb:
-        mo_fb = Feedback.objects.create(bill=mo_bill, create_time=None, rate=i_rate, content=s_content)
-    else:
-        mo_fb.content = s_content
-    mo_fb.save()
-    return JSONResponse({'errno':0})
+    se_fb = FeedbackSerializer(mo_fb)
+    d_response = se_fb.data
+    d_response['errno'] = 0
+    return JSONResponse(d_response)
 
 """ method template (13 lines)
 def submit(request):
