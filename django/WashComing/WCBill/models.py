@@ -28,7 +28,6 @@ class Bill(models.Model):
     total = models.FloatField(default=0.0)
     clothes = JSONField(default=[])
     comment = models.CharField(max_length=1023, default='', blank=True)
-    feedback = models.CharField(max_length=1023, default='', blank=True)
     ext = JSONField(default={})
 
     def __unicode__(self):
@@ -105,3 +104,11 @@ class Coupon(models.Model):
 
     def __unicode__(self):
         return self.name
+
+class Feedback(models.Model):
+    fid = models.AutoField(primary_key=True)
+    bill = models.ForeignKey(Bill, unique=True)
+    create_time = models.DateTimeField(auto_now_add=True)
+    rate = models.IntegerField(default=5)
+    content = models.CharField(max_length=1023)
+

@@ -1,6 +1,5 @@
 # coding=utf-8
-from django.test import TestCase, Client
-import json
+from WCLib.tests import *
 from WCUser.models import User
 from WCUser.serializers import UserSerializer
 
