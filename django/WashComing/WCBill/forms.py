@@ -63,3 +63,16 @@ class BillGetFeedbackForm(forms.Form):
                              max_length=255)
     bid = forms.IntegerField(required = True)
 
+class CartSubmitForm(forms.Form):
+    username = forms.CharField(required = True,
+                           min_length=2,max_length=255)
+    token = forms.CharField(required = True,
+                             max_length=255)
+    clothes = forms.CharField(required = True,
+                             max_length=65535)
+
+class CartListForm(forms.Form):
+    username = forms.CharField(required = True,
+                           min_length=2,max_length=255)
+    token = forms.CharField(required = True,
+                             max_length=255)

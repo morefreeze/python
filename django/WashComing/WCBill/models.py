@@ -112,3 +112,28 @@ class Feedback(models.Model):
     rate = models.IntegerField(default=5)
     content = models.CharField(max_length=1023)
 
+class Cart(models.Model):
+    caid = models.AutoField(primary_key=True)
+    own = models.ForeignKey(User, unique=True)
+    update_time = models.DateTimeField(auto_now=True)
+    clothes = JSONField(default=[])
+    ext = JSONField(default={})
+
+    @classmethod
+# return caid
+    def clean(cls, own):
+        try:
+            mo_cart = cls.objects.get(own=own)
+        except (cls.DoesNotExist):
+            return -1
+        mo_cart.clothes = []
+        return mo_cart.caid
+
+    def format_cloth(self, s_cloth):
+        try:
+            self.clothes = json.loads(s_cloth)
+        except (ValueError) as e:
+            self.ext['error'] = "%s%s;" \
+                %(self.ext.get('error', ''), e.__str__())
+        return self.clothes
+
