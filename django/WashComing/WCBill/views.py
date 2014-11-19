@@ -3,9 +3,10 @@ from django.shortcuts import render
 from django.core.paginator import Paginator
 from WCLib.views import *
 from WCBill.serializers import BillSerializer, FeedbackSerializer
-from WCBill.models import Bill, Feedback
+from WCBill.models import Bill, Feedback, Cart
 from WCBill.forms import BillSubmitForm, BillListForm, BillInfoForm, BillCancelForm, \
         BillFeedbackForm, BillGetFeedbackForm
+from WCBill.forms import CartSubmitForm, CartListForm
 from WCUser.models import User
 from WCLogistics.models import Address
 import json
@@ -193,18 +194,53 @@ def get_feedback(request):
     d_response['errno'] = 0
     return JSONResponse(d_response)
 
+def submit_cart(request):
+    if request.method != 'GET':
+        return JSONResponse({'errmsg':'method error'})
+    fo_bill = CartSubmitForm(request.GET)
+    if not fo_bill.is_valid():
+        return JSONResponse({'errmsg':fo_bill.errors})
+    d_data = fo_bill.cleaned_data
+    s_name = d_data.get('username')
+    s_token = d_data.get('token')
+    mo_user = User.get_user(s_name, s_token)
+    if None == mo_user:
+        return JSONResponse({'errmsg':'username or password or permission error'})
+    mo_cart, created = Cart.objects.get_or_create(own=mo_user)
+    mo_cart.clothes = mo_cart.format_cloth(d_data.get('clothes'))
+    mo_cart.save()
+    return JSONResponse({'caid':mo_cart.caid, 'errno':0})
+
+def list_cart(request):
+    if request.method != 'GET':
+        return JSONResponse({'errmsg':'method error'})
+    fo_bill = CartListForm(request.GET)
+    if not fo_bill.is_valid():
+        return JSONResponse({'errmsg':fo_bill.errors})
+    d_data = fo_bill.cleaned_data
+    s_name = d_data.get('username')
+    s_token = d_data.get('token')
+    mo_user = User.get_user(s_name, s_token)
+    if None == mo_user:
+        return JSONResponse({'errmsg':'username or password or permission error'})
+    mo_cart, created = Cart.objects.get_or_create(own=mo_user)
+    d_response = dict()
+    d_response['errno'] = 0
+    d_response['clothes'] = mo_cart.clothes
+    return JSONResponse(d_response)
+
 """ method template (13 lines)
 def submit(request):
     if request.method != 'GET':
-        fo_bill = BillXXXXXForm(request.GET)
-        if not fo_bill.is_valid():
-            d_data = fo_bill.cleaned_data
-            s_name = d_data.get('username')
-            s_token = d_data.get('token')
-            mo_user = User.get_user(s_name, s_token)
-            if None == mo_user:
-                return JSONResponse({'errmsg':'username or password or permission error'})
-            mo_bill = Bill()
+        return JSONResponse({'errmsg':'method error'})
+    fo_bill = BillXXXXXForm(request.GET)
+    if not fo_bill.is_valid():
         return JSONResponse({'errmsg':fo_bill.errors})
-    return JSONResponse({'errmsg':'method error'})
+    d_data = fo_bill.cleaned_data
+    s_name = d_data.get('username')
+    s_token = d_data.get('token')
+    mo_user = User.get_user(s_name, s_token)
+    if None == mo_user:
+        return JSONResponse({'errmsg':'username or password or permission error'})
+    mo_bill = Bill()
 """
