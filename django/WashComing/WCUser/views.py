@@ -3,7 +3,7 @@ from WCLib.views import *
 from WCUser.serializers import UserSerializer
 from WCUser.models import User
 from WCUser.forms import UserRegisterForm, UserLoginForm, UserInfoForm, \
-        UserUpdateForm, UserResendActiveForm, UserActiveForm, \
+        UserUpdateForm, UserChangePasswordForm, UserResendActiveForm, UserActiveForm, \
         UserResendResetForm, UserResetPasswordForm, UserResetPasswordConfirmForm
 import datetime as dt
 
@@ -96,9 +96,6 @@ def update(request):
     b_modify = False
     if None == mo_user:
         return JSONResponse({'errmsg':'username or password error'})
-    if None != d_data.get('password') and '' != d_data.get('password'):
-        mo_user.token = User.gen_token(d_data)
-        b_modify = True
     s_phone = d_data.get('phone')
     if None != s_phone and '' != s_phone:
         mo_user.phone = s_phone
@@ -106,6 +103,22 @@ def update(request):
     # if nothing to modify then do not update, or last_time will be updated
     if b_modify:
         mo_user.save()
+    d_response = {'errno':0}
+    return JSONResponse(d_response)
+
+def change_password(request):
+    if request.method != 'GET':
+        return JSONResponse({'errmsg':'method error'})
+    fo_user = UserChangePasswordForm(request.GET)
+    if not fo_user.is_valid():
+        return JSONResponse({'errmsg':fo_user.errors})
+    d_data = fo_user.cleaned_data
+    mo_user = User.vali_passwd(d_data)
+    if None == mo_user:
+        return JSONResponse({'errmsg':'username or password error'})
+    d_data['password'] = d_data['new_password']
+    mo_user.token = User.gen_token(d_data)
+    mo_user.save()
     d_response = {'errno':0}
     d_response['username'] = mo_user.name
     d_response['token'] = mo_user.token
