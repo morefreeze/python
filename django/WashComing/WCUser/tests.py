@@ -77,10 +77,10 @@ class UserTest(TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertJSONEqual(res.content, {'errmsg': 'username or password error'})
 
-    def test_update_password(self):
+    def test_change_password(self):
         res = self.client.get(u'/user/register', {'email':'unittest11@qq.com', 'password':'abcdef', 'phone':'12345678901'})
         s_token = json.loads(res.content)["token"]
-        res = self.client.get(u'/user/update', {'username':'unittest11@qq.com', 'token':s_token, 'password':'123456'})
+        res = self.client.get(u'/user/change_password', {'username':'unittest11@qq.com', 'password':'abcdef', 'new_password':'123456'})
         s_token = json.loads(res.content)["token"]
         self.assertEqual(res.status_code, 200)
         self.assertJSONEqual(res.content, {'errno': 0,'username':'unittest11@qq.com','token':s_token})
@@ -90,25 +90,24 @@ class UserTest(TestCase):
         res = self.client.get(u'/user/login', {'username':'unittest11@qq.com','password':'123456'})
         self.assertEqual(json.loads(res.content)["token"], s_token)
 
+# same password but token changed
+    def test_change_same_password(self):
+        res = self.client.get(u'/user/register', {'email':'unittest011@qq.com', 'password':'abcdef', 'phone':'12345678901'})
+        s_token = json.loads(res.content)["token"]
+        res = self.client.get(u'/user/change_password', {'username':'unittest011@qq.com', 'password':'abcdef', 'new_password':'abcdef'})
+        s_token = json.loads(res.content)["token"]
+        self.assertEqual(res.status_code, 200)
+        self.assertJSONEqual(res.content, {'errno': 0,'username':'unittest011@qq.com','token':s_token})
+        res = self.client.get(u'/user/login', {'username':'unittest011@qq.com','password':'abcdef'})
+        self.assertEqual(json.loads(res.content)["token"], s_token)
+
     def test_update_phone(self):
         res = self.client.get(u'/user/register', {'email':'unittest12@qq.com', 'password':'abcdef', 'phone':'12345678901'})
         s_token = json.loads(res.content)["token"]
         res = self.client.get(u'/user/update', {'username':'unittest12@qq.com', 'token':s_token, 'phone':'10987654321'})
         self.assertEqual(res.status_code, 200)
-        s_token = json.loads(res.content)["token"]
-        self.assertJSONEqual(res.content, {'errno': 0,'username':'unittest12@qq.com','token':s_token})
+        self.assertJSONEqual(res.content, {'errno': 0})
         mo_user = User.objects.get(name='unittest12@qq.com')
-        self.assertEqual(mo_user.phone, '10987654321')
-
-    def test_update_phone_password(self):
-        res = self.client.get(u'/user/register', {'email':'unittest13@qq.com', 'password':'abcdef', 'phone':'12345678901'})
-        s_token = json.loads(res.content)["token"]
-        res = self.client.get(u'/user/update', {'username':'unittest13@qq.com', 'token':s_token, 'password':'123456', 'phone':'10987654321'})
-        self.assertEqual(res.status_code, 200)
-        s_token = json.loads(res.content)["token"]
-        self.assertJSONEqual(res.content, {'errno': 0,'username':'unittest13@qq.com','token':s_token})
-        mo_user = User.objects.get(name='unittest13@qq.com')
-        self.assertEqual(mo_user.token, s_token)
         self.assertEqual(mo_user.phone, '10987654321')
 
     def test_update_nothing(self):
