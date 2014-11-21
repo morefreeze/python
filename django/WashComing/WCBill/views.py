@@ -38,7 +38,10 @@ def submit(request):
     mo_adr = Address.get_adr(mo_user.uid, d_data.get('aid'))
     if None == mo_adr:
         return JSONResponse({'errmsg':'address error'})
-    mo_bill.address = mo_adr.get_full_address()
+    mo_bill.province = mo_adr.province
+    mo_bill.city = mo_adr.city
+    mo_bill.area = mo_adr.area
+    mo_bill.address = mo_adr.address
     mo_bill.real_name = mo_adr.real_name
     mo_bill.phone = mo_adr.phone
     mo_bill.status = 0

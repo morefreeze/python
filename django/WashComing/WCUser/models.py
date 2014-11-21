@@ -1,4 +1,5 @@
 # coding=utf-8
+from WCLib.models import *
 from django.forms import ValidationError
 from django.db import models
 from jsonfield import JSONField
@@ -124,8 +125,9 @@ class Shop(models.Model):
     sid = models.AutoField(primary_key=True)
     name = models.CharField(unique=True,max_length=255,default='')
     real_name = models.CharField(max_length=255,default='')
-    province = models.CharField(max_length=15,default='')
-    city = models.CharField(max_length=63,default='')
+    province = models.CharField(max_length=15,default='',choices=Province_Choice)
+    city = models.CharField(max_length=63,default='',choices=City_Choice)
+    area = models.CharField(max_length=15,default='',choices=Area_Choice)
     address = models.CharField(max_length=255,default='')
     phone = models.CharField(max_length=12,default='')
     deleted = models.BooleanField(default=False)
@@ -133,3 +135,11 @@ class Shop(models.Model):
 
     def __unicode__(self):
         return "%s(%d)" %(self.name, self.sid)
+
+    def get_full_address(self):
+        if 0 == len(self.province + self.city + self.area):
+            s_separator = ''
+        else:
+            s_separator = ' '
+        return self.province + self.city + self.area + " " + self.address
+

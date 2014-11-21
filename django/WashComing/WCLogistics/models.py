@@ -1,10 +1,15 @@
 # coding=utf-8
 from django.db import models
 from WCLib.models import *
+from WCLib.views import *
+from WCCloth.models import Cloth
 import ConfigParser
 import OpenSSL.crypto as ct
 import sys, json, base64, hashlib, httplib
 import xml.etree.ElementTree as ET
+from django.template import loader, Context
+import datetime as dt
+import uuid
 
 # Create your models here.
 class RFD(models.Model):
@@ -17,8 +22,66 @@ class RFD(models.Model):
     return_form_no = models.IntegerField(default=0)
     return_message = models.CharField(max_length=255,default='')
 
-    def ImportOrders(self):
-        pass
+    @classmethod
+    def ImportOrders(cls, mo_shop, mo_bill):
+        s_method_name = sys._getframe().f_code.co_name
+        config = ConfigParser.ConfigParser()
+        with open('rfd.conf', 'r') as rfdconf:
+            config.readfp(rfdconf)
+            s_url = config.get('common', 'url')
+            s_port = config.get('common', 'port')
+            s_company = config.get('common', 'company')
+            s_default_zipcode = config.get('common', 'default_zipcode')
+            s_merchant_code = config.get(s_method_name, 'merchant_code')
+            s_template_file = config.get(s_method_name, 'template_file')
+            s_order_template_file = config.get(s_method_name, 'order_template_file')
+
+        d_import_orders = {
+            "company": s_company,
+            "dt": dt.datetime.now().strftime("%Y%m%d%H%M%S"),
+            "once_key": uuid.uuid4(),
+            "merchant_code": s_merchant_code,
+            "bid": mo_bill.bid,
+            "shop_name": mo_shop.name,
+            "shop_province": mo_shop.province,
+            "shop_city": mo_shop.city,
+            "shop_area": mo_shop.area,
+            "shop_address": mo_shop.address,
+            "shop_phone": mo_shop.phone,
+            "bill_total": mo_bill.total,
+            "bill_paid": mo_bill.paid,
+            "bill_receive": max(0, mo_bill.total - mo_bill.paid),
+            "user_name": mo_bill.real_name,
+            "user_province": mo_bill.province,
+            "user_city": mo_bill.city,
+            "user_area": mo_bill.area,
+            "user_address": mo_bill.address,
+            "user_phone": mo_bill.phone,
+            "order_details": "",
+        }
+        js_cloth = mo_bill.clothes
+        for it_cloth in js_cloth:
+            try:
+                i_cid = it_cloth.get('cid')
+                i_num = it_cloth.get('number')
+                mo_cloth = Cloth.objects.get(cid=i_cid,is_leaf=True)
+                f_price = mo_cloth.price
+                if not eq_zero(f_price):
+                    t_order = loader.get_template(s_order_template_file)
+                    d_order_detail = {
+                        "cloth_name": mo_cloth.name,
+                        "cloth_num": i_num,
+                        "cloth_price": mo_cloth.price,
+                        "cid": mo_cloth.cid,
+                    }
+                    c_order = Context(d_order_detail)
+                    d_import_orders['order_details'] += t_order.render(c_order)
+            except (AttributeError, Cloth.DoesNotExist) as e:
+                continue
+
+        t_response = loader.get_template(s_template_file)
+        c_response = Context(d_import_orders)
+        return t_response.render(c_response)
 
     def AddFetchOrder(self, mo_address, mo_bill):
         SM_TEMPLATE = '''<?xml version="1.0" encoding="UTF-8"?>
@@ -34,12 +97,12 @@ class RFD(models.Model):
             </SOAP-ENV:Envelope>
             '''
         s_method_name = sys._getframe().f_code.co_name
-        s_fetch_order = self.__class__.sign_data(d_fetch_order)
         config = ConfigParser.ConfigParser()
         with open('rfd.conf', 'r') as rfdconf:
             config.readfp(rfdconf)
             s_lcid = config.get(s_method_name, 'lcid')
             s_xmlns = config.get(s_method_name, 'xmlns')
+            s_pk_file = config.get(s_method_name, 'private_key')
             s_url = config.get('common', 'url')
             s_port = config.get('common', 'port')
             s_company = config.get('common', 'company')
@@ -58,6 +121,7 @@ class RFD(models.Model):
             "NeedAmount": mo_bill.total,
             "ProtectPrice": 0
         }
+        s_fetch_order = self.__class__.sign_data(d_fetch_order, s_pk_file)
 
         soap_msg = SM_TEMPLATE %{'method_name':s_method_name,
                                  's_fetch_order':s_fetch_order,
@@ -84,21 +148,14 @@ class RFD(models.Model):
         return d_res
 
     @classmethod
-    def sign_data(cls, js_data):
+    def sign_data(cls, js_data, s_pk_file):
         if None == js_data:
             return None
         s_json = json.dumps(js_data, separators=(',', ':'))
         s_hash = base64.b64encode(hashlib.md5(s_json).digest())
-        pk_prikey = ct.load_privatekey(ct.FILETYPE_PEM, open('rfd.pem').read())
+        pk_prikey = ct.load_privatekey(ct.FILETYPE_PEM, open(s_pk_file).read())
         s_res = s_json + ',' + base64.b64encode(ct.sign(pk_prikey, s_hash, 'sha1'))
         return s_res
-
-
-    def gen_get_bill(self, mo_user, mo_shop):
-        [self.get_way_no, self.get_form_no] = self.ImportOrders()
-
-    def gen_fetch_order(self, mo_adr, mo_bill):
-        d_res = self.AddFetchOrder(mo_adr, mo_bill)
 
 class Address(models.Model):
     aid = models.AutoField(primary_key=True)
@@ -115,7 +172,11 @@ class Address(models.Model):
         return "%d(%s)" % (self.aid, self.real_name)
 
     def get_full_address(self):
-        return self.province + self.city + self.area + " " + self.address
+        if 0 == len(self.province + self.city + self.area):
+            s_separator = ''
+        else:
+            s_separator = ' '
+        return self.province + self.city + self.area + s_separator + self.address
 
     @classmethod
     def create(cls, mo_user, d_data):
