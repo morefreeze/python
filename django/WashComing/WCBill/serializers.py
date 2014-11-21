@@ -11,6 +11,9 @@ class BillSerializer(serializers.ModelSerializer):
                   'status', 'deleted', \
                   'clothes', 'total', 'comment')
 
+    def transform_address(self, obj, value):
+        return obj.get_full_address()
+
 class FeedbackSerializer(serializers.ModelSerializer):
     class Meta:
         model = Feedback

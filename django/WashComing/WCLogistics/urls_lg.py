@@ -1,9 +1,10 @@
 from django.conf.urls import patterns, url
-from WCLogistics.views import lg_list, lg_info, test_sign
+from WCLogistics.views import list_lg, info_lg, test_post_status, test_import
 
 urlpatterns = patterns(
     '',
-    url(r'^list$', lg_list),
-    url(r'^info$', lg_info),
-    url(r'^test_sign$', test_sign),
+    url(r'^list$', list_lg),
+    url(r'^info$', info_lg),
+    url(r'^test_post_status$', test_post_status),
+    url(r'^test_import$', test_import),
 )

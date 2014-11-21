@@ -1,4 +1,5 @@
 # coding=utf-8
+from WCLib.models import *
 from django.db import models
 from jsonfield import JSONField
 from WCUser.models import User, Shop
@@ -17,7 +18,9 @@ class Bill(models.Model):
     return_time_1 = models.DateTimeField()
     own = models.ForeignKey(User) # own_id in db
     lg = models.ForeignKey(RFD,null=True) # lg_id in db
-# joint province, city, area, address together
+    province = models.CharField(max_length=15,default='',choices=Province_Choice)
+    city = models.CharField(max_length=63,default='',choices=City_Choice)
+    area = models.CharField(max_length=15,default='',choices=Area_Choice)
     address = models.CharField(max_length=511, default='')
     phone = models.CharField(max_length=12,default='')
     real_name = models.CharField(max_length=255,default='')
@@ -26,12 +29,20 @@ class Bill(models.Model):
     deleted = models.BooleanField(default=False)
     score = models.PositiveIntegerField(default=0)
     total = models.FloatField(default=0.0)
+    paid = models.FloatField(default=0.0)
     clothes = JSONField(default=[])
     comment = models.CharField(max_length=1023, default='', blank=True)
     ext = JSONField(default={})
 
     def __unicode__(self):
         return self.bid
+
+    def get_full_address(self):
+        if 0 == len(self.province + self.city + self.area):
+            s_separator = ''
+        else:
+            s_separator = ' '
+        return self.province + self.city + self.area + s_separator + self.address
 
     def format_cloth(self, s_cloth):
         try:
@@ -57,7 +68,7 @@ class Bill(models.Model):
                 self.ext['error'] = "%s%s(it_cloth:%s,maybe category);" \
                     %(self.ext.get('error', ''), e.__str__(), it_cloth.__str__())
                 continue
-            if i_num * f_price <= 0:
+            if i_num * f_price < 0:
                 self.ext['error'] = "%s%s(it_cloth:%s);" \
                     %(self.ext.get('error', ''), 'num*price<0', it_cloth.__str__())
             else:

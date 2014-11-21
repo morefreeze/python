@@ -1,13 +1,12 @@
 # coding=utf-8
-from django.shortcuts import render
-
 from WCLib.views import *
 from WCLogistics.models import RFD, Address
 from WCLogistics.forms import AddressAddForm, AddressUpdateForm, AddressDeleteForm, \
         AddressListForm, AddressSetDefaultForm, AddressInfoForm
 from WCLogistics.serializers import AddressSerializer
-from WCUser.models import User
+from WCUser.models import User, Shop
 from WCUser.serializers import UserSerializer
+from WCBill.models import Bill
 import OpenSSL.crypto as ct
 import hashlib, base64
 # Create your views here.
@@ -152,7 +151,7 @@ def info(request):
     return JSONResponse(d_response)
 
 #==============RFD method
-def lg_list(request):
+def list_lg(request):
     if request.method != 'GET':
         return JSONResponse({'errmsg':'method error'})
     fo_adr = AddressXXXXXForm(request.GET)
@@ -166,7 +165,7 @@ def lg_list(request):
         return JSONResponse({'errmsg':'username or password error'})
     # todo
 
-def lg_info(request):
+def info_lg(request):
     if request.method != 'GET':
         return JSONResponse({'errmsg':'method error'})
     fo_adr = AddressXXXXXForm(request.GET)
@@ -196,6 +195,41 @@ def sign_data(js_data):
     pk_prikey = ct.load_privatekey(ct.FILETYPE_PEM, open('rfd.pem').read())
     s_res = s_json + ',' + base64.b64encode(ct.sign(pk_prikey, s_hash, 'sha1'))
     return s_res
+
+def test_post_status(request):
+    POST_STATUS_TEMPLATE = """
+    <Response>
+        <Head>
+            <Service>PostStatus</Service>
+            <ServiceVersion>1.0</ServiceVersion>
+            <SrcSys> rfd </SrcSys>
+            <DstSys>demo</DstSys>
+            <DateTime>20131127132426</DateTime>
+        </Head>
+        <Body>
+            <StatusInfo>
+                <OperateId>111</OperateId>
+                <IsSuccess>0</IsSuccess>
+                <Message>网络异常</Message>
+                <WaybillNo>111</WaybillNo>
+            </StatusInfo>
+            <StatusInfo>
+                <OperateId>222</OperateId>
+                <IsSuccess>0</IsSuccess>
+                <Message>网络异常</Message>
+                <WaybillNo>222</WaybillNo>
+            </StatusInfo>
+        </Body>
+    </Response>
+    """
+    return HttpResponse(POST_STATUS_TEMPLATE,content_type="application/xhtml+xml")
+
+def test_import(request):
+    mo_user = User.objects.get(uid=1)
+    mo_shop = Shop.objects.get(sid=1)
+    mo_bill = Bill.objects.get(bid=2)
+    return HttpResponse(RFD.ImportOrders(mo_shop, mo_bill))
+    #return JSONResponse({'xml':RFD.ImportOrders(mo_shop, mo_bill)})
 
 """
 def submit(request):
