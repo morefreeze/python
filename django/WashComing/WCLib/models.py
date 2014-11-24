@@ -1,5 +1,11 @@
 #coding=utf-8
 from django.db import models
+import uuid
+import os
+
+def get_avatar_filename(instance, filename):
+    s_ext = os.path.splitext(filename)[1] # include dot, e.g.: ".png"
+    return os.path.join('avatar/', uuid.uuid4().__str__())+s_ext
 
 # Create your models here.
 # follow rfd doc

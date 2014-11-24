@@ -16,6 +16,7 @@ class User(models.Model):
     name = models.CharField(unique=True,max_length=255)
     token = models.CharField(max_length=255)
     openauth = models.CharField(max_length=255,default='')
+    avatar = models.ImageField(default='', upload_to=get_avatar_filename)
     phone = models.CharField(max_length=12,default='')
     email = models.CharField(max_length=128,default='')
     default_adr = models.OneToOneField('WCLogistics.Address',null=True)

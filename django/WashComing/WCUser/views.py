@@ -1,11 +1,14 @@
 from django.db import IntegrityError
+from django.http import HttpResponseRedirect
+from django.core.urlresolvers import reverse
+from django.template import RequestContext
 from WCLib.views import *
 from WCUser.serializers import UserSerializer
 from WCUser.models import User, Feedback
 from WCUser.forms import UserRegisterForm, UserLoginForm, UserInfoForm, \
         UserUpdateForm, UserChangePasswordForm, UserResendActiveForm, UserActiveForm, \
         UserResendResetForm, UserResetPasswordForm, UserResetPasswordConfirmForm, \
-        UserFeedbackForm
+        UserFeedbackForm, UserUploadAvatarForm
 import datetime as dt
 
 # Create your views here.
@@ -76,6 +79,7 @@ def info(request):
     d_response['uid'] = se_user.data['uid']
     d_response['username'] = se_user.data['name']
     d_response['token'] = se_user.data['token']
+    d_response['avatar'] = se_user.data['avatar']
     d_response['exp'] = se_user.data['exp']
     d_response['score'] = se_user.data['score']
     d_response['level'] = User.gen_level(d_response['score'])
@@ -240,6 +244,43 @@ def feedback(request):
     s_content = d_data.get('content')
     mo_fb = Feedback.objects.create(own=mo_user, create_time=None, content=s_content)
     return JSONResponse({'fid': mo_fb.fid, 'errno': 0})
+
+def upload_avatar(request):
+    if request.method != 'POST':
+        return JSONResponse({'errmsg':'method error'})
+    fo_user = UserUploadAvatarForm(request.POST, request.FILES)
+    if not fo_user.is_valid():
+        return JSONResponse({'errmsg':fo_user.errors})
+    d_data = fo_user.cleaned_data
+    s_name = d_data.get('username')
+    s_token = d_data.get('token')
+    mo_user = User.get_user(s_name, s_token)
+    if None == mo_user:
+        return JSONResponse({'errmsg':'username or password error'})
+    mo_user.avatar = request.FILES['avatar']
+    mo_user.save()
+    return JSONResponse({'avatar': mo_user.avatar.url, 'errno': 0})
+
+def admin_upload_avatar(request):
+    if request.method != 'POST':
+        form = UserUploadAvatarForm()
+        mos = User.objects.exclude(avatar__exact='')
+        return render_to_response('list.html',
+                                  {'documents':mos,'form':form},
+                                 context_instance=RequestContext(request))
+        #return JSONResponse({'errmsg':'method error'})
+    fo_user = UserUploadAvatarForm(request.POST, request.FILES)
+    if not fo_user.is_valid():
+        return JSONResponse({'errmsg':fo_user.errors})
+    d_data = fo_user.cleaned_data
+    s_name = d_data.get('username')
+    s_token = d_data.get('token')
+    mo_user = User.get_user(s_name, s_token)
+    if None == mo_user:
+        return JSONResponse({'errmsg':'username or password error'})
+    mo_user.avatar = request.FILES['avatar']
+    mo_user.save()
+    return HttpResponseRedirect(reverse('WCUser.views.admin_upload_avatar'))
 
 """ method template (12 lines)
 def info(request):
