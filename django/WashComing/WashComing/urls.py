@@ -1,4 +1,6 @@
 from django.conf.urls import patterns, include, url
+from django.conf.urls.static import static
+from django.conf import settings
 from django.contrib import admin
 
 urlpatterns = patterns('',
@@ -13,4 +15,4 @@ urlpatterns = patterns('',
     url(r'^cloth/', include('WCCloth.urls')),
     url(r'^logistics/', include('WCLogistics.urls_lg')),
     url(r'^address/', include('WCLogistics.urls_adr')),
-)
+) + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
