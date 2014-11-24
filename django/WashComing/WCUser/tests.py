@@ -1,6 +1,6 @@
 # coding=utf-8
 from WCLib.tests import *
-from WCUser.models import User
+from WCUser.models import User, Feedback
 from WCUser.serializers import UserSerializer
 
 # Create your tests here.
@@ -118,4 +118,14 @@ class UserTest(TestCase):
         se_new_user = UserSerializer(User.objects.get(name='unittest14@qq.com'))
         self.assertEqual(res.status_code, 200)
         self.assertEqual(se_old_user.data, se_new_user.data)
+
+    def test_feedback(self):
+        s_content = u'hello world 中文测试'
+        res = self.client.get(u'/user/register', {'email':'unittest15@qq.com', 'password':'abcdef', 'phone':'12345678901'})
+        s_token = json.loads(res.content)["token"]
+        res = self.client.get(u'/user/feedback', {'username':'unittest15@qq.com', 'token':s_token, 'content':s_content})
+        i_fid = json.loads(res.content)["fid"]
+        self.assertJSONEqual(res.content, {'errno':0, 'fid':i_fid})
+        mo_fb = Feedback.objects.get(fid=i_fid)
+        self.assertEqual(mo_fb.content, s_content)
 

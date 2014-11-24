@@ -1,10 +1,11 @@
 from django.db import IntegrityError
 from WCLib.views import *
 from WCUser.serializers import UserSerializer
-from WCUser.models import User
+from WCUser.models import User, Feedback
 from WCUser.forms import UserRegisterForm, UserLoginForm, UserInfoForm, \
         UserUpdateForm, UserChangePasswordForm, UserResendActiveForm, UserActiveForm, \
-        UserResendResetForm, UserResetPasswordForm, UserResetPasswordConfirmForm
+        UserResendResetForm, UserResetPasswordForm, UserResetPasswordConfirmForm, \
+        UserFeedbackForm
 import datetime as dt
 
 # Create your views here.
@@ -223,6 +224,22 @@ def reset_password_confirm(request):
 
 def reset_password_complete(request):
     return render_to_response('reset/reset_password.html')
+
+def feedback(request):
+    if request.method != 'GET':
+        return JSONResponse({'errmsg':'method error'})
+    fo_user = UserFeedbackForm(request.GET)
+    if not fo_user.is_valid():
+        return JSONResponse({'errmsg':fo_user.errors})
+    d_data = fo_user.cleaned_data
+    s_name = d_data.get('username')
+    s_token = d_data.get('token')
+    mo_user = User.get_user(s_name, s_token)
+    if None == mo_user:
+        return JSONResponse({'errmsg':'username or password error'})
+    s_content = d_data.get('content')
+    mo_fb = Feedback.objects.create(own=mo_user, create_time=None, content=s_content)
+    return JSONResponse({'fid': mo_fb.fid, 'errno': 0})
 
 """ method template (12 lines)
 def info(request):

@@ -143,3 +143,11 @@ class Shop(models.Model):
             s_separator = ' '
         return self.province + self.city + self.area + " " + self.address
 
+#============Shop end
+
+class Feedback(models.Model):
+    fid = models.AutoField(primary_key=True)
+    own = models.ForeignKey(User)
+    create_time = models.DateTimeField(auto_now_add=True)
+    content = models.CharField(max_length=1023)
+
