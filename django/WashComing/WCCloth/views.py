@@ -25,6 +25,13 @@ def category(request):
 # replace cid to gid
             se_category.data['gid'] = se_category.data['cid']
             del se_category.data['cid']
+            i_gid = se_category.data['gid']
+            a_clothes = Cloth.objects.filter(fa_cid=i_gid, deleted=False)
+            se_category.data['children'] = []
+            if None != a_clothes:
+                for it_cloth in a_clothes:
+                    se_cloth = ClothSerializer(it_cloth)
+                    se_category.data['children'].append(se_cloth.data)
             d_response['data'].append(se_category.data)
     d_response['errno'] = 0
     return JSONResponse(d_response)
@@ -37,7 +44,7 @@ def list(request):
         return JSONResponse({'errmsg':fo_cloth.errors})
     d_data = fo_cloth.cleaned_data
     i_gid = d_data.get('gid')
-    a_clothes = Cloth.objects.filter(fa_cid=i_gid, is_leaf=True, deleted=False)
+    a_clothes = Cloth.objects.filter(fa_cid=i_gid, deleted=False)
     d_response = dict()
     d_response['data'] = []
     if None != a_clothes:
