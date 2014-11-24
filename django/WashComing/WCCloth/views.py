@@ -4,7 +4,8 @@ from WCLib.views import *
 from WCUser.models import User
 from WCCloth.serializers import ClothSerializer
 from WCCloth.models import Cloth
-from WCCloth.forms import ClothCategoryForm, ClothListForm, ClothInfoForm
+from WCCloth.forms import ClothCategoryForm, ClothListForm, ClothInfoForm, \
+        ClothSearchForm
 
 # Create your views here.
 
@@ -36,11 +37,11 @@ def list(request):
         return JSONResponse({'errmsg':fo_cloth.errors})
     d_data = fo_cloth.cleaned_data
     i_gid = d_data.get('gid')
-    a_cloth = Cloth.objects.filter(fa_cid=i_gid, is_leaf=True, deleted=False)
+    a_clothes = Cloth.objects.filter(fa_cid=i_gid, is_leaf=True, deleted=False)
     d_response = dict()
     d_response['data'] = []
-    if None != a_cloth:
-        for it_cloth in a_cloth:
+    if None != a_clothes:
+        for it_cloth in a_clothes:
             se_cloth = ClothSerializer(it_cloth)
             d_response['data'].append(se_cloth.data)
     d_response['count'] = len(d_response['data'])
@@ -64,6 +65,28 @@ def info(request):
     d_response['name'] = se_cloth.data['name']
     d_response['detail'] = se_cloth.data['detail']
     d_response['price'] = se_cloth.data['price']
+    d_response['errno'] = 0
+    return JSONResponse(d_response)
+
+def search(request):
+    if request.method != 'GET':
+        return JSONResponse({'errmsg':'method error'})
+    fo_cloth = ClothSearchForm(request.GET)
+    if not fo_cloth.is_valid():
+        return JSONResponse({'errmsg':fo_cloth.errors})
+    d_data = fo_cloth.cleaned_data
+    s_name = d_data.get('username')
+    s_token = d_data.get('token')
+    mo_user = User.get_user(s_name, s_token)
+    if None == mo_user:
+        return JSONResponse({'errmsg':'username or password or permission error'})
+    s_keyword = d_data.get('keyword')
+    a_clothes = Cloth.objects.filter(name__contains=s_keyword, fa_cid__gt=0)
+    d_response = dict()
+    d_response['data'] = []
+    for it_cloth in a_clothes:
+        d_response['data'].append(ClothSerializer(it_cloth).data)
+    d_response['count'] = len(d_response['data'])
     d_response['errno'] = 0
     return JSONResponse(d_response)
 

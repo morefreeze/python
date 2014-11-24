@@ -14,7 +14,7 @@ class BillSubmitForm(forms.Form):
     return_time_1 = forms.DateTimeField(required = True)
     aid = forms.IntegerField(required = True)
     comment = forms.CharField(required = False,
-                              max_length=1023)
+                              max_length=255)
     score = forms.IntegerField(required = False)
 
 class BillListForm(forms.Form):
@@ -54,7 +54,7 @@ class BillFeedbackForm(forms.Form):
     bid = forms.IntegerField(required = True)
     rate = forms.IntegerField(required = True)
     content = forms.CharField(required = False,
-                               max_length=1023)
+                               max_length=255)
 
 class BillGetFeedbackForm(forms.Form):
     username = forms.CharField(required = True,

@@ -35,7 +35,7 @@ class Bill(models.Model):
     ext = JSONField(default={})
 
     def __unicode__(self):
-        return self.bid
+        return "%d" %(self.bid)
 
     def get_full_address(self):
         if 0 == len(self.province + self.city + self.area):
