@@ -138,6 +138,7 @@ class Cart(models.Model):
         except (cls.DoesNotExist):
             return -1
         mo_cart.clothes = []
+        mo_cart.save()
         return mo_cart.caid
 
     def format_cloth(self, s_cloth):

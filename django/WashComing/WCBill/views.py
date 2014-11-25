@@ -65,6 +65,7 @@ def submit(request):
         return JSONResponse({'errmsg': 'some error happen, please contact admin'})
     mo_user.score -= i_score
     mo_user.save()
+    Cart.clean(mo_user)
     se_bill = BillSerializer(mo_bill)
     return JSONResponse({'errno':0, 'bid':se_bill.data.get('bid'),
                          'total':se_bill.data.get('total')})
@@ -88,14 +89,13 @@ def list(request):
     i_deleted = d_data.get('deleted')
     i_offset = (i_pn-1)*i_rn
     i_limit = i_rn
-    # todo: order rule
     if i_deleted == 2:
 # query all include deleted
         a_bills = Bill.objects.filter(own=mo_user)\
-            .order_by('get_time_0', 'return_time_0', '-bid')#[i_offset:i_offset+i_limit]
+            .order_by('-bid')#[i_offset:i_offset+i_limit]
     else:
         a_bills = Bill.objects.filter(own=mo_user,deleted=i_deleted)\
-            .order_by('get_time_0', 'return_time_0', '-bid')#[i_offset:i_offset+i_limit]
+            .order_by('-bid')#[i_offset:i_offset+i_limit]
     try:
         paginator = Paginator(a_bills, i_rn)
         p_bills = paginator.page(i_pn)
