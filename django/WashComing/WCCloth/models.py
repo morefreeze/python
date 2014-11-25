@@ -15,7 +15,7 @@ class Cloth(models.Model):
     is_leaf = models.BooleanField(default=True)
     fa_cid = models.IntegerField(default=0)
     name = models.CharField(unique=True,max_length=32)
-    image = models.CharField(max_length=255,default='',blank=True)
+    image = models.ImageField(default='')
     detail = models.CharField(max_length=255,default='',blank=True)
     price = models.FloatField(default=0.)
     deleted = models.BooleanField(default=False)

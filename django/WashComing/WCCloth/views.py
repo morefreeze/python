@@ -71,6 +71,7 @@ def info(request):
     d_response['cid'] = se_cloth.data['cid']
     d_response['name'] = se_cloth.data['name']
     d_response['detail'] = se_cloth.data['detail']
+    d_response['image'] = se_cloth.data['image']
     d_response['price'] = se_cloth.data['price']
     d_response['errno'] = 0
     return JSONResponse(d_response)
