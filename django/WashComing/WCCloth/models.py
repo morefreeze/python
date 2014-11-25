@@ -14,11 +14,10 @@ class Cloth(models.Model):
     cid = models.AutoField(primary_key=True)
     is_leaf = models.BooleanField(default=True)
     fa_cid = models.IntegerField(default=0)
-    name = models.CharField(unique=True,max_length=32)
-    image = models.ImageField(default='')
+    name = models.CharField(max_length=32)
+    image = models.ImageField(default='',blank=True)
     detail = models.CharField(max_length=255,default='',blank=True)
     price = models.FloatField(default=0.)
-    deleted = models.BooleanField(default=False)
     ext = JSONField(default={},blank=True)
 
     def __unicode__(self):
@@ -40,15 +39,18 @@ class Cloth(models.Model):
         return first category
         """
         try:
-            a_category = cls.objects.filter(fa_cid=0, deleted=False, is_leaf=False)
+            a_category = cls.objects.filter(fa_cid=0, is_leaf=False)
         except (cls.DoesNotExist) as e:
             return None
         return a_category
 
     @classmethod
-    def get_cloth(cls, i_cid):
+    def get_cloth(cls, i_cid, is_leaf=None):
         try:
-            mo_cloth = cls.objects.get(cid=i_cid, deleted=False, is_leaf=True)
+            if None == is_leaf:
+                mo_cloth = cls.objects.get(cid=i_cid)
+            else:
+                mo_cloth = cls.objects.get(cid=i_cid, is_leaf=is_leaf)
         except (cls.DoesNotExist) as e:
             return None
         return mo_cloth

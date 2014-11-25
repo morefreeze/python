@@ -4,8 +4,7 @@ from WCLib.views import *
 from WCUser.models import User
 from WCCloth.serializers import ClothSerializer
 from WCCloth.models import Cloth
-from WCCloth.forms import ClothCategoryForm, ClothListForm, ClothInfoForm, \
-        ClothSearchForm
+from WCCloth.forms import ClothCategoryForm, ClothInfoForm, ClothSearchForm
 
 # Create your views here.
 
@@ -26,32 +25,13 @@ def category(request):
             se_category.data['gid'] = se_category.data['cid']
             del se_category.data['cid']
             i_gid = se_category.data['gid']
-            a_clothes = Cloth.objects.filter(fa_cid=i_gid, deleted=False)
+            a_clothes = Cloth.objects.filter(fa_cid=i_gid)
             se_category.data['children'] = []
             if None != a_clothes:
                 for it_cloth in a_clothes:
                     se_cloth = ClothSerializer(it_cloth)
                     se_category.data['children'].append(se_cloth.data)
             d_response['data'].append(se_category.data)
-    d_response['errno'] = 0
-    return JSONResponse(d_response)
-
-def list(request):
-    if request.method != 'GET':
-        return JSONResponse({'errmsg':'method error'})
-    fo_cloth = ClothListForm(request.GET)
-    if not fo_cloth.is_valid():
-        return JSONResponse({'errmsg':fo_cloth.errors})
-    d_data = fo_cloth.cleaned_data
-    i_gid = d_data.get('gid')
-    a_clothes = Cloth.objects.filter(fa_cid=i_gid, deleted=False)
-    d_response = dict()
-    d_response['data'] = []
-    if None != a_clothes:
-        for it_cloth in a_clothes:
-            se_cloth = ClothSerializer(it_cloth)
-            d_response['data'].append(se_cloth.data)
-    d_response['count'] = len(d_response['data'])
     d_response['errno'] = 0
     return JSONResponse(d_response)
 
@@ -66,13 +46,25 @@ def info(request):
     mo_cloth = Cloth.get_cloth(i_cid)
     if None == mo_cloth:
         return JSONResponse({'errmsg':'get cloth error'})
-    se_cloth = ClothSerializer(mo_cloth)
     d_response = dict()
-    d_response['cid'] = se_cloth.data['cid']
-    d_response['name'] = se_cloth.data['name']
-    d_response['detail'] = se_cloth.data['detail']
-    d_response['image'] = se_cloth.data['image']
-    d_response['price'] = se_cloth.data['price']
+    d_response['title'] = mo_cloth.name
+    d_response['cid'] = []
+    d_response['name'] = []
+    d_response['price'] = []
+    if mo_cloth.is_leaf:
+        d_response['cid'].append(mo_cloth.cid)
+        d_response['name'].append(mo_cloth.name)
+        d_response['price'].append(mo_cloth.price)
+        d_response['child_num'] = 1
+    else:
+        a_children = Cloth.objects.filter(fa_cid=i_cid)
+        for it_child in a_children:
+            d_response['cid'].append(it_child.cid)
+            d_response['name'].append(it_child.name)
+            d_response['price'].append(it_child.price)
+        d_response['child_num'] = len(a_children)
+    d_response['detail'] = mo_cloth.detail
+    d_response['image'] = mo_cloth.image.__str__()
     d_response['errno'] = 0
     return JSONResponse(d_response)
 
