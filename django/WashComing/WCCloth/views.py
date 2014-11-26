@@ -65,6 +65,7 @@ def info(request):
         d_response['child_num'] = len(a_children)
     d_response['detail'] = mo_cloth.detail
     d_response['image'] = mo_cloth.image.__str__()
+    d_response['ext'] = mo_cloth.ext
     d_response['errno'] = 0
     return JSONResponse(d_response)
 

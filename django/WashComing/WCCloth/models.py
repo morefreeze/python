@@ -18,6 +18,8 @@ class Cloth(models.Model):
     image = models.ImageField(default='',blank=True)
     detail = models.CharField(max_length=255,default='',blank=True)
     price = models.FloatField(default=0.)
+# show weight, bigger show first
+    weight = models.IntegerField(default=0)
     ext = JSONField(default={},blank=True)
 
     def __unicode__(self):
@@ -39,7 +41,7 @@ class Cloth(models.Model):
         return first category
         """
         try:
-            a_category = cls.objects.filter(fa_cid=0, is_leaf=False)
+            a_category = cls.objects.filter(fa_cid=0, is_leaf=False).order_by('-weight', 'cid')
         except (cls.DoesNotExist) as e:
             return None
         return a_category
