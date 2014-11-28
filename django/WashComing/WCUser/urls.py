@@ -1,7 +1,7 @@
 from django.conf.urls import patterns, url
 from WCUser.views import register, login, info, update, change_password, active, \
         resend_active, resend_reset, reset_password, reset_password_confirm, reset_password_complete, \
-        feedback, admin_upload_avatar
+        feedback, upload_avatar, admin_upload_avatar
 
 urlpatterns = patterns(
     '',
@@ -17,5 +17,6 @@ urlpatterns = patterns(
     url(r'^reset_password_confirm', reset_password_confirm),
     url(r'^reset_password_complete', reset_password_complete),
     url(r'^feedback$', feedback),
+    url(r'^upload_avatar$', upload_avatar),
     url(r'^admin_upload_avatar$', admin_upload_avatar, name='admin_upload_avatar'),
 )

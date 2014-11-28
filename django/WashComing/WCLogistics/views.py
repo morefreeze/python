@@ -180,14 +180,6 @@ def info_lg(request):
     mo_adr = Address()
     # todo
 
-def test_sign(request):
-    mo_address = Address.objects.get(aid=request.GET.get('aid'))
-    mo_bill = Address.objects.get(bid=request.GET.get('bid'))
-    tt = RFD()
-    s_s = tt.AddFetchOrder(mo_address, mo_bill)
-    #s_s = request.GET.get('s')
-    return JSONResponse({'res':s_s})
-
 def sign_data(js_data):
     if None == js_data:
         return None
@@ -196,7 +188,17 @@ def sign_data(js_data):
     s_res = s_json + ',' + base64.b64encode(ct.sign(pk_prikey, s_hash, 'sha1'))
     return s_res
 
+def test_order(request):
+    mo_address = Address.objects.get(aid=request.GET.get('aid'))
+    mo_bill = Bill.objects.get(bid=request.GET.get('bid'))
+    tt = RFD()
+    js_s = tt.AddFetchOrder(mo_address, mo_bill)
+    return JSONResponse(js_s)
+
 def test_post_status(request):
+    xml_res = ET.fromstring(request.body)
+    d_xml = etree_to_dict(xml_res)
+    return JSONResponse(d_xml)
     POST_STATUS_TEMPLATE = """
     <Response>
         <Head>
@@ -225,7 +227,6 @@ def test_post_status(request):
     return HttpResponse(POST_STATUS_TEMPLATE,content_type="application/xhtml+xml")
 
 def test_import(request):
-    mo_user = User.objects.get(uid=1)
     mo_shop = Shop.objects.get(sid=1)
     mo_bill = Bill.objects.get(bid=2)
     return HttpResponse(RFD.ImportOrders(mo_shop, mo_bill))

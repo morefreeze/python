@@ -259,7 +259,7 @@ def upload_avatar(request):
         return JSONResponse({'errmsg':'username or password error'})
     mo_user.avatar = request.FILES['avatar']
     mo_user.save()
-    return JSONResponse({'avatar': mo_user.avatar.url, 'errno': 0})
+    return JSONResponse({'avatar': mo_user.avatar.name, 'errno': 0})
 
 def admin_upload_avatar(request):
     if request.method != 'POST':

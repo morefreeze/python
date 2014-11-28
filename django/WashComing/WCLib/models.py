@@ -1,11 +1,26 @@
 #coding=utf-8
 from django.db import models
+import hashlib
 import uuid
 import os
 
+def get_cloth_filename(instance, filename):
+    s_ext = os.path.splitext(filename)[1] # include dot, e.g.: ".png"
+    if None == s_ext or '' == s_ext:
+        s_ext = '.png'
+    return os.path.join('clothes/', hashlib.md5(uuid.uuid4().__str__()).hexdigest())+s_ext
+
 def get_avatar_filename(instance, filename):
     s_ext = os.path.splitext(filename)[1] # include dot, e.g.: ".png"
+    if None == s_ext or '' == s_ext:
+        s_ext = '.png'
     return os.path.join('avatar/', uuid.uuid4().__str__())+s_ext
+
+def get_android_apk(instance, filename):
+    s_ext = os.path.splitext(filename)[1] # include dot, e.g.: ".apk"
+    if None == s_ext or '' == s_ext:
+        s_ext = '.apk'
+    return os.path.join('android/%s_%d' %(uuid.uuid4().__str__(), instance.ver_code))+s_ext
 
 # Create your models here.
 # follow rfd doc
