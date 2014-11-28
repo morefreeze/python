@@ -15,4 +15,5 @@ urlpatterns = patterns('',
     url(r'^cloth/', include('WCCloth.urls')),
     url(r'^logistics/', include('WCLogistics.urls_lg')),
     url(r'^address/', include('WCLogistics.urls_adr')),
+    url(r'^app/', include('WCApp.urls')),
 ) + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

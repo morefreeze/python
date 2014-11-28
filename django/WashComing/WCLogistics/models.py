@@ -2,7 +2,6 @@
 from django.db import models
 from WCLib.models import *
 from WCLib.views import *
-from WCCloth.models import Cloth
 import ConfigParser
 import OpenSSL.crypto as ct
 import sys, json, base64, hashlib, httplib
@@ -15,12 +14,13 @@ import uuid
 class RFD(models.Model):
     lid = models.AutoField(primary_key=True)
     status = models.IntegerField(default=0)
-    get_way_no = models.IntegerField(default=0)
-    get_form_no = models.IntegerField(default=0)
-    get_message = models.CharField(max_length=255,default='')
-    return_way_no = models.IntegerField(default=0)
-    return_form_no = models.IntegerField(default=0)
-    return_message = models.CharField(max_length=255,default='')
+    get_order_no = models.CharField(max_length=31,default='',blank=True)
+    get_way_no = models.CharField(max_length=31,default='',blank=True)
+    get_form_no = models.CharField(max_length=31,default='',blank=True)
+    get_message = models.CharField(max_length=255,default='',blank=True)
+    return_way_no = models.CharField(max_length=31,default='',blank=True)
+    return_form_no = models.CharField(max_length=31,default='',blank=True)
+    return_message = models.CharField(max_length=255,default='',blank=True)
 
     @classmethod
     def ImportOrders(cls, mo_shop, mo_bill):
@@ -128,7 +128,7 @@ class RFD(models.Model):
                                  's_lcid':s_lcid
                                 }
 
-        webservice = httplib.HTTP(s_url, i_port)
+        webservice = httplib.HTTP(s_url, s_port)
         webservice.putrequest("POST", "/DeliveryService.svc?wsdl")
         webservice.putheader("Content-type", "text/xml; charset=\"UTF-8\"")
         webservice.putheader("Content-length", "%d" % len(soap_msg))
@@ -144,7 +144,7 @@ class RFD(models.Model):
         if None == no_res:
             d_res = {'IsSucceed':false}
             return d_res
-        d_res = json.loads(s_res)
+        d_res = json.loads(no_res.text)
         return d_res
 
     @classmethod

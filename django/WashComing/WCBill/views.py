@@ -8,7 +8,7 @@ from WCBill.forms import BillSubmitForm, BillListForm, BillInfoForm, BillCancelF
         BillFeedbackForm, BillGetFeedbackForm
 from WCBill.forms import CartSubmitForm, CartListForm
 from WCUser.models import User
-from WCLogistics.models import Address
+from WCLogistics.models import Address, OrderQueue
 import json
 
 from datetime import datetime
@@ -66,9 +66,9 @@ def submit(request):
     mo_user.score -= i_score
     mo_user.save()
     Cart.clean(mo_user)
-    se_bill = BillSerializer(mo_bill)
-    return JSONResponse({'errno':0, 'bid':se_bill.data.get('bid'),
-                         'total':se_bill.data.get('total')})
+    OrderQueue.objects.create(bill=mo_bill)
+    return JSONResponse({'errno':0, 'bid':mo_bill.bid,
+                         'total':mo_bill.total})
 
 def list(request):
     if request.method != 'GET':

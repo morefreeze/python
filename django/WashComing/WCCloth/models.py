@@ -2,6 +2,7 @@
 from django.forms import ValidationError
 from django.db import models
 from jsonfield import JSONField
+from WCLib.models import *
 import base64
 import hashlib
 
@@ -15,7 +16,7 @@ class Cloth(models.Model):
     is_leaf = models.BooleanField(default=True)
     fa_cid = models.IntegerField(default=0)
     name = models.CharField(max_length=32)
-    image = models.ImageField(default='',blank=True)
+    image = models.ImageField(default='',blank=True,upload_to=get_cloth_filename)
     detail = models.CharField(max_length=255,default='',blank=True)
     price = models.FloatField(default=0.)
 # show weight, bigger show first

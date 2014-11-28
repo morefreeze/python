@@ -3,7 +3,6 @@ from WCLib.models import *
 from django.forms import ValidationError
 from django.db import models
 from jsonfield import JSONField
-from WCLogistics.models import Address
 import django.contrib.auth.hashers as hasher
 from django.template import loader, Context
 import base64, hashlib, uuid
