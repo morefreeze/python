@@ -26,6 +26,22 @@ class Cloth(models.Model):
     def __unicode__(self):
         return "%s(%d %d)" % (self.name, self.cid, self.price)
 
+    def save(self, *args, **kwargs):
+        # delete old file when replacing by updating the file
+        try:
+            mo_cloth = self.__class__.objects.get(cid=self.cid)
+            s_old_image = mo_cloth.image.__str__()
+            if self.image != mo_cloth.image:
+                mo_cloth.image.delete(save=False)
+            super(self.__class__, self).save(*args, **kwargs)
+# replace other model with same image
+            a_clothes = Cloth.objects.filter(image=s_old_image)
+            for it_cloth in a_clothes:
+                it_cloth.image = self.image
+                it_cloth.save()
+        except:
+            pass # when new photo then we do nothing, normal case
+
     @classmethod
     def create(cls, d_request):
         b_is_leaf = d_request.get('is_leaf')
