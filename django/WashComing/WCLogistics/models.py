@@ -2,6 +2,7 @@
 from django.db import models
 from WCLib.models import *
 from WCLib.views import *
+from WCCloth.models import Cloth
 import ConfigParser
 import OpenSSL.crypto as ct
 import sys, json, base64, hashlib, httplib
@@ -83,7 +84,7 @@ class RFD(models.Model):
         c_response = Context(d_import_orders)
         return t_response.render(c_response)
 
-    def AddFetchOrder(self, mo_address, mo_bill):
+    def AddFetchOrder(self, mo_bill):
         SM_TEMPLATE = '''<?xml version="1.0" encoding="UTF-8"?>
             <SOAP-ENV:Envelope
             xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
@@ -109,15 +110,15 @@ class RFD(models.Model):
             s_default_zipcode = config.get('common', 'default_zipcode')
 
         d_fetch_order = {
-            "SendBy": mo_address.real_name,
-            "MobilePhone": mo_address.phone,
-            "Telephone": mo_address.phone,
+            "SendBy": mo_bill.real_name,
+            "MobilePhone": mo_bill.phone,
+            "Telephone": mo_bill.phone,
             "PostCode": s_default_zipcode,
             "Company": s_company,
-            "SendProvinceName": mo_address.province,
-            "SendCityName": mo_address.city,
-            "SendAreaName": mo_address.area,
-            "SendAddress": mo_address.address,
+            "SendProvinceName": mo_bill.province,
+            "SendCityName": mo_bill.city,
+            "SendAreaName": mo_bill.area,
+            "SendAddress": mo_bill.address,
             "NeedAmount": mo_bill.total,
             "ProtectPrice": 0
         }
@@ -140,9 +141,12 @@ class RFD(models.Model):
         statuscode, statusmessage, header = webservice.getreply()
         s_xmlres = webservice.getfile().read()
         xml_res = ET.fromstring(s_xmlres)
-        no_res = xml_res.find('.//{%s}AddFetchOrderResult' %(s_xmlns))
-        if None == no_res:
-            d_res = {'IsSucceed':false}
+        try:
+            no_res = xml_res.find('.//{%s}AddFetchOrderResult' %(s_xmlns))
+            if None == no_res:
+                d_res = {'IsSucceed':false}
+        except e:
+            d_res = {'IsSucceed':false, 'Message':'get xml result error', 'Exception':e.__str__()}
             return d_res
         d_res = json.loads(no_res.text)
         return d_res
@@ -192,3 +196,25 @@ class Address(models.Model):
         except (cls.DoesNotExist) as e:
             return None
         return mo_adr
+
+# order queue for logistics
+# some script fetch queue for sending order request to logistics
+class OrderQueue(models.Model):
+    Status_Choice = (
+        (-1, 'error'),
+        (0, 'todo'),
+        (10, 'doing'),
+# add some other here
+        (100, 'done'),
+    )
+    Type_Choice = (
+        (0, 'AddFetchOrder'),
+        (1, 'ImportOrders'),
+        (2, 'GetOrderLog'),
+    )
+
+    qid = models.AutoField(primary_key=True)
+    bill = models.ForeignKey('WCBill.Bill',default=None,blank=True)
+    type = models.IntegerField(default=0,choices=Type_Choice)
+    status = models.IntegerField(default=0,choices=Status_Choice)
+

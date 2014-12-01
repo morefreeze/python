@@ -189,16 +189,20 @@ def sign_data(js_data):
     return s_res
 
 def test_order(request):
-    mo_address = Address.objects.get(aid=request.GET.get('aid'))
     mo_bill = Bill.objects.get(bid=request.GET.get('bid'))
     tt = RFD()
-    js_s = tt.AddFetchOrder(mo_address, mo_bill)
+    js_s = tt.AddFetchOrder(mo_bill)
     return JSONResponse(js_s)
 
 def test_post_status(request):
     xml_res = ET.fromstring(request.body)
     d_xml = etree_to_dict(xml_res)
-    return JSONResponse(d_xml)
+    if not 'Request' in d_xml:
+        return HttpResponse("no Request")
+    d_body = d_xml['Request'][1]['Body']
+    for it_status_info in d_body:
+        s_op = it_status_info['StatusInfo'][0]['_text']
+    return HttpResponse(s_op)
     POST_STATUS_TEMPLATE = """
     <Response>
         <Head>

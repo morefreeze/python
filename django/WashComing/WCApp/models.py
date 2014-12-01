@@ -12,3 +12,4 @@ class Android(models.Model):
 
     def __unicode__(self):
         return "%d(v%s)" %(self.ver_code, self.ver_str)
+
