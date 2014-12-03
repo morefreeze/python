@@ -24,7 +24,7 @@ class Cloth(models.Model):
     ext = JSONField(default={},blank=True)
 
     def __unicode__(self):
-        return "%s(%d %d)" % (self.name, self.cid, self.price)
+        return "%s(%d %d)" % (self.get_name(), self.cid, self.price)
 
     def save(self, *args, **kwargs):
         # delete old file when replacing by updating the file
@@ -73,4 +73,12 @@ class Cloth(models.Model):
         except (cls.DoesNotExist) as e:
             return None
         return mo_cloth
+
+    def get_name(self):
+        if self.fa_cid > 0:
+            mo_fa_cloth = self.__class__.objects.get(cid=self.fa_cid)
+# self is third category cloth
+            if mo_fa_cloth.fa_cid > 0:
+                return "%s_%s" % (mo_fa_cloth.name, self.name)
+        return "%s" % (self.name)
 

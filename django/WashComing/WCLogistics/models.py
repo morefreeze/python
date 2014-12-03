@@ -13,6 +13,24 @@ import uuid
 
 # Create your models here.
 class RFD(models.Model):
+    TO_GET = 5
+    GETTING = 10
+    GOT = 20
+    GET_BACK = 30
+    TO_RETURN = 40
+    RETURNNING = 50
+    RETURN_BACK = 60
+    CLIENT_SIGN = 100
+
+# RFD order status
+    ASSIGNED_SITE = -4
+    IN_WAREHOUSE = 1
+    DELIVERY = 2
+    SUCCESS = 3
+    STAY = 4
+    REFUSAL = 5
+    OUT_WAREHOUSE = 10
+
     lid = models.AutoField(primary_key=True)
     status = models.IntegerField(default=0)
     get_order_no = models.CharField(max_length=31,default='',blank=True)
@@ -23,11 +41,17 @@ class RFD(models.Model):
     return_form_no = models.CharField(max_length=31,default='',blank=True)
     return_message = models.CharField(max_length=255,default='',blank=True)
 
+# in parent directory
+    conf_dir = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
+
     @classmethod
-    def ImportOrders(cls, mo_shop, mo_bill):
+    def ImportOrders(cls, mo_bill):
+        mo_shop = mo_bill.shop
+        if None == mo_shop:
+            return 1
         s_method_name = sys._getframe().f_code.co_name
         config = ConfigParser.ConfigParser()
-        with open('rfd.conf', 'r') as rfdconf:
+        with open(os.path.join(cls.conf_dir, 'rfd.conf'), 'r') as rfdconf:
             config.readfp(rfdconf)
             s_url = config.get('common', 'url')
             s_port = config.get('common', 'port')
@@ -84,7 +108,8 @@ class RFD(models.Model):
         c_response = Context(d_import_orders)
         return t_response.render(c_response)
 
-    def AddFetchOrder(self, mo_bill):
+    @classmethod
+    def AddFetchOrder(cls, mo_bill):
         SM_TEMPLATE = '''<?xml version="1.0" encoding="UTF-8"?>
             <SOAP-ENV:Envelope
             xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
@@ -99,16 +124,24 @@ class RFD(models.Model):
             '''
         s_method_name = sys._getframe().f_code.co_name
         config = ConfigParser.ConfigParser()
-        with open('rfd.conf', 'r') as rfdconf:
+        with open(os.path.join(cls.conf_dir, 'rfd.conf'), 'r') as rfdconf:
             config.readfp(rfdconf)
             s_lcid = config.get(s_method_name, 'lcid')
             s_xmlns = config.get(s_method_name, 'xmlns')
-            s_pk_file = config.get(s_method_name, 'private_key')
+            s_pk_file = os.path.join(cls.conf_dir, config.get(s_method_name, 'private_key'))
             s_url = config.get('common', 'url')
             s_port = config.get('common', 'port')
             s_company = config.get('common', 'company')
             s_default_zipcode = config.get('common', 'default_zipcode')
 
+        js_clothes = mo_bill.format_cloth()
+        s_remark = ''
+        if len(js_clothes) == 0:
+            d_res = {'IsSucceed':false, 'Message':'format clothes error', 'Exception':e.__str__()}
+            return d_res
+        for it_cloth in js_clothes:
+            mo_cloth = Cloth.objects.get(cid=it_cloth['cid'])
+            s_remark += " %s %d" %(mo_cloth.get_name(), it_cloth['number'])
         d_fetch_order = {
             "SendBy": mo_bill.real_name,
             "MobilePhone": mo_bill.phone,
@@ -120,9 +153,10 @@ class RFD(models.Model):
             "SendAreaName": mo_bill.area,
             "SendAddress": mo_bill.address,
             "NeedAmount": mo_bill.total,
-            "ProtectPrice": 0
+            "ProtectPrice": 0,
+            "Remark": s_remark,
         }
-        s_fetch_order = self.__class__.sign_data(d_fetch_order, s_pk_file)
+        s_fetch_order = cls.sign_data(d_fetch_order, s_pk_file)
 
         soap_msg = SM_TEMPLATE %{'method_name':s_method_name,
                                  's_fetch_order':s_fetch_order,
@@ -148,7 +182,23 @@ class RFD(models.Model):
         except e:
             d_res = {'IsSucceed':false, 'Message':'get xml result error', 'Exception':e.__str__()}
             return d_res
+# {u'Message': u'SL141202000001', u'Exception': None, u'IsSucceed': True}
         d_res = json.loads(no_res.text)
+        return d_res
+
+    @classmethod
+    # because function etree_to_dict convert dict like this:
+    # [{'OperateId':{}, '_text':111}, {'WaybillNo':{}, '_text':123}]
+    # so convert above to normal dict
+    def get_status_info(cls, d_st):
+        d_res = {}
+        s_params = ['OperateId', 'WaybillNo', 'CustomerOrder', 'Result',
+                   'Status', 'OperateTime', 'Operator',]
+        for it_st in d_st:
+            for s_param in s_params:
+                if s_param in it_st:
+                    d_res[s_param] = it_st['_text']
+                    break
         return d_res
 
     @classmethod
@@ -200,6 +250,10 @@ class Address(models.Model):
 # order queue for logistics
 # some script fetch queue for sending order request to logistics
 class OrderQueue(models.Model):
+    ERROR = -1
+    TODO = 0
+    DOING = 10
+    DONE = 100
     Status_Choice = (
         (-1, 'error'),
         (0, 'todo'),
@@ -207,14 +261,21 @@ class OrderQueue(models.Model):
 # add some other here
         (100, 'done'),
     )
+    Nothing = 0
+    AddFetchOrder = 1
+    ImportOrders = 2
+    GetOrderLog = 3
     Type_Choice = (
-        (0, 'AddFetchOrder'),
-        (1, 'ImportOrders'),
-        (2, 'GetOrderLog'),
+        (Nothing, 'Nothing'),
+        (AddFetchOrder, 'AddFetchOrder'),
+        (ImportOrders, 'ImportOrders'),
+        (GetOrderLog, 'GetOrderLog'),
     )
 
     qid = models.AutoField(primary_key=True)
     bill = models.ForeignKey('WCBill.Bill',default=None,blank=True)
     type = models.IntegerField(default=0,choices=Type_Choice)
+    message = models.CharField(max_length=8195)
     status = models.IntegerField(default=0,choices=Status_Choice)
+    time = models.DateTimeField(db_index=True)
 

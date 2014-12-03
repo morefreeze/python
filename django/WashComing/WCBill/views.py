@@ -66,7 +66,7 @@ def submit(request):
     mo_user.score -= i_score
     mo_user.save()
     Cart.clean(mo_user)
-    OrderQueue.objects.create(bill=mo_bill)
+    OrderQueue.objects.create(bill=mo_bill, type=OrderQueue.AddFetchOrder, status=OrderQueue.TODO)
     return JSONResponse({'errno':0, 'bid':mo_bill.bid,
                          'total':mo_bill.total})
 

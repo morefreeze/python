@@ -23,7 +23,7 @@ class User(models.Model):
     last_time = models.DateTimeField(auto_now=True)
     score = models.IntegerField(default=0)
     exp = models.IntegerField(default=0)
-    invited = models.ForeignKey('self')
+    invited = models.ForeignKey('self',null=True,default=None)
     is_active = models.BooleanField(default=True)
     deleted = models.BooleanField(default=False)
     ext = JSONField(default={})
@@ -33,9 +33,9 @@ class User(models.Model):
 
     @classmethod
     def create(cls, d_request):
-        s_email = d_request.get('email')
-        s_name = s_email
-        return cls(uid=None, name=s_name, token='', email=s_email)
+        s_phone = d_request.get('phone')
+        s_name = s_phone
+        return cls(uid=None, name=s_name, token='', phone=s_phone)
 
     @classmethod
     def gen_token(cls, d_request):

@@ -18,16 +18,15 @@ def register(request):
     fo_user = UserRegisterForm(request.GET)
     if not fo_user.is_valid():
         return JSONResponse({'errmsg':fo_user.errors})
-    mo_user = User.create(fo_user.cleaned_data)
     d_data = fo_user.cleaned_data
-    s_token = User.gen_token(d_data)
     s_phone = d_data.get('phone')
     try:
         int(s_phone)
     except (ValueError, TypeError):
         return JSONResponse({'errmsg':'phone must be number'})
+    mo_user = User.create(d_data)
+    s_token = User.gen_token(d_data)
     mo_user.token = s_token
-    mo_user.phone = s_phone
     s_invited_name = d_data.get('invited_username')
     if None != s_invited_name and '' != s_invited_name:
         mo_inv_user = User.query_user(s_invited_name)
@@ -37,7 +36,7 @@ def register(request):
     try:
         mo_user.save()
         se_user = UserSerializer(mo_user)
-        return JSONResponse({'errno':0, 'uid':se_user.data.get('uid'), 'token':s_token})
+        return JSONResponse({'errno':0, 'uid':se_user.data.get('uid'), 'username':mo_user.name, 'token':s_token})
 # duplicate username
     except IntegrityError as e:
         return JSONResponse({'errmsg':'username has been registered'})
@@ -83,6 +82,7 @@ def info(request):
     d_response['exp'] = se_user.data['exp']
     d_response['score'] = se_user.data['score']
     d_response['level'] = User.gen_level(d_response['score'])
+    d_response['phone'] = se_user.data['phone']
     d_response['email'] = se_user.data['email']
     d_response['is_active'] = se_user.data['is_active']
     d_response['errno'] = 0

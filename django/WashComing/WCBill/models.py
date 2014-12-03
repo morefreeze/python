@@ -44,12 +44,24 @@ class Bill(models.Model):
             s_separator = ' '
         return self.province + self.city + self.area + s_separator + self.address
 
-    def format_cloth(self, s_cloth):
+    # format_cloth DOES NOT save
+    # and DOES NOT modify clothes value
+    def format_cloth(self, s_cloth=None):
         try:
-            self.clothes = json.loads(s_cloth)
-        except (ValueError) as e:
+            if None != s_cloth and '' != s_cloth:
+                self.clothes = json.loads(s_cloth)
+            for it_cloth in self.clothes:
+                if 'cid' not in it_cloth:
+                    raise ValueError('cid not in cloth')
+                if 'number' not in it_cloth:
+                    raise ValueError('number not in cloth')
+                mo_cloth = Cloth.objects.get(cid=it_cloth['cid'])
+                if not mo_cloth.is_leaf:
+                    raise Cloth.DoesNotExist('cloth[%d] is leaf' % mo_cloth.cid)
+        except (ValueError,Cloth.DoesNotExist) as e:
             self.ext['error'] = "%s%s;" \
                 %(self.ext.get('error', ''), e.__str__())
+            return []
         return self.clothes
 
 # update total field
@@ -141,11 +153,23 @@ class Cart(models.Model):
         mo_cart.save()
         return mo_cart.caid
 
-    def format_cloth(self, s_cloth):
+    # format_cloth DOES NOT save
+    # and DOES NOT modify clothes value
+    def format_cloth(self, s_cloth=None):
         try:
-            self.clothes = json.loads(s_cloth)
-        except (ValueError) as e:
+            if None != s_cloth and '' != s_cloth:
+                self.clothes = json.loads(s_cloth)
+            for it_cloth in self.clothes:
+                if 'cid' not in it_cloth:
+                    raise ValueError('cid not in cloth')
+                if 'number' not in it_cloth:
+                    raise ValueError('number not in cloth')
+                mo_cloth = Cloth.objects.get(cid=it_cloth['cid'])
+                if not mo_cloth.is_leaf:
+                    raise Cloth.DoesNotExist('cloth[%d] is leaf %d' % mo_cloth.cid)
+        except (ValueError,Cloth.DoesNotExist) as e:
             self.ext['error'] = "%s%s;" \
                 %(self.ext.get('error', ''), e.__str__())
+            return []
         return self.clothes
 
