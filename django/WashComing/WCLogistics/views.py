@@ -9,6 +9,7 @@ from WCUser.serializers import UserSerializer
 from WCBill.models import Bill
 import OpenSSL.crypto as ct
 import hashlib, base64
+import json
 # Create your views here.
 
 #============Address method
@@ -183,8 +184,9 @@ def info_lg(request):
 def sign_data(js_data):
     if None == js_data:
         return None
+    conf_dir = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
     s_hash = base64.b64encode(hashlib.md5(json.dumps(js_data)).digest())
-    pk_prikey = ct.load_privatekey(ct.FILETYPE_PEM, open('rfd.pem').read())
+    pk_prikey = ct.load_privatekey(ct.FILETYPE_PEM, open(os.path.join(conf_dir,'rfd.pem')).read())
     s_res = s_json + ',' + base64.b64encode(ct.sign(pk_prikey, s_hash, 'sha1'))
     return s_res
 
@@ -194,15 +196,19 @@ def test_order(request):
     js_s = tt.AddFetchOrder(mo_bill)
     return JSONResponse(js_s)
 
-def test_post_status(request):
+def post_status(request):
     xml_res = ET.fromstring(request.body)
     d_xml = etree_to_dict(xml_res)
     if not 'Request' in d_xml:
         return HttpResponse("no Request")
     d_body = d_xml['Request'][1]['Body']
+    d_res = []
     for it_status_info in d_body:
-        s_op = it_status_info['StatusInfo'][0]['_text']
-    return HttpResponse(s_op)
+        if 'StatusInfo' not in it_status_info:
+            continue
+        d_status_info = RFD.get_status_info(it_status_info['StatusInfo'])
+        d_res.append(d_status_info)
+    return JSONResponse(d_res)
     POST_STATUS_TEMPLATE = """
     <Response>
         <Head>
@@ -233,7 +239,14 @@ def test_post_status(request):
 def test_import(request):
     mo_shop = Shop.objects.get(sid=1)
     mo_bill = Bill.objects.get(bid=2)
-    return HttpResponse(RFD.ImportOrders(mo_shop, mo_bill))
+    mo_bill.format_cloth()
+    mo_bill.save()
+    s_s = ''
+    for it_cloth in mo_bill.clothes:
+        mo_cloth = Cloth.objects.get(cid=it_cloth['cid'])
+        s_s += " %s %d" %(mo_cloth.get_name(), it_cloth['number'])
+    return HttpResponse(s_s)
+    #return HttpResponse(RFD.ImportOrders(mo_bill))
     #return JSONResponse({'xml':RFD.ImportOrders(mo_shop, mo_bill)})
 
 """
