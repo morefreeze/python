@@ -202,39 +202,16 @@ def post_status(request):
     if not 'Request' in d_xml:
         return HttpResponse("no Request")
     d_body = d_xml['Request'][1]['Body']
-    d_res = []
+    a_st_info = []
     for it_status_info in d_body:
-        if 'StatusInfo' not in it_status_info:
-            continue
         d_status_info = RFD.get_status_info(it_status_info['StatusInfo'])
-        d_res.append(d_status_info)
-    return JSONResponse(d_res)
-    POST_STATUS_TEMPLATE = """
-    <Response>
-        <Head>
-            <Service>PostStatus</Service>
-            <ServiceVersion>1.0</ServiceVersion>
-            <SrcSys> rfd </SrcSys>
-            <DstSys>demo</DstSys>
-            <DateTime>20131127132426</DateTime>
-        </Head>
-        <Body>
-            <StatusInfo>
-                <OperateId>111</OperateId>
-                <IsSuccess>0</IsSuccess>
-                <Message>网络异常</Message>
-                <WaybillNo>111</WaybillNo>
-            </StatusInfo>
-            <StatusInfo>
-                <OperateId>222</OperateId>
-                <IsSuccess>0</IsSuccess>
-                <Message>网络异常</Message>
-                <WaybillNo>222</WaybillNo>
-            </StatusInfo>
-        </Body>
-    </Response>
-    """
-    return HttpResponse(POST_STATUS_TEMPLATE,content_type="application/xhtml+xml")
+        a_st_info.append(d_status_info)
+    a_res = []
+    for it_st_info in a_st_info:
+        d_ret = RFD.update(it_st_info)
+        a_res.append(d_ret)
+    js_xml = RFD.PostStatus(a_res)
+    return HttpResponse(js_xml['xml'],content_type="application/xhtml+xml")
 
 def test_import(request):
     mo_shop = Shop.objects.get(sid=1)
@@ -242,12 +219,14 @@ def test_import(request):
     mo_bill.format_cloth()
     mo_bill.save()
     s_s = ''
+    """
     for it_cloth in mo_bill.clothes:
         mo_cloth = Cloth.objects.get(cid=it_cloth['cid'])
         s_s += " %s %d" %(mo_cloth.get_name(), it_cloth['number'])
     return HttpResponse(s_s)
-    #return HttpResponse(RFD.ImportOrders(mo_bill))
-    #return JSONResponse({'xml':RFD.ImportOrders(mo_shop, mo_bill)})
+    """
+    d_res = RFD.ImportOrders(mo_bill)
+    return JSONResponse(d_res)
 
 """
 def submit(request):
