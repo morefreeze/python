@@ -14,22 +14,33 @@ class User(models.Model):
     uid = models.AutoField(primary_key=True)
     name = models.CharField(unique=True,max_length=255)
     token = models.CharField(max_length=255)
-    openauth = models.CharField(max_length=255,default='')
-    avatar = models.ImageField(default='', upload_to=get_avatar_filename)
-    phone = models.CharField(max_length=12,default='')
-    email = models.CharField(max_length=128,default='')
-    default_adr = models.OneToOneField('WCLogistics.Address',null=True)
-    create_time = models.DateTimeField(auto_now_add=True)
+    openauth = models.CharField(max_length=255,default='',blank=True)
+    avatar = models.ImageField(default='', upload_to=get_avatar_filename,blank=True)
+    phone = models.CharField(max_length=12,default='',blank=True)
+    email = models.CharField(max_length=128,default='',blank=True)
+    default_adr = models.OneToOneField('WCLogistics.Address',null=True,blank=True)
+    create_time = models.DateTimeField(auto_now_add=True,blank=True)
     last_time = models.DateTimeField(auto_now=True)
     score = models.IntegerField(default=0)
     exp = models.IntegerField(default=0)
-    invited = models.ForeignKey('self',null=True,default=None)
+    invited = models.ForeignKey('self',null=True,default=None,blank=True)
     is_active = models.BooleanField(default=True)
     deleted = models.BooleanField(default=False)
-    ext = JSONField(default={})
+    ext = JSONField(default={},blank=True)
 
     def __unicode__(self):
         return "%s(%d)" %(self.name, self.uid)
+
+    def save(self, *args, **kwargs):
+        # delete old file when replacing by updating the file
+        try:
+            mo_user = self.__class__.objects.get(uid=self.uid)
+            s_old_avatar = mo_user.avatar.__str__()
+            if self.avatar != mo_user.avatar:
+                mo_user.avatar.delete(save=False)
+        except:
+            pass # when new photo then we do nothing, normal case
+        super(self.__class__, self).save(*args, **kwargs)
 
     @classmethod
     def create(cls, d_request):
