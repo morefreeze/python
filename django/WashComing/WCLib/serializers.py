@@ -5,3 +5,5 @@ import json
 import datetime as dt
 
 DATETIME_FORMAT = "%Y%m%dT%H:%M:%S"
+DATETIME_FORMAT_SHORT = "%m%d %H:%M"
+

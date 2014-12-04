@@ -1,7 +1,9 @@
 # coding=utf-8
 from django.db import models
+from django.db.models import Q
 from WCLib.models import *
 from WCLib.views import *
+from WCLib.serializers import *
 from WCCloth.models import Cloth
 import ConfigParser
 import OpenSSL.crypto as ct
@@ -10,13 +12,17 @@ import xml.etree.ElementTree as ET
 from django.template import loader, Context
 import datetime as dt
 import uuid
+import urllib
+import urllib2
 
 # Create your models here.
 class RFD(models.Model):
+    GET_ABORT = -10
+    RETURN_ABORT = -20
     TO_GET = 5
     GETTING = 10
     GOT = 20
-    GET_BACK = 30
+    WASHING = 30
     TO_RETURN = 40
     RETURNNING = 50
     RETURN_BACK = 60
@@ -33,7 +39,7 @@ class RFD(models.Model):
 
     lid = models.AutoField(primary_key=True)
     status = models.IntegerField(default=0)
-    get_order_no = models.CharField(max_length=31,default='',blank=True)
+    get_order_no = models.CharField(max_length=31,unique=True,default='',blank=True)
     get_way_no = models.CharField(max_length=31,default='',blank=True)
     get_form_no = models.CharField(max_length=31,default='',blank=True)
     get_message = models.CharField(max_length=255,default='',blank=True)
@@ -43,24 +49,29 @@ class RFD(models.Model):
 
 # in parent directory
     conf_dir = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
+    config = ConfigParser.ConfigParser()
+
 
     @classmethod
+    # return rfd response convert dict
     def ImportOrders(cls, mo_bill):
         mo_shop = mo_bill.shop
         if None == mo_shop:
-            return 1
+            return {'ResultCode':1, 'ResultMessage':'no shop info'}
         s_method_name = sys._getframe().f_code.co_name
-        config = ConfigParser.ConfigParser()
         with open(os.path.join(cls.conf_dir, 'rfd.conf'), 'r') as rfdconf:
-            config.readfp(rfdconf)
-            s_url = config.get('common', 'url')
-            s_port = config.get('common', 'port')
-            s_company = config.get('common', 'company')
-            s_default_zipcode = config.get('common', 'default_zipcode')
-            s_merchant_code = config.get(s_method_name, 'merchant_code')
-            s_template_file = config.get(s_method_name, 'template_file')
-            s_order_template_file = config.get(s_method_name, 'order_template_file')
+            cls.config.readfp(rfdconf)
+            s_url = cls.config.get('common', 'url')
+            s_port = cls.config.get('common', 'port')
+            s_company = cls.config.get('common', 'company')
+            s_default_zipcode = cls.config.get('common', 'default_zipcode')
+            s_merchant_code = cls.config.get('common', 'merchant_code')
+            s_template_file = cls.config.get(s_method_name, 'template_file')
+            s_order_template_file = cls.config.get(s_method_name, 'order_template_file')
 
+        s_url = "http://%s:%s/api/" %(s_url, s_port)
+        s_return_start = mo_bill.return_time_0.strftime(DATETIME_FORMAT_SHORT)
+        s_return_end = mo_bill.return_time_1.strftime(DATETIME_FORMAT_SHORT)
         d_import_orders = {
             "company": s_company,
             "dt": dt.datetime.now().strftime("%Y%m%d%H%M%S"),
@@ -82,6 +93,7 @@ class RFD(models.Model):
             "user_area": mo_bill.area,
             "user_address": mo_bill.address,
             "user_phone": mo_bill.phone,
+            "comment": "%s至%s取" %(s_return_start, s_return_end),
             "order_details": "",
         }
         js_cloth = mo_bill.clothes
@@ -106,9 +118,23 @@ class RFD(models.Model):
 
         t_response = loader.get_template(s_template_file)
         c_response = Context(d_import_orders)
-        return t_response.render(c_response)
+        s_xml = t_response.render(c_response).encode('utf-8')
+        s_req_xml = cls.send_api(s_url, s_xml)
+        d_res = {}
+        try:
+            xml_req = ET.fromstring(s_req_xml)
+            no_xml = xml_req.find('.//ImportResultDetail')
+            for no_child in no_xml:
+                d_res[no_child.tag] = no_child.text
+        except Exception as e:
+            # this follow rfd format
+            d_res['ResultCode'] = 'ImportFailure'
+            d_res['ResultMessage'] = e.__str__()
+            return d_res
+        return d_res
 
     @classmethod
+    # return rfd response json
     def AddFetchOrder(cls, mo_bill):
         SM_TEMPLATE = '''<?xml version="1.0" encoding="UTF-8"?>
             <SOAP-ENV:Envelope
@@ -123,16 +149,15 @@ class RFD(models.Model):
             </SOAP-ENV:Envelope>
             '''
         s_method_name = sys._getframe().f_code.co_name
-        config = ConfigParser.ConfigParser()
         with open(os.path.join(cls.conf_dir, 'rfd.conf'), 'r') as rfdconf:
-            config.readfp(rfdconf)
-            s_lcid = config.get(s_method_name, 'lcid')
-            s_xmlns = config.get(s_method_name, 'xmlns')
-            s_pk_file = os.path.join(cls.conf_dir, config.get(s_method_name, 'private_key'))
-            s_url = config.get('common', 'url')
-            s_port = config.get('common', 'port')
-            s_company = config.get('common', 'company')
-            s_default_zipcode = config.get('common', 'default_zipcode')
+            cls.config.readfp(rfdconf)
+            s_lcid = cls.config.get(s_method_name, 'lcid')
+            s_xmlns = cls.config.get(s_method_name, 'xmlns')
+            s_pk_file = os.path.join(cls.conf_dir, cls.config.get('common', 'private_key'))
+            s_url = cls.config.get('common', 'url')
+            s_port = cls.config.get('common', 'port')
+            s_company = cls.config.get('common', 'company')
+            s_default_zipcode = cls.config.get('common', 'default_zipcode')
 
         js_clothes = mo_bill.format_cloth()
         s_remark = ''
@@ -142,6 +167,9 @@ class RFD(models.Model):
         for it_cloth in js_clothes:
             mo_cloth = Cloth.objects.get(cid=it_cloth['cid'])
             s_remark += " %s %d" %(mo_cloth.get_name(), it_cloth['number'])
+        s_dt_start = mo_bill.get_time_0.strftime(DATETIME_FORMAT_SHORT)
+        s_dt_end = mo_bill.get_time_1.strftime(DATETIME_FORMAT_SHORT)
+        s_remark += u" %s至%s取" %(s_dt_start, s_dt_end)
         d_fetch_order = {
             "SendBy": mo_bill.real_name,
             "MobilePhone": mo_bill.phone,
@@ -187,6 +215,60 @@ class RFD(models.Model):
         return d_res
 
     @classmethod
+    # return render xml text in json
+    # {'errno':0, 'xml':'...'}
+    def PostStatus(cls, a_st):
+        s_method_name = sys._getframe().f_code.co_name
+        with open(os.path.join(cls.conf_dir, 'rfd.conf'), 'r') as rfdconf:
+            cls.config.readfp(rfdconf)
+            s_url = cls.config.get('common', 'url')
+            s_port = cls.config.get('common', 'port')
+            s_company = cls.config.get('common', 'company')
+            s_template_file = cls.config.get(s_method_name, 'template_file')
+            s_status_template_file = cls.config.get(s_method_name, 'status_template_file')
+
+        d_post_status = {
+            "company": s_company,
+            "dt": dt.datetime.now().strftime("%Y%m%d%H%M%S"),
+            "status_infos": "",
+        }
+        for it_st in a_st:
+            if 0 == it_st.get('Ret'):
+                is_success = 1
+            else:
+                is_success = 0
+            d_st = {
+                "op_id": it_st.get('OperateId'),
+                "is_success": is_success,
+                "message": it_st.get('Message'),
+                "way_no": it_st.get('WaybillNo'),
+            }
+            t_status_info = loader.get_template(s_status_template_file)
+            c_status_info = Context(d_st)
+            d_post_status['status_infos'] += t_status_info.render(c_status_info)
+        t_response = loader.get_template(s_template_file)
+        c_response = Context(d_post_status)
+        return {'errno':0, 'xml':t_response.render(c_response)}
+
+    @classmethod
+    def send_api(cls, s_url, s_xml):
+        print s_xml
+        with open(os.path.join(cls.conf_dir, 'rfd.conf'), 'r') as rfdconf:
+            cls.config.readfp(rfdconf)
+            s_company = cls.config.get('common', 'company')
+            s_merchant_code = cls.config.get('common', 'merchant_code')
+            s_pk_file = os.path.join(cls.conf_dir, cls.config.get('common', 'private_key'))
+        pk_prikey = ct.load_privatekey(ct.FILETYPE_PEM, open(s_pk_file).read())
+        s_sign = base64.b64encode(ct.sign(pk_prikey, s_xml, 'sha1'))
+        s_token = s_merchant_code + "|" + s_sign
+
+        header = {'token':s_token, 'Content-Type':'text/xml; charset=utf-8'}
+        req = urllib2.Request(s_url, s_xml, header)
+        response = urllib2.urlopen(req)
+        page = response.read()
+        return page
+
+    @classmethod
     # because function etree_to_dict convert dict like this:
     # [{'OperateId':{}, '_text':111}, {'WaybillNo':{}, '_text':123}]
     # so convert above to normal dict
@@ -210,6 +292,50 @@ class RFD(models.Model):
         pk_prikey = ct.load_privatekey(ct.FILETYPE_PEM, open(s_pk_file).read())
         s_res = s_json + ',' + base64.b64encode(ct.sign(pk_prikey, s_hash, 'sha1'))
         return s_res
+
+    @classmethod
+    def update(cls, d_st_info):
+        s_operate_id = d_st_info.get('OperateId')
+        s_custom_order = d_st_info.get('CustomerOrder')
+# i_type 1,2 for get form, 3 for return form
+        try:
+            if s_custom_order.startswith('SL'):
+                mo_rfd = cls.objects.get(get_order_no=s_custom_order)
+                i_type = 1
+            else:
+                q_rfd = cls.objects.filter(
+                    Q(get_form_no=s_custom_order) | Q(return_form_no=s_custom_order)
+                )
+                if 0 == len(q_rfd):
+                    return {'Ret': 1, 'Message': 'array is empty'}
+                mo_rfd = q_rfd[0]
+                if mo_rfd.get_form_no == s_custom_order:
+                    i_type = 2
+                elif mo_rfd.return_form_no == s_custom_order:
+                    i_type = 3
+            s_waybill_no = d_st_info.get('WaybillNo')
+            i_status = int(d_st_info.get('Status'))
+            s_message = d_st_info.get('Result')
+            if i_type in [1, 2]:
+                mo_rfd.get_message = s_message
+                mo_rfd.get_way_no = s_waybill_no
+                if i_status in [cls.ASSIGNED_SITE, cls.IN_WAREHOUSE,
+                                cls.DELIVERY, cls.STAY, cls.OUT_WAREHOUSE]:
+                    mo_rfd.status = cls.GETTING
+                if cls.SUCCESS == i_status:
+                    mo_rfd.status = cls.GOT
+            elif 3 == i_type:
+                mo_rfd.return_message = s_message
+                mo_rfd.return_way_no = s_waybill_no
+                if i_status in [cls.ASSIGNED_SITE, cls.IN_WAREHOUSE,
+                                cls.DELIVERY, cls.STAY, cls.OUT_WAREHOUSE]:
+                    mo_rfd.status = cls.RETURNNING
+                if cls.SUCCESS == i_status:
+                    mo_rfd.status = cls.RETURN_BACK
+            mo_rfd.save()
+        except (cls.DoesNotExist) as e:
+            return {'Ret': 2, 'Message': e.__str__()}
+        return {'Ret': 0, 'WaybillNo': s_waybill_no, 'OperateId': s_operate_id}
 
 class Address(models.Model):
     aid = models.AutoField(primary_key=True)

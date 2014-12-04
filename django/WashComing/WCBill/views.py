@@ -10,6 +10,7 @@ from WCBill.forms import CartSubmitForm, CartListForm
 from WCUser.models import User
 from WCLogistics.models import Address, OrderQueue
 import json
+import datetime as dt
 
 from datetime import datetime
 
@@ -66,7 +67,12 @@ def submit(request):
     mo_user.score -= i_score
     mo_user.save()
     Cart.clean(mo_user)
-    OrderQueue.objects.create(bill=mo_bill, type=OrderQueue.AddFetchOrder, status=OrderQueue.TODO)
+    dt_fetch_time = mo_bill.get_time_0 - dt.timedelta(hours=8)
+    OrderQueue.objects.create(bill=mo_bill, type=OrderQueue.AddFetchOrder,
+                              status=OrderQueue.TODO, time=dt_fetch_time)
+    dt_import_time = mo_bill.return_time_0 - dt.timedelta(hours=8)
+    OrderQueue.objects.create(bill=mo_bill, type=OrderQueue.ImportOrders,
+                              status=OrderQueue.TODO, time=dt_import_time)
     return JSONResponse({'errno':0, 'bid':mo_bill.bid,
                          'total':mo_bill.total})
 
