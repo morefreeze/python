@@ -8,7 +8,7 @@ from WCUser.models import User, Feedback
 from WCUser.forms import UserRegisterForm, UserLoginForm, UserInfoForm, \
         UserUpdateForm, UserChangePasswordForm, UserResendActiveForm, UserActiveForm, \
         UserResendResetForm, UserResetPasswordForm, UserResetPasswordConfirmForm, \
-        UserFeedbackForm, UserUploadAvatarForm
+        UserFeedbackForm, UserUploadAvatarForm, UserThirdBindForm
 import datetime as dt
 
 # Create your views here.
@@ -25,7 +25,7 @@ def register(request):
     except (ValueError, TypeError):
         return JSONResponse({'errmsg':'phone must be number'})
     mo_user = User.create(d_data)
-    s_token = User.gen_token(d_data)
+    s_token = User.gen_token(d_data['password'])
     mo_user.token = s_token
     s_invited_name = d_data.get('invited_username')
     if None != s_invited_name and '' != s_invited_name:
@@ -122,7 +122,7 @@ def change_password(request):
     if None == mo_user:
         return JSONResponse({'errmsg':'username or password error'})
     d_data['password'] = d_data['new_password']
-    mo_user.token = User.gen_token(d_data)
+    mo_user.token = User.gen_token(d_data['password'])
     mo_user.save()
     d_response = {'errno':0}
     d_response['username'] = mo_user.name
@@ -261,6 +261,35 @@ def upload_avatar(request):
     mo_user.save()
     return JSONResponse({'avatar': mo_user.avatar.name, 'errno': 0})
 
+def third_bind(request):
+    if request.method != 'GET':
+        return JSONResponse({'errmsg':'method error'})
+    fo_user = UserThirdBindForm(request.GET)
+    if not fo_user.is_valid():
+        return JSONResponse({'errmsg':fo_user.errors})
+    d_data = fo_user.cleaned_data
+    s_name = d_data.get('username')
+    s_token = d_data.get('token')
+    mo_user = User.get_user(s_name, s_token)
+    if None == mo_user:
+        return JSONResponse({'errmsg':'username or password error'})
+    s_third_name = "%s$%s|" %(d_data.get('third_tag'), d_data.get('third_uid'))
+    a_user = User.objects.filter(third_names__contains=s_third_name, deleted=False)
+    if len(a_user) > 1:
+        return JSONResponse({'errmsg':'this account has been binded multiple user'})
+    elif len(a_user) == 1:
+        mo_third_user = a_user[0]
+        if mo_third_user.uid != mo_user.uid:
+            return JSONResponse({'errmsg':'this account has been binded'})
+        else:
+            return JSONResponse({'errno':0, 'third_token':mo_user.third_token})
+    # len(a_user) == 0
+    mo_user.third_names += s_third_name
+    mo_user.third_token = User.gen_token(s_third_name)
+    mo_user.save()
+    return JSONResponse({'errno':0, 'third_token':mo_user.third_token})
+
+"""
 def admin_upload_avatar(request):
     if request.method != 'POST':
         form = UserUploadAvatarForm()
@@ -281,6 +310,7 @@ def admin_upload_avatar(request):
     mo_user.avatar = request.FILES['avatar']
     mo_user.save()
     return HttpResponseRedirect(reverse('WCUser.views.admin_upload_avatar'))
+"""
 
 """ method template (12 lines)
 def info(request):
