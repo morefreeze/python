@@ -2,6 +2,7 @@
 from WCLib.models import *
 from django.forms import ValidationError
 from django.db import models
+from django.db.models import Q
 from jsonfield import JSONField
 import django.contrib.auth.hashers as hasher
 from django.template import loader, Context
@@ -14,7 +15,9 @@ class User(models.Model):
     uid = models.AutoField(primary_key=True)
     name = models.CharField(unique=True,max_length=255)
     token = models.CharField(max_length=255)
-    openauth = models.CharField(max_length=255,default='',blank=True)
+# qq$12345|wb$54321|
+    third_names = models.CharField(max_length=255,default='',blank=True)
+    third_token = models.CharField(max_length=255,default='',blank=True)
     avatar = models.ImageField(default='', upload_to=get_avatar_filename,blank=True)
     phone = models.CharField(max_length=12,default='',blank=True)
     email = models.CharField(max_length=128,default='',blank=True)
@@ -49,8 +52,8 @@ class User(models.Model):
         return cls(uid=None, name=s_name, token='', phone=s_phone)
 
     @classmethod
-    def gen_token(cls, d_request):
-        s_token = hasher.make_password(d_request.get('password'))
+    def gen_token(cls, s_passwd):
+        s_token = hasher.make_password(s_passwd)
         return s_token
 
 # if vali pass return User obj else return None
@@ -69,10 +72,13 @@ class User(models.Model):
     def get_user(cls, name, token, is_active=None):
         try:
             if None == is_active:
-                mo_user = cls.objects.get(name=name, token=token)
+                mo_user = cls.objects.filter(Q(name=name),
+                                             Q(token=token) | Q(third_token=token))[0]
             else:
-                mo_user = cls.objects.get(name=name, token=token, is_active=is_active)
-        except (cls.DoesNotExist) as e:
+                mo_user = cls.objects.filter(Q(name=name),
+                                             Q(token=token) | Q(third_token=token),
+                                             is_active=is_active)[0]
+        except (cls.DoesNotExist, IndexError) as e:
             return None
         return mo_user
 
