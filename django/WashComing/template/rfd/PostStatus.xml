@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Response>
+    <Head>
+        <Service>PostStatus</Service>
+        <ServiceVersion>1.0</ServiceVersion>
+        <SrcSys> rfd </SrcSys>
+        <DstSys>{{ company }}</DstSys>
+        <DateTime>{{ dt }}</DateTime>
+    </Head>
+    <Body>
+        {{ status_infos | safe }}
+    </Body>
+</Response>
+

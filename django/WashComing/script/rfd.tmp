@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Request>
+    <Head>
+        <Service>ImportOrders</Service>
+        <ServiceVersion>1.0</ServiceVersion>
+        <SrcSys>xll</SrcSys>
+        <DstSys>RFD</DstSys>
+        <DateTime>20141204155917</DateTime>
+        <Result/>
+        <OnceKey>8cf5f522-9a17-4cb4-b9ab-ee330644e583</OnceKey>
+    </Head>
+    <Body>
+        <OrderModel>
+            <MerchantCode>xll001</MerchantCode>
+            <FormCode>157</FormCode>
+            <PerFormCode/>
+            <ToName>北京三洋干洗有限公司望京店</ToName>
+            <ToAddress>南湖南路8号</ToAddress>
+            <ToProvince>北京</ToProvince>
+            <ToCity>北京市</ToCity>
+            <ToArea>朝阳区</ToArea>
+            <ToPostCode>100000</ToPostCode>
+            <ToMobile>01064749878</ToMobile>
+            <ToPhone>01064749878</ToPhone>
+            <OrderType>0</OrderType>
+            <TotalAmount>20.0</TotalAmount>
+            <PaidAmount>0.0</PaidAmount>
+            <ReceiveAmount>20.0</ReceiveAmount>
+            <RefundAmount>0</RefundAmount>
+            <InsureAmount>0</InsureAmount>
+            <Weight>0</Weight>
+            <Comment>1206 12:00至1206 13:00取</Comment>
+            <FromName>fdxgg</FromName>
+            <FromAddress>fgjcxxbnn</FromAddress>
+            <FromProvince>北京</FromProvince>
+            <FromCity>北京市</FromCity>
+            <FromArea>石景山区</FromArea>
+            <FromPostCode>100000</FromPostCode>
+            <FromMobile>19875557555</FromMobile>
+            <FromPhone>19875557555</FromPhone>
+            <GoodsProperty>0</GoodsProperty>
+            <GoodsCategory/>
+            <OrderDetails>
+                <OrderDetail>
+    <ProductName>休闲裤</ProductName>
+    <Count>1</Count>
+    <Unit>件</Unit>
+    <UnitPrice>20.0</UnitPrice>
+    <Size/>
+    <ProductCode>21</ProductCode>
+</OrderDetail>
+
+
+            </OrderDetails>
+        </OrderModel>
+    </Body>
+</Request>
+

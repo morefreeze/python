@@ -1,0 +1,9 @@
+<OrderDetail>
+    <ProductName>{{ cloth_name }}</ProductName>
+    <Count>{{ cloth_num }}</Count>
+    <Unit>件</Unit>
+    <UnitPrice>{{ cloth_price }}</UnitPrice>
+    <Size/>
+    <ProductCode>{{ cid }}</ProductCode>
+</OrderDetail>
+
