@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Request>
+    <Head>
+        <Service>ImportOrders</Service>
+        <ServiceVersion>1.0</ServiceVersion>
+        <SrcSys>{{ company }}</SrcSys>
+        <DstSys>RFD</DstSys>
+        <DateTime>{{ dt }}</DateTime>
+        <Result/>
+        <OnceKey>{{ once_key }}</OnceKey>
+    </Head>
+    <Body>
+        <OrderModel>
+            <MerchantCode>{{ merchant_code }}</MerchantCode>
+            <FormCode>{{ bid }}</FormCode>
+            <PerFormCode/>
+            <ToName>{{ shop_name }}</ToName>
+            <ToAddress>{{ shop_address }}</ToAddress>
+            <ToProvince>{{ shop_province }}</ToProvince>
+            <ToCity>{{ shop_city }}</ToCity>
+            <ToArea>{{ shop_area }}</ToArea>
+            <ToPostCode>100000</ToPostCode>
+            <ToMobile>{{ shop_phone }}</ToMobile>
+            <ToPhone>{{ shop_phone }}</ToPhone>
+            <OrderType>0</OrderType>
+            <TotalAmount>{{ bill_total }}</TotalAmount>
+            <PaidAmount>{{ bill_paid }}</PaidAmount>
+            <ReceiveAmount>{{ bill_receive }}</ReceiveAmount>
+            <RefundAmount>0</RefundAmount>
+            <InsureAmount>0</InsureAmount>
+            <Weight>0</Weight>
+            <Comment>{{ comment }}</Comment>
+            <FromName>{{ user_name }}</FromName>
+            <FromAddress>{{ user_address }}</FromAddress>
+            <FromProvince>{{ user_province }}</FromProvince>
+            <FromCity>{{ user_city }}</FromCity>
+            <FromArea>{{ user_area }}</FromArea>
+            <FromPostCode>100000</FromPostCode>
+            <FromMobile>{{ user_phone }}</FromMobile>
+            <FromPhone>{{ user_phone }}</FromPhone>
+            <GoodsProperty>0</GoodsProperty>
+            <GoodsCategory/>
+            <OrderDetails>
+                {{ order_details|safe }}
+            </OrderDetails>
+        </OrderModel>
+    </Body>
+</Request>
+

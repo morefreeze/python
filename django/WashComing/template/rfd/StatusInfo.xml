@@ -1,0 +1,6 @@
+<StatusInfo>
+    <OperateId>{{ op_id }}</OperateId>
+    <IsSuccess>{{ is_success }}</IsSuccess>
+    <Message>{{ message }}</Message>
+    <WaybillNo>{{ way_no }}</WaybillNo>
+</StatusInfo>

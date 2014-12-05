@@ -19,13 +19,13 @@ import urllib2
 class RFD(models.Model):
     GET_ABORT = -10
     RETURN_ABORT = -20
+    ERROR = -100
     TO_GET = 5
     GETTING = 10
     GOT = 20
     WASHING = 30
     TO_RETURN = 40
     RETURNNING = 50
-    RETURN_BACK = 60
     CLIENT_SIGN = 100
 
 # RFD order status
@@ -43,9 +43,12 @@ class RFD(models.Model):
     get_way_no = models.CharField(max_length=31,default='',blank=True)
     get_form_no = models.CharField(max_length=31,default='',blank=True)
     get_message = models.CharField(max_length=255,default='',blank=True)
+    get_operate_time = models.DateTimeField(default=dt.datetime(2000,1,1),blank=True)
     return_way_no = models.CharField(max_length=31,default='',blank=True)
     return_form_no = models.CharField(max_length=31,default='',blank=True)
     return_message = models.CharField(max_length=255,default='',blank=True)
+    return_operate_time = models.DateTimeField(default=dt.datetime(2000,1,1),blank=True)
+    ext = JSONField(default=[],blank=True)
 
 # in parent directory
     conf_dir = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
@@ -316,24 +319,42 @@ class RFD(models.Model):
             s_waybill_no = d_st_info.get('WaybillNo')
             i_status = int(d_st_info.get('Status'))
             s_message = d_st_info.get('Result')
+            dt_operate_time = dt.datetime.strptime(d_st_info.get('OperateTime'),"%Y%m%d%H%M%S")
+            mo_rfd.ext.append(d_st_info)
+            mo_rfd.save()
             if i_type in [1, 2]:
+                if dt_operate_time < mo_rfd.get_operate_time:
+                    return {'Ret':0, 'WaybillNo': s_waybill_no,
+                            'OperateId': s_operate_id, 'Message':'operate time passed(not error) [%s]' %dt_operate_time}
                 mo_rfd.get_message = s_message
                 mo_rfd.get_way_no = s_waybill_no
+                mo_rfd.get_operate_time = dt_operate_time
                 if i_status in [cls.ASSIGNED_SITE, cls.IN_WAREHOUSE,
                                 cls.DELIVERY, cls.STAY, cls.OUT_WAREHOUSE]:
                     mo_rfd.status = cls.GETTING
                 if cls.SUCCESS == i_status:
                     mo_rfd.status = cls.GOT
             elif 3 == i_type:
+                if dt_operate_time < mo_rfd.return_operate_time:
+                    return {'Ret':0, 'WaybillNo': s_waybill_no,
+                            'OperateId': s_operate_id, 'Message':'operate time passed(not error) [%s]' %dt_operate_time}
                 mo_rfd.return_message = s_message
                 mo_rfd.return_way_no = s_waybill_no
+                mo_rfd.return_operate_time = dt_operate_time
                 if i_status in [cls.ASSIGNED_SITE, cls.IN_WAREHOUSE,
                                 cls.DELIVERY, cls.STAY, cls.OUT_WAREHOUSE]:
                     mo_rfd.status = cls.RETURNNING
                 if cls.SUCCESS == i_status:
-                    mo_rfd.status = cls.RETURN_BACK
+                    mo_rfd.status = cls.CLIENT_SIGN
             mo_rfd.save()
         except (cls.DoesNotExist) as e:
+            if i_type in [1, 2]:
+                mo_rfd.status = cls.GET_ABORT
+            elif 3 == i_type:
+                mo_rfd.status = cls.RETURN_ABORT
+            else:
+                mo_rfd.status = cls.ERROR
+            mo_rfd.save()
             return {'Ret': 2, 'Message': e.__str__()}
         return {'Ret': 0, 'WaybillNo': s_waybill_no, 'OperateId': s_operate_id}
 

@@ -3,7 +3,6 @@ from WCLib.models import *
 from django.forms import ValidationError
 from django.db import models
 from django.db.models import Q
-from jsonfield import JSONField
 import django.contrib.auth.hashers as hasher
 from django.template import loader, Context
 import base64, hashlib, uuid
