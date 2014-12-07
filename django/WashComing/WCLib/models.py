@@ -23,7 +23,15 @@ def get_android_apk(instance, filename):
         s_ext = '.apk'
     return os.path.join('android/%s_%d' %(uuid.uuid4().__str__(), instance.ver_code))+s_ext
 
-# Create your models here.
+#Create your models here.
+# score higher first
+USER_LEVEL = [
+    {'lower': 100000, 'name':'铂金',},
+    {'lower': 10000, 'name':'黄金',},
+    {'lower': 100, 'name':'白银',},
+    {'lower': 0, 'name':'青铜',},
+]
+NO_LEVEL = '暂无等级'
 # follow rfd doc
 
 PRO_BJ = '北京'

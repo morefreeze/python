@@ -8,7 +8,7 @@ from WCUser.models import User, Feedback
 from WCUser.forms import UserRegisterForm, UserLoginForm, UserInfoForm, \
         UserUpdateForm, UserChangePasswordForm, UserResendActiveForm, UserActiveForm, \
         UserResendResetForm, UserResetPasswordForm, UserResetPasswordConfirmForm, \
-        UserFeedbackForm, UserUploadAvatarForm, UserThirdBindForm
+        UserFeedbackForm, UserUploadAvatarForm, UserThirdBindForm, UserThirdLoginForm
 import datetime as dt
 
 # Create your views here.
@@ -77,11 +77,14 @@ def info(request):
     d_response = dict()
     d_response['uid'] = se_user.data['uid']
     d_response['username'] = se_user.data['name']
-    d_response['token'] = se_user.data['token']
+    if '' == se_user.data['token']:
+        d_response['token'] = se_user.data['third_token']
+    else:
+        d_response['token'] = se_user.data['token']
     d_response['avatar'] = se_user.data['avatar']
     d_response['exp'] = se_user.data['exp']
     d_response['score'] = se_user.data['score']
-    d_response['level'] = User.gen_level(d_response['score'])
+    d_response['level'] = User.gen_level(d_response['exp'])
     d_response['phone'] = se_user.data['phone']
     d_response['email'] = se_user.data['email']
     d_response['is_active'] = se_user.data['is_active']
@@ -259,7 +262,8 @@ def upload_avatar(request):
         return JSONResponse({'errmsg':'username or password error'})
     mo_user.avatar = request.FILES['avatar']
     mo_user.save()
-    return JSONResponse({'avatar': mo_user.avatar.name, 'errno': 0})
+    se_user = UserSerializer(mo_user)
+    return JSONResponse({'avatar': se_user.data['avatar'], 'errno': 0})
 
 def third_bind(request):
     if request.method != 'GET':
@@ -273,21 +277,54 @@ def third_bind(request):
     mo_user = User.get_user(s_name, s_token)
     if None == mo_user:
         return JSONResponse({'errmsg':'username or password error'})
-    s_third_name = "%s$%s|" %(d_data.get('third_tag'), d_data.get('third_uid'))
-    a_user = User.objects.filter(third_names__contains=s_third_name, deleted=False)
+    s_third_uid = "%s$%s|" %(d_data.get('third_tag'), d_data.get('third_uid'))
+    a_user = User.objects.filter(third_uids__contains=s_third_uid, deleted=False)
     if len(a_user) > 1:
         return JSONResponse({'errmsg':'this account has been binded multiple user'})
     elif len(a_user) == 1:
         mo_third_user = a_user[0]
         if mo_third_user.uid != mo_user.uid:
+# qq bind other user, or user bind other qq
             return JSONResponse({'errmsg':'this account has been binded'})
         else:
-            return JSONResponse({'errno':0, 'third_token':mo_user.third_token})
-    # len(a_user) == 0
-    mo_user.third_names += s_third_name
-    mo_user.third_token = User.gen_token(s_third_name)
+# bind same account won't gen new token
+            se_user = UserSerializer(mo_user)
+            return JSONResponse({'errno':0, 'third_token':se_user.data['third_token']})
+    # len(a_user) == 0, third not be binded
+    if '|'+d_data.get('third_tag')+'$' in mo_user.third_uids \
+    or mo_user.third_uids.startswith(d_data.get('third_tag')+'$'):
+        return JSONResponse({'errmsg':'this user has been binded other third account'})
+    mo_user.third_uids += s_third_uid
+    mo_user.third_token = User.gen_token(s_third_uid)
     mo_user.save()
-    return JSONResponse({'errno':0, 'third_token':mo_user.third_token})
+    se_user = UserSerializer(mo_user)
+    return JSONResponse({'errno':0, 'third_token':se_user.data['third_token']})
+
+def third_login(request):
+    if request.method != 'GET':
+        return JSONResponse({'errmsg':'method error'})
+    fo_user = UserThirdLoginForm(request.GET)
+    if not fo_user.is_valid():
+        return JSONResponse({'errmsg':fo_user.errors})
+    d_data = fo_user.cleaned_data
+    s_third_name = "%s$%s" %(d_data.get('third_tag'), d_data.get('third_name'))
+    s_third_uid = "%s$%s|" %(d_data.get('third_tag'), d_data.get('third_uid'))
+    a_user = User.objects.filter(third_uids__contains=s_third_uid, deleted=False)
+    if len(a_user) > 1:
+        return JSONResponse({'errmsg':'this account has been binded multiple user'})
+    elif len(a_user) == 1:
+        mo_user = a_user[0]
+        if mo_user.name != s_third_name:
+            return JSONResponse({'errmsg':'this account has been binded'})
+    else:
+        mo_user = User.objects.create(name=s_third_name)
+    mo_user.third_token = User.gen_token(s_third_name)
+    mo_user.third_uids += s_third_uid
+    if '' == mo_user.token:
+        mo_user.token = mo_user.third_token
+    mo_user.save()
+    se_user = UserSerializer(mo_user)
+    return JSONResponse({'errno':0,'uid':se_user.data['uid'], 'username':mo_user.name, 'third_token':se_user.data['third_token']})
 
 """
 def admin_upload_avatar(request):

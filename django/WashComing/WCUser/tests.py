@@ -57,7 +57,7 @@ class UserTest(TestCase):
         s_uid = json.loads(res.content)["uid"]
         res = self.client.get(u'/user/info', {'username':'13345678907', 'token':s_token})
         self.assertEqual(res.status_code, 200)
-        self.assertJSONEqual(res.content, {'phone':'13345678907','exp':0,'level':42,'score':0,'token':s_token,'avatar':'','uid':s_uid,'username':'13345678907','is_active':True, 'email':'', 'errno':0})
+        self.assertJSONEqual(res.content, {'phone':'13345678907','exp':0,'level':u'青铜','score':0,'token':s_token,'avatar':'','uid':s_uid,'username':'13345678907','is_active':True, 'email':'', 'errno':0})
 
     def test_info_failed(self):
         res = self.client.get(u'/user/register', {'phone':'13345678908', 'password':'abcdef', })
@@ -126,4 +126,110 @@ class UserTest(TestCase):
         self.assertJSONEqual(res.content, {'errno':0, 'fid':i_fid})
         mo_fb = Feedback.objects.get(fid=i_fid)
         self.assertEqual(mo_fb.content, s_content)
+
+    def test_third_login(self):
+        res = self.client.get(u'/user/third_login', {'third_tag':'qq', 'third_uid':'1234567','third_name':'abcdefg',})
+        self.assertEqual(res.status_code, 200)
+        #print res
+        s_uid = json.loads(res.content)["uid"]
+        s_username = json.loads(res.content)["username"]
+        s_third_token = json.loads(res.content)["third_token"]
+        res = self.client.get(u'/user/info', {'username':s_username, 'token':s_third_token})
+        self.assertEqual(res.status_code, 200)
+        self.assertJSONEqual(res.content, {'phone':'','exp':0,'level':u'青铜','score':0,'token':s_third_token,'avatar':'','uid':s_uid,'username':'abcdefg','is_active':True, 'email':'', 'errno':0})
+
+    def test_third_bind(self):
+        res = self.client.get(u'/user/register', {'phone':'13345678916', 'password':'abcdef', })
+        s_token = json.loads(res.content)["token"]
+        res = self.client.get(u'/user/third_bind', {'username':'13345678916','token':s_token,'third_tag':'qq', 'third_uid':'1234568',})
+        self.assertEqual(res.status_code, 200)
+        mo_user = User.objects.get(name='13345678916')
+        s_third_token = json.loads(res.content)["third_token"]
+        self.assertEqual(mo_user.third_token, s_third_token)
+
+    def test_third_bind_multi(self):
+        res = self.client.get(u'/user/register', {'phone':'13345678917', 'password':'abcdef', })
+        s_token = json.loads(res.content)["token"]
+
+        res = self.client.get(u'/user/third_bind', {'username':'13345678917','token':s_token,'third_tag':'qq', 'third_uid':'1234569',})
+        self.assertEqual(res.status_code, 200)
+        mo_user = User.objects.get(name='13345678917')
+        s_third_token = json.loads(res.content)["third_token"]
+        self.assertEqual(mo_user.third_token, s_third_token)
+
+        res = self.client.get(u'/user/third_bind', {'username':'13345678917','token':s_token,'third_tag':'wb', 'third_uid':'zyxwvu0',})
+        self.assertEqual(res.status_code, 200)
+        s_third_token = json.loads(res.content)["third_token"]
+        mo_user = User.objects.get(name='13345678917')
+        self.assertEqual(mo_user.third_token, s_third_token)
+        self.assertEqual(mo_user.third_uids, 'qq$1234569|wb$zyxwvu0|')
+
+    def test_third_bind_binded_same(self):
+        res = self.client.get(u'/user/register', {'phone':'13345678918', 'password':'abcdef', })
+        s_token = json.loads(res.content)["token"]
+        res = self.client.get(u'/user/third_bind', {'username':'13345678918','token':s_token,'third_tag':'qq', 'third_uid':'12345610',})
+        self.assertEqual(res.status_code, 200)
+        mo_user = User.objects.get(name='13345678918')
+        s_third_token = json.loads(res.content)["third_token"]
+        self.assertEqual(mo_user.third_token, s_third_token)
+        res = self.client.get(u'/user/third_bind', {'username':'13345678918','token':s_token,'third_tag':'qq', 'third_uid':'12345610',})
+        self.assertEqual(res.status_code, 200)
+        self.assertJSONEqual(res.content, {'errno':0, 'third_token':s_third_token})
+
+    def test_third_bind_binded_other(self):
+        res = self.client.get(u'/user/register', {'phone':'13345678919', 'password':'abcdef', })
+        s_token = json.loads(res.content)["token"]
+        res = self.client.get(u'/user/third_bind', {'username':'13345678919','token':s_token,'third_tag':'qq', 'third_uid':'12345611',})
+        self.assertEqual(res.status_code, 200)
+        mo_user = User.objects.get(name='13345678919')
+        s_third_token = json.loads(res.content)["third_token"]
+        self.assertEqual(mo_user.third_token, s_third_token)
+        res = self.client.get(u'/user/register', {'phone':'13345678920', 'password':'abcdef', })
+        s_token = json.loads(res.content)["token"]
+        res = self.client.get(u'/user/third_bind', {'username':'13345678920','token':s_token,'third_tag':'qq', 'third_uid':'12345611',})
+        self.assertEqual(res.status_code, 200)
+        self.assertJSONEqual(res.content, {'errmsg':'this account has been binded'})
+
+    def test_third_login_twice(self):
+        res = self.client.get(u'/user/third_login', {'third_tag':'qq', 'third_uid':'12345612','third_name':'abcdef1'})
+        self.assertEqual(res.status_code, 200)
+        s_username = json.loads(res.content)["username"]
+        s_third_token = json.loads(res.content)["third_token"]
+        mo_user = User.objects.get(name=s_username)
+        self.assertEqual(mo_user.third_token, s_third_token)
+
+        res = self.client.get(u'/user/third_login', {'third_tag':'qq', 'third_uid':'12345612','third_name':'abcdef1'})
+        self.assertEqual(res.status_code, 200)
+        s_username = json.loads(res.content)["username"]
+        s_third_token = json.loads(res.content)["third_token"]
+        mo_user = User.objects.get(name=s_username)
+        self.assertEqual(mo_user.third_token, s_third_token)
+
+    def test_third_login_multi(self):
+        res = self.client.get(u'/user/third_login', {'third_tag':'qq', 'third_uid':'12345613','third_name':'abcdef2'})
+        self.assertEqual(res.status_code, 200)
+        s_username = json.loads(res.content)["username"]
+        s_third_token = json.loads(res.content)["third_token"]
+        mo_user = User.objects.get(name=s_username)
+        self.assertEqual(mo_user.third_token, s_third_token)
+
+        res = self.client.get(u'/user/third_login', {'third_tag':'wb', 'third_uid':'12345613','third_name':'zyxwvu2'})
+        self.assertEqual(res.status_code, 200)
+        s_username = json.loads(res.content)["username"]
+        s_third_token = json.loads(res.content)["third_token"]
+        mo_user = User.objects.get(name=s_username)
+        self.assertEqual(mo_user.third_token, s_third_token)
+
+    def test_third_login_binded(self):
+        res = self.client.get(u'/user/register', {'phone':'13345678921', 'password':'abcdef', })
+        s_token = json.loads(res.content)["token"]
+        res = self.client.get(u'/user/third_bind', {'username':'13345678921','token':s_token,'third_tag':'qq', 'third_uid':'12345614',})
+        self.assertEqual(res.status_code, 200)
+        mo_user = User.objects.get(name='13345678921')
+        s_third_token = json.loads(res.content)["third_token"]
+        self.assertEqual(mo_user.third_token, s_third_token)
+
+        res = self.client.get(u'/user/third_login', {'third_tag':'qq', 'third_uid':'12345614','third_name':'abcdef3'})
+        self.assertEqual(res.status_code, 200)
+        self.assertJSONEqual(res.content, {'errmsg':'this account has been binded'})
 
