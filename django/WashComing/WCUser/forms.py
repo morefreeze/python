@@ -1,8 +1,10 @@
 from django import forms
+from django.core.validators import RegexValidator
 
 class UserRegisterForm(forms.Form):
     phone = forms.CharField(required = True,
-                             min_length=11,max_length=12)
+                             min_length=11,max_length=12,
+                            validators=[RegexValidator('^[0-9]+$')])
     password = forms.CharField(required = True,
                              max_length=255)
     invited_username = forms.CharField(required = False,
@@ -85,7 +87,15 @@ class UserThirdBindForm(forms.Form):
     token = forms.CharField(required = True,
                              max_length=255)
     third_uid = forms.CharField(required = True,
-                             max_length=31)
+                             max_length=63)
     third_tag = forms.CharField(required = True,
                              max_length=7)
+
+class UserThirdLoginForm(forms.Form):
+    third_uid = forms.CharField(required = True,
+                             max_length=63)
+    third_tag = forms.CharField(required = True,
+                             max_length=7)
+    third_name = forms.CharField(required = True,
+                                 min_length=2,max_length=63)
 

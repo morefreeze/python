@@ -15,7 +15,7 @@ class User(models.Model):
     name = models.CharField(unique=True,max_length=255)
     token = models.CharField(max_length=255)
 # qq$12345|wb$54321|
-    third_names = models.CharField(max_length=255,default='',blank=True)
+    third_uids = models.CharField(max_length=255,default='',blank=True)
     third_token = models.CharField(max_length=255,default='',blank=True)
     avatar = models.ImageField(default='', upload_to=get_avatar_filename,blank=True)
     phone = models.CharField(max_length=12,default='',blank=True)
@@ -60,7 +60,7 @@ class User(models.Model):
     def vali_passwd(cls, d_request):
         s_name = d_request.get('username')
         try:
-            mo_user = cls.objects.get(name=s_name)
+            mo_user = cls.objects.get(name=s_name, deleted=False)
             if not hasher.check_password(d_request.get('password'), mo_user.token):
                 raise ValidationError('password does not match username')
         except (cls.DoesNotExist, ValidationError) as e:
@@ -72,26 +72,34 @@ class User(models.Model):
         try:
             if None == is_active:
                 mo_user = cls.objects.filter(Q(name=name),
-                                             Q(token=token) | Q(third_token=token))[0]
+                                             Q(token=token) | Q(third_token=token),
+                                             Q(deleted=False))[0]
             else:
                 mo_user = cls.objects.filter(Q(name=name),
                                              Q(token=token) | Q(third_token=token),
-                                             is_active=is_active)[0]
+                                             Q(is_active=is_active),
+                                             Q(deleted=False))[0]
         except (cls.DoesNotExist, IndexError) as e:
             return None
         return mo_user
 
     @classmethod
-    def query_user(cls, name):
+    def query_user(cls, name, deleted=None):
         try:
-            mo_user = cls.objects.get(name=name)
+            if None == deleted:
+                mo_user = cls.objects.get(name=name)
+            else:
+                mo_user = cls.objects.get(name=name, deleted=False)
         except (cls.DoesNotExist) as e:
             return None
         return mo_user
 
     @staticmethod
     def gen_level(i_score):
-        return 42
+        for it_lv in USER_LEVEL:
+            if i_score >= it_lv['lower']:
+                return it_lv['name']
+        return NO_LEVEL
 
     def send_active(self, d_request):
         d_active = dict()
