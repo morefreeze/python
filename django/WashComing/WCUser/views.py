@@ -8,7 +8,8 @@ from WCUser.models import User, Feedback
 from WCUser.forms import UserRegisterForm, UserLoginForm, UserInfoForm, \
         UserUpdateForm, UserChangePasswordForm, UserResendActiveForm, UserActiveForm, \
         UserResendResetForm, UserResetPasswordForm, UserResetPasswordConfirmForm, \
-        UserFeedbackForm, UserUploadAvatarForm, UserThirdBindForm, UserThirdLoginForm
+        UserFeedbackForm, UserUploadAvatarForm, UserThirdBindForm, UserThirdLoginForm, \
+        UserBindEmailForm
 import datetime as dt
 
 # Create your views here.
@@ -264,6 +265,25 @@ def upload_avatar(request):
     mo_user.save()
     se_user = UserSerializer(mo_user)
     return JSONResponse({'avatar': se_user.data['avatar'], 'errno': 0})
+
+def bind_email(request):
+    if request.method != 'GET':
+        return JSONResponse({'errmsg':'method error'})
+    fo_user = UserBindEmailForm(request.GET)
+    if not fo_user.is_valid():
+        return JSONResponse({'errmsg':fo_user.errors})
+    d_data = fo_user.cleaned_data
+    s_name = d_data.get('username')
+    s_token = d_data.get('token')
+    mo_user = User.get_user(s_name, s_token)
+    if None == mo_user:
+        return JSONResponse({'errmsg':'username or password error'})
+    if '' != mo_user.email:
+        return JSONResponse({'errmsg':'user has binded email'})
+    mo_user.email = d_data.get('email')
+    mo_user.save()
+    se_user = UserSerializer(mo_user)
+    return JSONResponse({'errno': 0})
 
 def third_bind(request):
     if request.method != 'GET':

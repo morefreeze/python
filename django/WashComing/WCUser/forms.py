@@ -81,6 +81,14 @@ class UserUploadAvatarForm(forms.Form):
                              max_length=255)
     avatar = forms.ImageField(required = True)
 
+class UserBindEmailForm(forms.Form):
+    username = forms.CharField(required = True,
+                           min_length=2,max_length=255)
+    token = forms.CharField(required = True,
+                             max_length=255)
+    email = forms.EmailField(required = True,
+                            min_length=4, max_length=127)
+
 class UserThirdBindForm(forms.Form):
     username = forms.CharField(required = True,
                            min_length=2,max_length=255)

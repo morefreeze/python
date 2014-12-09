@@ -22,8 +22,6 @@ def handleAddFetchOrder(mo_queue):
         mo_rfd = mo_bill.lg
         if None == mo_rfd:
             mo_rfd = RFD.objects.create(get_order_no=s_order_no,
-                                        get_operate_time=None,
-                                        return_operate_time=None,
                                         status=RFD.TO_GET)
             mo_bill.lg = mo_rfd
             mo_bill.save()
@@ -84,6 +82,7 @@ if __name__ == '__main__':
         mo_queue.status = -i_ret_code
     else:
         mo_queue.status = OrderQueue.DONE
+        mo_queue.message = ''
     mo_queue.save()
     if OrderQueue.DONE != mo_queue.status:
         exit(i_ret_code)
