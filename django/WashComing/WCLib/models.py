@@ -36,12 +36,12 @@ NO_LEVEL = '暂无等级'
 
 PRO_BJ = '北京'
 Province_Choice = (
-    (PRO_BJ, ''),
+    (PRO_BJ, PRO_BJ),
 )
 
 CTY_BEIJING = '北京市'
 City_Choice = (
-    (CTY_BEIJING, ''),
+    (CTY_BEIJING, CTY_BEIJING),
 )
 
 ARE_BJ_XICHENG = '西城区'
@@ -63,23 +63,23 @@ ARE_BJ_HUAIROU = '怀柔区'
 ARE_BJ_SHUNYI = '顺义区'
 ARE_BJ_XUANWU = '宣武区'
 Area_Choice = (
-    (ARE_BJ_XICHENG,        ''),
-    (ARE_BJ_TONGZHOU,       ''),
-    (ARE_BJ_SHIJINGSHAN,    ''),
-    (ARE_BJ_YANQING,        ''),
-    (ARE_BJ_DONGCHENG,      ''),
-    (ARE_BJ_FENGTAI,        ''),
-    (ARE_BJ_FANGSHAN,       ''),
-    (ARE_BJ_HAIDIAN,        ''),
-    (ARE_BJ_CHAOYANG,       ''),
-    (ARE_BJ_MIYUN,          ''),
-    (ARE_BJ_PINGGU,         ''),
-    (ARE_BJ_MENTOUGOU,      ''),
-    (ARE_BJ_CHONGWEN,       ''),
-    (ARE_BJ_DAXING,         ''),
-    (ARE_BJ_CHANGPING,      ''),
-    (ARE_BJ_HUAIROU,        ''),
-    (ARE_BJ_SHUNYI,         ''),
-    (ARE_BJ_XUANWU,         ''),
+    (ARE_BJ_XICHENG,        ARE_BJ_XICHENG),
+    (ARE_BJ_TONGZHOU,       ARE_BJ_TONGZHOU),
+    (ARE_BJ_SHIJINGSHAN,    ARE_BJ_SHIJINGSHAN),
+    (ARE_BJ_YANQING,        ARE_BJ_YANQING),
+    (ARE_BJ_DONGCHENG,      ARE_BJ_DONGCHENG),
+    (ARE_BJ_FENGTAI,        ARE_BJ_FENGTAI),
+    (ARE_BJ_FANGSHAN,       ARE_BJ_FANGSHAN),
+    (ARE_BJ_HAIDIAN,        ARE_BJ_HAIDIAN),
+    (ARE_BJ_CHAOYANG,       ARE_BJ_CHAOYANG),
+    (ARE_BJ_MIYUN,          ARE_BJ_MIYUN),
+    (ARE_BJ_PINGGU,         ARE_BJ_PINGGU),
+    (ARE_BJ_MENTOUGOU,      ARE_BJ_MENTOUGOU),
+    (ARE_BJ_CHONGWEN,       ARE_BJ_CHONGWEN),
+    (ARE_BJ_DAXING,         ARE_BJ_DAXING),
+    (ARE_BJ_CHANGPING,      ARE_BJ_CHANGPING),
+    (ARE_BJ_HUAIROU,        ARE_BJ_HUAIROU),
+    (ARE_BJ_SHUNYI,         ARE_BJ_SHUNYI),
+    (ARE_BJ_XUANWU,         ARE_BJ_XUANWU),
 )
 

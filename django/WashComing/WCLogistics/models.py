@@ -173,6 +173,10 @@ class RFD(models.Model):
         s_dt_start = mo_bill.get_time_0.strftime(DATETIME_FORMAT_SHORT)
         s_dt_end = mo_bill.get_time_1.strftime(DATETIME_FORMAT_SHORT)
         s_remark += u" %s至%s取" %(s_dt_start, s_dt_end)
+# rfd remark len is 100
+        if len(s_remark.encode('utf-8')) > 100:
+            s_remark = u"订单品类过多，请联系客服获取详细信息 "
+            s_remark += u" %s至%s取" %(s_dt_start, s_dt_end)
         d_fetch_order = {
             "SendBy": mo_bill.real_name,
             "MobilePhone": mo_bill.phone,
