@@ -91,8 +91,6 @@ class Bill(models.Model):
                     i_num = it_cloth.get('number')
                     mo_cloth = Cloth.objects.get(cid=i_cid,is_leaf=True)
                     f_price = mo_cloth.price
-                    if 'inquiry' in mo_cloth.ext and mo_cloth.ext['inquiry']:
-                        self.ext['inquiry'] = True
                 except (AttributeError, Cloth.DoesNotExist) as e:
                     self.ext['error'] = "%s%s(it_cloth:%s,maybe category);" \
                         %(self.ext.get('error', ''), e.__str__(), it_cloth.__str__())
@@ -116,6 +114,25 @@ class Bill(models.Model):
             break # while True
         self.total = f_total
         return f_total
+
+    def is_inquiry(self):
+        js_cloth = self.clothes
+        if self.comment != '':
+            self.ext['inquiry'] = True
+            return True
+        for it_cloth in js_cloth:
+            try:
+                i_cid = it_cloth.get('cid')
+                mo_cloth = Cloth.objects.get(cid=i_cid,is_leaf=True)
+                if 'inquiry' in mo_cloth.ext and mo_cloth.ext['inquiry']:
+                    self.ext['inquiry'] = True
+                    return True
+            except (AttributeError, Cloth.DoesNotExist) as e:
+                self.ext['error'] = "%s%s(it_cloth:%s,maybe category);" \
+                    %(self.ext.get('error', ''), e.__str__(), it_cloth.__str__())
+                continue
+        return False
+
 
     @classmethod
     def get_bill(cls, own_id, bid):
