@@ -45,7 +45,6 @@ def submit(request):
     mo_bill.address = mo_adr.address
     mo_bill.real_name = mo_adr.real_name
     mo_bill.phone = mo_adr.phone
-    mo_bill.status = 0
     mo_bill.deleted = 0
     mo_bill.ext = {}
     mo_bill.clothes = mo_bill.format_cloth(d_data.get('clothes'))
@@ -57,11 +56,16 @@ def submit(request):
         return JSONResponse({'errmsg':'score error'})
     mo_bill.score = i_score
     mo_bill.calc_total()
+# if no inquiry cloth will confirm directly
+    if mo_bill.ext.get('inquiry'):
+        mo_bill.status = Bill.GETTING
+    else:
+        mo_bill.status = Bill.CONFIRMING
     s_errmsg = mo_bill.ext.get('error')
     mo_bill.save()
     if None != s_errmsg and '' != s_errmsg:
         mo_bill.deleted = True
-        mo_bill.status = -20
+        mo_bill.status = SCORE_ERROR
         mo_bill.save()
         return JSONResponse({'errmsg': 'some error happen, please contact admin'})
     mo_user.score -= i_score
@@ -156,7 +160,7 @@ def cancel(request):
     s_errmsg = mo_bill.ext.get('error')
     if None == s_errmsg or '' == s_errmsg and mo_bill.score > 0:
         mo_user.score += mo_bill.score
-    mo_bill.status = -10
+    mo_bill.status = Bill.USER_CANCEL
     mo_bill.save()
     return JSONResponse({'errno':0})
 

@@ -330,6 +330,12 @@ class RFD(models.Model):
             dt_operate_time = dt.datetime.strptime(d_st_info.get('OperateTime'),"%Y%m%d%H%M%S")
             mo_rfd.ext.append(d_st_info)
             mo_rfd.save()
+            try:
+                mo_bill = mo_rfd.bill_of
+            except Exception as e:
+                mo_rfd.ext['error'] = 'no bill bind this rfd order'
+                mo_rfd.save()
+                return {'Ret': 3, 'Message': e.__str__()}
             if i_type in [1, 2]:
                 if dt_operate_time < mo_rfd.get_operate_time:
                     return {'Ret':0, 'WaybillNo': s_waybill_no,
@@ -340,8 +346,10 @@ class RFD(models.Model):
                 if i_status in [cls.ASSIGNED_SITE, cls.IN_WAREHOUSE,
                                 cls.DELIVERY, cls.STAY, cls.OUT_WAREHOUSE]:
                     mo_rfd.status = cls.GETTING
+                    mo_bill.status = mo_bill.__class__.GETTING
                 if cls.SUCCESS == i_status:
                     mo_rfd.status = cls.GOT
+                    mo_bill.status = mo_bill.__class__.WASHING
             elif 3 == i_type:
                 if dt_operate_time < mo_rfd.return_operate_time:
                     return {'Ret':0, 'WaybillNo': s_waybill_no,
@@ -352,9 +360,12 @@ class RFD(models.Model):
                 if i_status in [cls.ASSIGNED_SITE, cls.IN_WAREHOUSE,
                                 cls.DELIVERY, cls.STAY, cls.OUT_WAREHOUSE]:
                     mo_rfd.status = cls.RETURNNING
+                    mo_bill.status = mo_bill.__class__.RETURNNING
                 if cls.SUCCESS == i_status:
                     mo_rfd.status = cls.CLIENT_SIGN
+                    mo_bill.status = mo_bill.__class__.DONE
             mo_rfd.save()
+            mo_bill.save()
         except (cls.DoesNotExist) as e:
             if i_type in [1, 2]:
                 mo_rfd.status = cls.GET_ABORT

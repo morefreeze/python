@@ -2,6 +2,7 @@ from django.db import IntegrityError
 from django.http import HttpResponseRedirect
 from django.core.urlresolvers import reverse
 from django.template import RequestContext
+from django.core.mail import send_mail
 from WCLib.views import *
 from WCUser.serializers import UserSerializer
 from WCUser.models import User, Feedback
@@ -192,8 +193,14 @@ def resend_reset(request):
     if None == mo_user:
         return JSONResponse({'errmsg':'reset failed'})
     s_html = mo_user.send_reset(request)
-    d_response = {'errno':0, 'html':s_html}
-    return JSONResponse(d_response)
+    try:
+        send_mail(subject='', message='', from_email='', recipient_list=[s_email], \
+                  fail_silently=False, html_message=s_html)
+    except Exception as e:
+        return HttpResponse('send mail failed, please contact admin')
+    return HttpResponse('Mail has been sent successfully')
+    #d_response = {'errno':0, 'html':s_html}
+    #return JSONResponse(d_response)
 
 def reset_password_confirm(request):
     if request.method != 'GET':
@@ -227,6 +234,7 @@ def reset_password_confirm(request):
         return render(request, 'reset/reset_password_confirm.html', {'validlink':1, 'form':fo_user})
     del mo_user.ext['reset_token']
     del mo_user.ext['reset_expire']
+    mo_user.token = User.gen_token(s_password)
     mo_user.save()
     return render(request, 'reset/reset_password_complete.html')
 
