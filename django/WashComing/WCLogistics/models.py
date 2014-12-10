@@ -170,6 +170,9 @@ class RFD(models.Model):
             return d_res
         for it_cloth in js_clothes:
             mo_cloth = Cloth.objects.get(cid=it_cloth['cid'])
+# inquiry don't send to rfd
+            if 'inquiry' in mo_cloth.ext and mo_cloth.ext['inquiry']:
+                continue
             s_remark += " %s %d" %(mo_cloth.get_name(), it_cloth['number'])
         s_dt_start = mo_bill.get_time_0.strftime(DATETIME_FORMAT_SHORT)
         s_dt_end = mo_bill.get_time_1.strftime(DATETIME_FORMAT_SHORT)

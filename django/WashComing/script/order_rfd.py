@@ -6,6 +6,7 @@ from WCLogistics.models import OrderQueue, RFD
 import json
 import traceback
 import datetime as dt
+import sys
 
 def handleAddFetchOrder(mo_queue):
     try:
@@ -65,10 +66,13 @@ def handleImportOrders(mo_queue):
 
 if __name__ == '__main__':
     trigger_time = dt.datetime.now()
-    mo_queue = OrderQueue.objects.all().filter(type__gt=0,status__lte=0,time__lt=trigger_time).order_by('time','qid')
-    if 0 == len(mo_queue):
-        exit(0)
-    mo_queue = mo_queue[0]
+    if len(sys.argv) > 1:
+        mo_queue = OrderQueue.objects.get(qid=sys.argv[1])
+    else:
+        mo_queue = OrderQueue.objects.all().filter(type__gt=0,status__lte=0,time__lt=trigger_time).order_by('time','qid')
+        if 0 == len(mo_queue):
+            exit(0)
+        mo_queue = mo_queue[0]
     print mo_queue.qid
     mo_queue.status = OrderQueue.DOING
     mo_queue.message = ''
