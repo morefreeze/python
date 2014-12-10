@@ -177,7 +177,7 @@ class RFD(models.Model):
 # rfd remark len is 100
         if len(s_remark.encode('utf-8')) > 100:
             s_remark = u"订单品类过多，请联系客服获取详细信息 "
-            s_remark += u" %s至%s取" %(s_dt_start, s_dt_end)
+            s_remark += u" %s至%s送" %(s_dt_start, s_dt_end)
         d_fetch_order = {
             "SendBy": mo_bill.real_name,
             "MobilePhone": mo_bill.phone,
