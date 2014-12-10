@@ -65,7 +65,7 @@ def handleImportOrders(mo_queue):
     return 0
 
 if __name__ == '__main__':
-    trigger_time = dt.datetime.now()
+    trigger_time = dt.datetime.now() + dt.timedelta(hours=8)
     if len(sys.argv) > 1:
         mo_queue = OrderQueue.objects.get(qid=sys.argv[1])
     else:

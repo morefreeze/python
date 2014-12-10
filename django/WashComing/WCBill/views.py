@@ -67,10 +67,10 @@ def submit(request):
     mo_user.score -= i_score
     mo_user.save()
     Cart.clean(mo_user)
-    dt_fetch_time = mo_bill.get_time_0 - dt.timedelta(hours=8)
+    dt_fetch_time = mo_bill.get_time_0
     OrderQueue.objects.create(bill=mo_bill, type=OrderQueue.AddFetchOrder,
                               status=OrderQueue.TODO, time=dt_fetch_time)
-    dt_import_time = mo_bill.return_time_0 - dt.timedelta(hours=8)
+    dt_import_time = mo_bill.return_time_0
     OrderQueue.objects.create(bill=mo_bill, type=OrderQueue.ImportOrders,
                               status=OrderQueue.TODO, time=dt_import_time)
     return JSONResponse({'errno':0, 'bid':mo_bill.bid,
