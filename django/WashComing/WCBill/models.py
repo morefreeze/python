@@ -10,6 +10,15 @@ import json
 # Create your models here.
 SCORE_RMB_RATE = 0.01
 class Bill(models.Model):
+    READY = 0
+    CONFIRMING = 10
+    GETTING = 20
+    WASHING = 30
+    RETURNNING = 40
+    DONE = 50
+    USER_CANCEL = -10
+    SCORE_ERROR = -20
+
     bid = models.AutoField(primary_key=True)
     create_time = models.DateTimeField(auto_now_add=True)
     get_time_0 = models.DateTimeField()
@@ -17,7 +26,7 @@ class Bill(models.Model):
     return_time_0 = models.DateTimeField()
     return_time_1 = models.DateTimeField()
     own = models.ForeignKey(User) # own_id in db
-    lg = models.ForeignKey(RFD,null=True) # lg_id in db
+    lg = models.OneToOneField(RFD,null=True, related_name='bill_of') # lg_id in db
     province = models.CharField(max_length=15,default='',choices=Province_Choice)
     city = models.CharField(max_length=63,default='',choices=City_Choice)
     area = models.CharField(max_length=15,default='',choices=Area_Choice)
@@ -82,6 +91,8 @@ class Bill(models.Model):
                     i_num = it_cloth.get('number')
                     mo_cloth = Cloth.objects.get(cid=i_cid,is_leaf=True)
                     f_price = mo_cloth.price
+                    if 'inquiry' in mo_cloth.ext and mo_cloth.ext['inquiry']:
+                        self.ext['inquiry'] = True
                 except (AttributeError, Cloth.DoesNotExist) as e:
                     self.ext['error'] = "%s%s(it_cloth:%s,maybe category);" \
                         %(self.ext.get('error', ''), e.__str__(), it_cloth.__str__())

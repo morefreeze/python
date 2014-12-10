@@ -3,6 +3,7 @@ from __future__ import absolute_import
 import base
 from django.db.models import Min
 from WCLogistics.models import OrderQueue, RFD
+from WCBill.models import Bill
 import json
 import traceback
 import datetime as dt
@@ -25,10 +26,11 @@ def handleAddFetchOrder(mo_queue):
             mo_rfd = RFD.objects.create(get_order_no=s_order_no,
                                         status=RFD.TO_GET)
             mo_bill.lg = mo_rfd
-            mo_bill.save()
         else:
             mo_rfd.get_order_no = s_order_no
             mo_rfd.status = RFD.TO_GET
+        mo_bill.status = Bill.GETTING
+        mo_bill.save()
         mo_rfd.save()
     except Exception as e:
         # todo: logging
