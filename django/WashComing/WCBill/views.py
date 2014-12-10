@@ -57,10 +57,10 @@ def submit(request):
     mo_bill.score = i_score
     mo_bill.calc_total()
 # if no inquiry cloth will confirm directly
-    if mo_bill.ext.get('inquiry'):
-        mo_bill.status = Bill.GETTING
-    else:
+    if mo_bill.is_inquiry():
         mo_bill.status = Bill.CONFIRMING
+    else:
+        mo_bill.status = Bill.GETTING
     s_errmsg = mo_bill.ext.get('error')
     mo_bill.save()
     if None != s_errmsg and '' != s_errmsg:
