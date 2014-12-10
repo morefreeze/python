@@ -75,6 +75,7 @@ class RFD(models.Model):
         s_url = "http://%s:%s/api/" %(s_url, s_port)
         s_return_start = mo_bill.return_time_0.strftime(DATETIME_FORMAT_SHORT)
         s_return_end = mo_bill.return_time_1.strftime(DATETIME_FORMAT_SHORT)
+        f_total = float(mo_bill.total)
         d_import_orders = {
             "company": s_company,
             "dt": dt.datetime.now().strftime("%Y%m%d%H%M%S"),
@@ -96,7 +97,7 @@ class RFD(models.Model):
             "user_area": mo_bill.area,
             "user_address": mo_bill.address,
             "user_phone": mo_bill.phone,
-            "comment": "%s至%s取" %(s_return_start, s_return_end),
+            "comment": "%s至%s取 应收%.2f元 上门POS机" %(s_return_start, s_return_end, f_total),
             "order_details": "",
         }
         js_cloth = mo_bill.clothes

@@ -92,6 +92,11 @@ class Bill(models.Model):
                 self.ext['error'] = "%s%s" %(self.ext.get('error', ''), \
                                              'score exceed total price')
             f_total = 0
+        if f_total < 49:
+            f_total += 10.0
+            mo_bill.ext['ship_free'] = False
+        else:
+            mo_bill.ext['ship_free'] = True
         return f_total
 
     @classmethod
