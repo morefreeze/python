@@ -49,16 +49,18 @@ def update(request):
     mo_adr = Address.get_adr(mo_user.uid, i_aid)
     if None == mo_adr:
         return JSONResponse({'errmsg':'address not exist'})
-    if '' != d_data.get('real_name'):
+    if None != d_data.get('real_name') and '' != d_data.get('real_name'):
         mo_adr.real_name = d_data.get('real_name')
-    if '' != d_data.get('province'):
+    if None != d_data.get('province') and '' != d_data.get('province'):
         mo_adr.province = d_data.get('province')
-    if '' != d_data.get('city'):
+    if None != d_data.get('city') and '' != d_data.get('city'):
         mo_adr.city = d_data.get('city')
-    if '' != d_data.get('area'):
+    if None != d_data.get('area') and '' != d_data.get('area'):
         mo_adr.area = d_data.get('area')
-    if '' != d_data.get('address'):
+    if None != d_data.get('address') and '' != d_data.get('address'):
         mo_adr.address = d_data.get('address')
+    if None != d_data.get('phone') and '' != d_data.get('phone'):
+        mo_adr.phone = d_data.get('phone')
     mo_adr.save()
     return JSONResponse({'errno':0})
 

@@ -33,6 +33,8 @@ class AddressUpdateForm(forms.Form):
                              min_length=2,max_length=15)
     address = forms.CharField(required = False,
                              min_length=3,max_length=255)
+    phone = forms.CharField(required = False,
+                             min_length=7,max_length=12)
 
 class AddressDeleteForm(forms.Form):
     username = forms.CharField(required = True,

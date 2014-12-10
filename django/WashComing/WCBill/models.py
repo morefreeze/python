@@ -94,9 +94,9 @@ class Bill(models.Model):
             f_total = 0
         if f_total < 49:
             f_total += 10.0
-            mo_bill.ext['ship_free'] = False
+            self.ext['ship_free'] = False
         else:
-            mo_bill.ext['ship_free'] = True
+            self.ext['ship_free'] = True
         return f_total
 
     @classmethod
