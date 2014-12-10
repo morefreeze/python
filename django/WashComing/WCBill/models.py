@@ -47,6 +47,8 @@ class Bill(models.Model):
     # format_cloth DOES NOT save
     # and DOES NOT modify clothes value
     def format_cloth(self, s_cloth=None):
+        if None == self.ext:
+            self.ext = dict()
         try:
             if None != s_cloth and '' != s_cloth:
                 self.clothes = json.loads(s_cloth)
@@ -69,34 +71,39 @@ class Bill(models.Model):
         f_total = 0.0
         js_cloth = self.clothes
         if None == self.ext:
-            self.ext = dict()
-        for it_cloth in js_cloth:
-            try:
-                i_cid = it_cloth.get('cid')
-                i_num = it_cloth.get('number')
-                mo_cloth = Cloth.objects.get(cid=i_cid,is_leaf=True)
-                f_price = mo_cloth.price
-            except (AttributeError, Cloth.DoesNotExist) as e:
-                self.ext['error'] = "%s%s(it_cloth:%s,maybe category);" \
-                    %(self.ext.get('error', ''), e.__str__(), it_cloth.__str__())
-                continue
-            if i_num * f_price < 0:
-                self.ext['error'] = "%s%s(it_cloth:%s);" \
-                    %(self.ext.get('error', ''), 'num*price<0', it_cloth.__str__())
+            self.ext = {}
+        while True:
+            if 0 == len(js_cloth):
+                self.ext['error'] = "%s%s;" %(self.ext.get('error', ''), 'clothes is empty')
+                break
+            for it_cloth in js_cloth:
+                try:
+                    i_cid = it_cloth.get('cid')
+                    i_num = it_cloth.get('number')
+                    mo_cloth = Cloth.objects.get(cid=i_cid,is_leaf=True)
+                    f_price = mo_cloth.price
+                except (AttributeError, Cloth.DoesNotExist) as e:
+                    self.ext['error'] = "%s%s(it_cloth:%s,maybe category);" \
+                        %(self.ext.get('error', ''), e.__str__(), it_cloth.__str__())
+                    continue
+                if i_num * f_price < 0:
+                    self.ext['error'] = "%s%s(it_cloth:%s);" \
+                        %(self.ext.get('error', ''), 'num*price<0', it_cloth.__str__())
+                else:
+                    f_total += i_num * f_price
+            if self.score >= 0:
+                if f_total - self.score * SCORE_RMB_RATE < 0:
+                    self.ext['error'] = "%s%s" %(self.ext.get('error', ''), \
+                                                 'score exceed total price')
+                else:
+                    f_total -= self.score * SCORE_RMB_RATE
+            if f_total < 49:
+                f_total += 10.0
+                self.ext['shipping_free'] = False
             else:
-                f_total += i_num * f_price
+                self.ext['shipping_free'] = True
+            break # while True
         self.total = f_total
-        if self.score >= 0:
-            self.total -= self.score * SCORE_RMB_RATE
-            if self.total < 0:
-                self.ext['error'] = "%s%s" %(self.ext.get('error', ''), \
-                                             'score exceed total price')
-            f_total = 0
-        if f_total < 49:
-            f_total += 10.0
-            self.ext['ship_free'] = False
-        else:
-            self.ext['ship_free'] = True
         return f_total
 
     @classmethod
@@ -161,6 +168,8 @@ class Cart(models.Model):
     # format_cloth DOES NOT save
     # and DOES NOT modify clothes value
     def format_cloth(self, s_cloth=None):
+        if None == self.ext:
+            self.ext = dict()
         try:
             if None != s_cloth and '' != s_cloth:
                 self.clothes = json.loads(s_cloth)

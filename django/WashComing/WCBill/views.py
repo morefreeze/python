@@ -47,7 +47,7 @@ def submit(request):
     mo_bill.phone = mo_adr.phone
     mo_bill.status = 0
     mo_bill.deleted = 0
-    mo_bill.ext = None
+    mo_bill.ext = {}
     mo_bill.clothes = mo_bill.format_cloth(d_data.get('clothes'))
     mo_bill.comment = d_data.get('comment')
     i_score = d_data.get('score', 0)
