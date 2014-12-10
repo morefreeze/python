@@ -1,5 +1,6 @@
 #coding=utf-8
 from django.db import models
+from django.conf import settings
 from jsonfield import JSONField
 import hashlib
 import uuid
@@ -22,6 +23,10 @@ def get_android_apk(instance, filename):
     if None == s_ext or '' == s_ext:
         s_ext = '.apk'
     return os.path.join('android/%s_%d' %(uuid.uuid4().__str__(), instance.ver_code))+s_ext
+
+def get_android_latest_apk():
+    s_ext = '.apk'
+    return os.path.join(settings.MEDIA_ROOT, 'android/xilaile')+s_ext
 
 #Create your models here.
 # score higher first

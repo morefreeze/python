@@ -1,5 +1,4 @@
 from django.shortcuts import render
-from django.db.models import Max
 from WCLib.views import *
 from WCApp.models import Android
 from WCApp.forms import AppGetNewestAndroidForm
@@ -14,11 +13,17 @@ def get_newest_android(request):
     if not fo_app.is_valid():
         return JSONResponse({'errmsg':fo_app.errors})
     d_data = fo_app.cleaned_data
-    i_ver_code = Android.objects.all().aggregate(Max('ver_code'))['ver_code__max']
-    if None == i_ver_code:
-        return JSONResponse({'errmsg':'db does not exist any version info'})
-    mo_android = Android.objects.get(ver_code=i_ver_code)
+    mo_android = Android.get_newest_version()
+    if None == mo_android:
+        JSONResponse({'errmsg':'db does not exist any version info'})
     se_android = AndroidSerializer(mo_android)
     d_response = se_android.data
     return JSONResponse(d_response)
 
+def download(request):
+    s_ios = ['iphone', 'ios']
+    if any(s for s in s_ios if s in request.META['HTTP_USER_AGENT'].lower()):
+        return HttpResponse('IOS is coming!')
+    if 'Android' in request.META['HTTP_USER_AGENT']:
+        return HttpResponseRedirect('/media/android/xilaile.apk')
+    return render_to_response('app/download.html')
