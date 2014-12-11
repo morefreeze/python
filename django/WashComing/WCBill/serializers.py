@@ -14,6 +14,9 @@ class BillSerializer(serializers.ModelSerializer):
     def transform_address(self, obj, value):
         return obj.get_full_address()
 
+    def transform_status(self, obj, value):
+        return int(value * 0.1) * 10
+
 class FeedbackSerializer(serializers.ModelSerializer):
     class Meta:
         model = Feedback

@@ -5,17 +5,77 @@ from jsonfield import JSONField
 from WCUser.models import User, Shop
 from WCLogistics.models import RFD, Address
 from WCCloth.models import Cloth
+from WCCloth.serializers import ClothSerializer
 import json
 
 # Create your models here.
+class Mass_Clothes(models.Model):
+    class Meta:
+        abstract = True
+
+    clothes = JSONField(default=[])
+    ext = JSONField(default={})
+    def add_error(self, s_errmsg):
+        if None == self.ext:
+            self.ext = {}
+        if None == self.ext['error']:
+            self.ext['error'] = []
+        self.ext['error'].append(s_errmsg)
+
+    # format_cloth DOES NOT save
+    # but modify clothes value
+    def format_cloth(self, s_cloth=None):
+        if None == self.ext:
+            self.ext = {}
+        try:
+            if None != s_cloth and '' != s_cloth:
+                a_clothes = json.loads(s_cloth)
+            a_new_clothes = []
+            for it_cloth in a_clothes:
+                if 'cid' not in it_cloth:
+                    raise ValueError('cid not in cloth')
+                if 'number' not in it_cloth:
+                    raise ValueError('number not in cloth')
+                mo_cloth = Cloth.objects.get(cid=it_cloth['cid'])
+                if not mo_cloth.is_leaf:
+                    raise Cloth.DoesNotExist('cloth[%d] is leaf %d' % mo_cloth.cid)
+                js_cloth = {}
+                se_cloth = ClothSerializer(mo_cloth)
+                js_cloth['cid'] = se_cloth.data['cid']
+                js_cloth['number'] = it_cloth['number']
+                js_cloth['name'] = se_cloth.data['name']
+                js_cloth['price'] = se_cloth.data['price']
+                js_cloth['image'] = se_cloth.data['image']
+                a_new_clothes.append(js_cloth)
+            self.clothes = a_new_clothes
+        except (ValueError,Cloth.DoesNotExist) as e:
+            self.ext['error'] = "%s%s;" \
+                %(self.ext.get('error', ''), e.__str__())
+            return []
+        return self.clothes
+
+# JSONField has bug, if parent has JSONField will be escaped after update
+# so decode it expect insert
+    def save(self, *args, **kwargs):
+        if self.pk is not None:
+            self.clothes = json.loads(self.clothes)
+            self.ext = json.loads(self.ext)
+        else:
+            self.clothes = self.clothes
+            self.ext = self.ext
+# don't write self.__class__ in abstract, it will be derive class
+        super(Mass_Clothes, self).save(*args, **kwargs)
+
 SCORE_RMB_RATE = 0.01
-class Bill(models.Model):
+class Bill(Mass_Clothes):
     READY = 0
     CONFIRMING = 10
-    GETTING = 20
+    WAITTING_GET = 20
+    GETTING = 25
     WASHING = 30
     RETURNNING = 40
-    DONE = 50
+    NEED_FEEDBACK = 50
+    DONE = 60
     USER_CANCEL = -10
     SCORE_ERROR = -20
 
@@ -39,9 +99,7 @@ class Bill(models.Model):
     score = models.PositiveIntegerField(default=0)
     total = models.FloatField(default=0.0)
     paid = models.FloatField(default=0.0)
-    clothes = JSONField(default=[])
     comment = models.CharField(max_length=1023, default='', blank=True)
-    ext = JSONField(default={})
 
     def __unicode__(self):
         return "%d" %(self.bid)
@@ -52,28 +110,6 @@ class Bill(models.Model):
         else:
             s_separator = ' '
         return self.province + self.city + self.area + s_separator + self.address
-
-    # format_cloth DOES NOT save
-    # and DOES NOT modify clothes value
-    def format_cloth(self, s_cloth=None):
-        if None == self.ext:
-            self.ext = dict()
-        try:
-            if None != s_cloth and '' != s_cloth:
-                self.clothes = json.loads(s_cloth)
-            for it_cloth in self.clothes:
-                if 'cid' not in it_cloth:
-                    raise ValueError('cid not in cloth')
-                if 'number' not in it_cloth:
-                    raise ValueError('number not in cloth')
-                mo_cloth = Cloth.objects.get(cid=it_cloth['cid'])
-                if not mo_cloth.is_leaf:
-                    raise Cloth.DoesNotExist('cloth[%d] is leaf' % mo_cloth.cid)
-        except (ValueError,Cloth.DoesNotExist) as e:
-            self.ext['error'] = "%s%s;" \
-                %(self.ext.get('error', ''), e.__str__())
-            return []
-        return self.clothes
 
 # update total field
     def calc_total(self):
@@ -175,12 +211,10 @@ class Feedback(models.Model):
     rate = models.IntegerField(default=5)
     content = models.CharField(max_length=1023)
 
-class Cart(models.Model):
+class Cart(Mass_Clothes):
     caid = models.AutoField(primary_key=True)
     own = models.ForeignKey(User, unique=True)
     update_time = models.DateTimeField(auto_now=True)
-    clothes = JSONField(default=[])
-    ext = JSONField(default={})
 
     @classmethod
 # return caid
@@ -192,26 +226,4 @@ class Cart(models.Model):
         mo_cart.clothes = []
         mo_cart.save()
         return mo_cart.caid
-
-    # format_cloth DOES NOT save
-    # and DOES NOT modify clothes value
-    def format_cloth(self, s_cloth=None):
-        if None == self.ext:
-            self.ext = dict()
-        try:
-            if None != s_cloth and '' != s_cloth:
-                self.clothes = json.loads(s_cloth)
-            for it_cloth in self.clothes:
-                if 'cid' not in it_cloth:
-                    raise ValueError('cid not in cloth')
-                if 'number' not in it_cloth:
-                    raise ValueError('number not in cloth')
-                mo_cloth = Cloth.objects.get(cid=it_cloth['cid'])
-                if not mo_cloth.is_leaf:
-                    raise Cloth.DoesNotExist('cloth[%d] is leaf %d' % mo_cloth.cid)
-        except (ValueError,Cloth.DoesNotExist) as e:
-            self.ext['error'] = "%s%s;" \
-                %(self.ext.get('error', ''), e.__str__())
-            return []
-        return self.clothes
 

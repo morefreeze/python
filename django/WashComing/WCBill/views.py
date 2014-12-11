@@ -8,6 +8,7 @@ from WCBill.forms import BillSubmitForm, BillListForm, BillInfoForm, BillCancelF
         BillFeedbackForm, BillGetFeedbackForm
 from WCBill.forms import CartSubmitForm, CartListForm
 from WCUser.models import User
+from WCBill.models import Bill
 from WCLogistics.models import Address, OrderQueue
 import json
 import datetime as dt
@@ -32,8 +33,15 @@ def submit(request):
     mo_bill.create_time = None
     mo_bill.get_time_0 = d_data.get('get_time_0')
     mo_bill.get_time_1 = d_data.get('get_time_1')
+    dt_now = dt.datetime.now()
+    if mo_bill.get_time_1 <= mo_bill.get_time_0 or mo_bill.get_time_0 <= dt_now:
+        return JSONResponse({'errmsg':'get_time error'})
     mo_bill.return_time_0 = d_data.get('return_time_0')
     mo_bill.return_time_1 = d_data.get('return_time_1')
+    if mo_bill.return_time_1 <= mo_bill.return_time_0:
+        return JSONResponse({'errmsg':'return_time error'})
+    if mo_bill.return_time_0 <= mo_bill.get_time_1:
+        return JSONResponse({'errmsg':'return_time error'})
     mo_bill.own = mo_user
     mo_bill.lg = None
     mo_adr = Address.get_adr(mo_user.uid, d_data.get('aid'))
@@ -60,7 +68,7 @@ def submit(request):
     if mo_bill.is_inquiry():
         mo_bill.status = Bill.CONFIRMING
     else:
-        mo_bill.status = Bill.GETTING
+        mo_bill.status = Bill.WAITTING_GET
     s_errmsg = mo_bill.ext.get('error')
     mo_bill.save()
     if None != s_errmsg and '' != s_errmsg:
@@ -110,8 +118,8 @@ def list(request):
         paginator = Paginator(a_bills, i_rn)
         p_bills = paginator.page(i_pn)
     except EmptyPage:
-        p_bills = list()
-    d_response = dict()
+        p_bills = []
+    d_response = {}
     d_response['errno'] = 0
     d_response['data'] = []
     for mo_bill in p_bills.object_list:
@@ -157,11 +165,17 @@ def cancel(request):
     mo_bill = Bill.get_bill(mo_user.uid, d_data.get('bid'))
     if None == mo_bill:
         return JSONResponse({'errmsg':'bill not exist'})
+    if mo_bill.status >= Bill.GETTING:
+        return JSONResponse({'errmsg':'bill status should not cancel'})
     s_errmsg = mo_bill.ext.get('error')
     if None == s_errmsg or '' == s_errmsg and mo_bill.score > 0:
         mo_user.score += mo_bill.score
     mo_bill.status = Bill.USER_CANCEL
     mo_bill.save()
+    a_orderqueue = OrderQueue.objects.filter(bill=mo_bill)
+    for it_orderqueue in a_orderqueue:
+        it_orderqueue.status = OrderQueue.NO_DO_BUT_DONE
+        it_orderqueue.save()
     return JSONResponse({'errno':0})
 
 def feedback(request):
@@ -179,11 +193,18 @@ def feedback(request):
     mo_bill = Bill.get_bill(mo_user.uid, d_data.get('bid'))
     if None == mo_bill:
         return JSONResponse({'errmsg':'bill not exist'})
+    if Bill.NEED_FEEDBACK != mo_bill.status:
+        return JSONResponse({'errmsg':'bill do not need feedback'})
     i_rate = d_data.get('rate')
     s_content = d_data.get('content')
     if None == s_content:
         s_content = ''
-    mo_fb, created = Feedback.objects.get_or_create(bill=mo_bill, create_time=None, rate=i_rate, content=s_content)
+    mo_fb, created = Feedback.objects.get_or_create(bill=mo_bill)
+    mo_fb.rate = i_rate
+    mo_fb.content = s_content
+    mo_fb.save()
+    mo_bill.status = Bill.DONE
+    mo_bill.save()
     return JSONResponse({'fid':mo_fb.fid, 'errno':0})
 
 def get_feedback(request):
@@ -237,7 +258,7 @@ def list_cart(request):
     if None == mo_user:
         return JSONResponse({'errmsg':'username or password or permission error'})
     mo_cart, created = Cart.objects.get_or_create(own=mo_user)
-    d_response = dict()
+    d_response = {}
     d_response['errno'] = 0
     d_response['clothes'] = mo_cart.clothes
     return JSONResponse(d_response)
