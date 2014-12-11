@@ -363,7 +363,7 @@ class RFD(models.Model):
                     mo_bill.status = mo_bill.__class__.RETURNNING
                 if cls.SUCCESS == i_status:
                     mo_rfd.status = cls.CLIENT_SIGN
-                    mo_bill.status = mo_bill.__class__.DONE
+                    mo_bill.status = mo_bill.__class__.NEED_FEEDBACK
             mo_rfd.save()
             mo_bill.save()
         except (cls.DoesNotExist) as e:
@@ -419,12 +419,14 @@ class OrderQueue(models.Model):
     ERROR = -1
     TODO = 0
     DOING = 10
+    NO_DO_BUT_DONE = 90 # bill may be cancel
     DONE = 100
     Status_Choice = (
         (-1, 'error'),
         (0, 'todo'),
         (10, 'doing'),
 # add some other here
+        (90, 'no_do_but_done'),
         (100, 'done'),
     )
     Nothing = 0
