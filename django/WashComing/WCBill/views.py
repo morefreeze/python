@@ -73,12 +73,12 @@ def submit(request):
     mo_bill.save()
     if None != s_errmsg and '' != s_errmsg:
         mo_bill.deleted = True
-        mo_bill.status = SCORE_ERROR
+        mo_bill.status = Bill.ERROR
         mo_bill.save()
         return JSONResponse({'errmsg': 'some error happen, please contact admin'})
     mo_user.score -= i_score
     mo_user.save()
-    Cart.clean(mo_user)
+    Cart.remove_bill_clothes(mo_user, mo_bill)
     dt_fetch_time = mo_bill.get_time_0
     OrderQueue.objects.create(bill=mo_bill, type=OrderQueue.AddFetchOrder,
                               status=OrderQueue.TODO, time=dt_fetch_time)
@@ -205,6 +205,9 @@ def feedback(request):
     mo_fb.save()
     mo_bill.status = Bill.DONE
     mo_bill.save()
+    if mo_bill.total > 0:
+        mo_user.score += int(mo_bill.total)
+        mo_user.save()
     return JSONResponse({'fid':mo_fb.fid, 'errno':0})
 
 def get_feedback(request):
