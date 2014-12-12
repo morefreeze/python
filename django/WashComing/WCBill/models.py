@@ -18,7 +18,7 @@ class Mass_Clothes(models.Model):
     def add_error(self, s_errmsg):
         if None == self.ext:
             self.ext = {}
-        if None == self.ext['error']:
+        if None == self.ext.get('error'):
             self.ext['error'] = []
         self.ext['error'].append(s_errmsg)
 
@@ -49,22 +49,30 @@ class Mass_Clothes(models.Model):
                 a_new_clothes.append(js_cloth)
             self.clothes = a_new_clothes
         except (ValueError,Cloth.DoesNotExist) as e:
-            self.ext['error'] = "%s%s;" \
-                %(self.ext.get('error', ''), e.__str__())
+            self.add_error(e.__str__())
             return []
         return self.clothes
 
+"""
 # JSONField has bug, if parent has JSONField will be escaped after update
 # so decode it expect insert
     def save(self, *args, **kwargs):
         if self.pk is not None:
-            self.clothes = json.loads(self.clothes)
-            self.ext = json.loads(self.ext)
+            try:
+                self.clothes = json.loads(self.clothes)
+            except Exception as e:
+                self.clothes = self.clothes
+            try:
+                self.ext = json.loads(self.ext)
+            except Exception as e:
+                self.ext = self.ext
         else:
             self.clothes = self.clothes
             self.ext = self.ext
+
 # don't write self.__class__ in abstract, it will be derive class
         super(Mass_Clothes, self).save(*args, **kwargs)
+        """
 
 SCORE_RMB_RATE = 0.01
 class Bill(Mass_Clothes):
@@ -77,7 +85,7 @@ class Bill(Mass_Clothes):
     NEED_FEEDBACK = 50
     DONE = 60
     USER_CANCEL = -10
-    SCORE_ERROR = -20
+    ERROR = -20
 
     bid = models.AutoField(primary_key=True)
     create_time = models.DateTimeField(auto_now_add=True)
@@ -119,7 +127,7 @@ class Bill(Mass_Clothes):
             self.ext = {}
         while True:
             if 0 == len(js_cloth):
-                self.ext['error'] = "%s%s;" %(self.ext.get('error', ''), 'clothes is empty')
+                self.add_error('clothes is empty')
                 break
             for it_cloth in js_cloth:
                 try:
@@ -128,18 +136,17 @@ class Bill(Mass_Clothes):
                     mo_cloth = Cloth.objects.get(cid=i_cid,is_leaf=True)
                     f_price = mo_cloth.price
                 except (AttributeError, Cloth.DoesNotExist) as e:
-                    self.ext['error'] = "%s%s(it_cloth:%s,maybe category);" \
-                        %(self.ext.get('error', ''), e.__str__(), it_cloth.__str__())
+                    self.add_error("%s(it_cloth:%s,maybe category)" \
+                        %(e.__str__(), it_cloth.__str__()))
                     continue
                 if i_num * f_price < 0:
-                    self.ext['error'] = "%s%s(it_cloth:%s);" \
-                        %(self.ext.get('error', ''), 'num*price<0', it_cloth.__str__())
+                    self.add_error("%s(it_cloth:%s)" \
+                        %('num*price<0', it_cloth.__str__()))
                 else:
                     f_total += i_num * f_price
             if self.score >= 0:
                 if f_total - self.score * SCORE_RMB_RATE < 0:
-                    self.ext['error'] = "%s%s" %(self.ext.get('error', ''), \
-                                                 'score exceed total price')
+                    self.add_error('score exceed total price')
                 else:
                     f_total -= self.score * SCORE_RMB_RATE
             if f_total < 49:
@@ -168,7 +175,6 @@ class Bill(Mass_Clothes):
                     %(self.ext.get('error', ''), e.__str__(), it_cloth.__str__())
                 continue
         return False
-
 
     @classmethod
     def get_bill(cls, own_id, bid):
@@ -218,12 +224,23 @@ class Cart(Mass_Clothes):
 
     @classmethod
 # return caid
-    def clean(cls, own):
+    def remove_bill_clothes(cls, own, mo_bill):
         try:
             mo_cart = cls.objects.get(own=own)
         except (cls.DoesNotExist):
             return -1
-        mo_cart.clothes = []
+        d_del_cloth = {}
+        for it_cloth in mo_bill.clothes:
+            if 'cid' in it_cloth:
+                d_del_cloth[ it_cloth['cid'] ] = 1
+        mo_cart.ext = d_del_cloth
+        a_new_clothes = []
+        mo_cart.ext['e'] = []
+        for it_cloth in mo_cart.clothes:
+            mo_cart.ext['e'].append(it_cloth)
+            if 'cid' in it_cloth and it_cloth['cid'] not in d_del_cloth:
+                a_new_clothes.append(it_cloth)
+        mo_cart.clothes = a_new_clothes
         mo_cart.save()
         return mo_cart.caid
 
