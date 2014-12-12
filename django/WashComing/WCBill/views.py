@@ -206,6 +206,7 @@ def feedback(request):
     mo_bill.status = Bill.DONE
     mo_bill.save()
     if mo_bill.total > 0:
+        mo_user.exp += int(mo_bill.total)
         mo_user.score += int(mo_bill.total)
         mo_user.save()
     return JSONResponse({'fid':mo_fb.fid, 'errno':0})
