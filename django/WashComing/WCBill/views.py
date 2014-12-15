@@ -40,7 +40,7 @@ def submit(request):
     mo_bill.return_time_1 = d_data.get('return_time_1')
     if mo_bill.return_time_1 <= mo_bill.return_time_0:
         return JSONResponse({'errmsg':'return_time error'})
-    if mo_bill.return_time_0 <= mo_bill.get_time_1:
+    if mo_bill.return_time_0 < mo_bill.get_time_0+dt.timedelta(days=4):
         return JSONResponse({'errmsg':'return_time error'})
     mo_bill.own = mo_user
     mo_bill.lg = None
