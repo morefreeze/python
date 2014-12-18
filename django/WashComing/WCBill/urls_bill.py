@@ -1,6 +1,5 @@
 from django.conf.urls import patterns, url
-from WCBill.views import submit, list, info, cancel, feedback, get_feedback, \
-        submit_cart, list_cart
+from WCBill.views import submit, list, info, cancel, feedback, get_feedback
 
 urlpatterns = patterns(
     '',

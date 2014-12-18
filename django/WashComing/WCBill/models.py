@@ -198,17 +198,39 @@ class Coupon(models.Model):
 # exp threshold user's exp must greater than this
     exp_thd = models.IntegerField(default=0)
 # cloth threshold this can be first category, bill must contain at least one
-# cloth which cid equal cid_thd
+# cloth which cid equal cid_thd, null represent all clothes
     cid_thd = models.ForeignKey(Cloth, blank=True, null=True)
 # price threshold total price greater than this
     price_thd = models.FloatField(default=0)
-# percent discount [0,100] like 10% off
+# percent discount [0,100] like 10% off, percent discount will be calc before price
     percent_dst = models.IntegerField(default=0)
 # price discount minus price directly
     price_dst = models.FloatField(default=0)
+# max use limit each user, 0 for no limit
+    max_limit = models.IntegerField(default=0)
 
     def __unicode__(self):
         return self.name
+
+class MyCoupon(models.Model):
+    mcid = models.AutoField(primary_key=True)
+    own = models.ForeignKey('WCUser.User', db_index=True)
+    used = models.BooleanField(default=False)
+    start_time = models.DateTimeField(default=dt.datetime(2000,1,1))
+    expire_time = models.DateTimeField(default=dt.datetime(2000,1,1))
+    cid_thd = models.ForeignKey(Cloth, blank=True, null=True)
+    price_thd = models.FloatField(default=0)
+    percent_dst = models.IntegerField(default=0)
+    price_dst = models.FloatField(default=0)
+    ext = JSONField(default={})
+
+    def __unicode__(self):
+        if None == self.cid_thd:
+            return "%s([%.0f,%s] -%.0f -%d%%)" %(self.own.name, self.price_thd, \
+                        'ALL', self.price_dst, self.percent_dst)
+
+        return "%s([%.0f,%s] -%.0f -%d%%)" % (self.own.name, self.price_thd, \
+                        self.cid_thd.name, self.price_dst, self.percent_dst)
 
 class Feedback(models.Model):
     fid = models.AutoField(primary_key=True)
