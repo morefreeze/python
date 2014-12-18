@@ -17,6 +17,7 @@ class Cloth(models.Model):
     fa_cid = models.IntegerField(default=0)
     name = models.CharField(max_length=32)
     image = models.ImageField(default='',blank=True,upload_to=get_cloth_filename)
+    image_hiden = models.ImageField(default='',blank=True,upload_to=get_cloth_filename)
     detail = models.CharField(max_length=255,default='',blank=True)
     price = models.FloatField(default=0.)
 # show weight, bigger show first
@@ -77,9 +78,12 @@ class Cloth(models.Model):
 
     def get_name(self):
         if self.fa_cid > 0:
-            mo_fa_cloth = self.__class__.objects.get(cid=self.fa_cid)
+            try:
+                mo_fa_cloth = self.__class__.objects.get(cid=self.fa_cid)
 # self is third category cloth
-            if mo_fa_cloth.fa_cid > 0:
-                return "%s_%s" % (mo_fa_cloth.name, self.name)
+                if mo_fa_cloth.fa_cid > 0:
+                    return "%s_%s" % (mo_fa_cloth.name, self.name)
+            except Exception as e:
+                return "NULL_%s" % (self.name)
         return "%s" % (self.name)
 

@@ -5,6 +5,7 @@ from jsonfield import JSONField
 import hashlib
 import uuid
 import os
+import datetime as dt
 
 def get_cloth_filename(instance, filename):
     s_ext = os.path.splitext(filename)[1] # include dot, e.g.: ".png"

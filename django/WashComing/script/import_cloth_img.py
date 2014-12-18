@@ -1,8 +1,6 @@
+import base
 import os
 import django
-
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "WashComing.settings")
-django.setup()
 
 import os, uuid, hashlib
 from WCCloth.models import Cloth

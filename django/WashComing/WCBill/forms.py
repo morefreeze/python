@@ -13,9 +13,11 @@ class BillSubmitForm(forms.Form):
     return_time_0 = forms.DateTimeField(required = True)
     return_time_1 = forms.DateTimeField(required = True)
     aid = forms.IntegerField(required = True)
+    payment = forms.CharField(required = True)
     comment = forms.CharField(required = False,
                               max_length=255)
     score = forms.IntegerField(required = False)
+    mcid = forms.IntegerField(required = False)
 
 class BillListForm(forms.Form):
     username = forms.CharField(required = True,
@@ -76,3 +78,11 @@ class CartListForm(forms.Form):
                            min_length=2,max_length=255)
     token = forms.CharField(required = True,
                              max_length=255)
+
+class MyCouponListForm(forms.Form):
+    username = forms.CharField(required = True,
+                           min_length=2,max_length=255)
+    token = forms.CharField(required = True,
+                             max_length=255)
+    type = forms.IntegerField(required = True)
+

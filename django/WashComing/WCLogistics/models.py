@@ -54,7 +54,6 @@ class RFD(models.Model):
     conf_dir = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
     config = ConfigParser.ConfigParser()
 
-
     @classmethod
     # return rfd response convert dict
     def ImportOrders(cls, mo_bill):

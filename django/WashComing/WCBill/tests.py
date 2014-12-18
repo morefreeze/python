@@ -279,5 +279,5 @@ class CartTest(BillBaseTest):
         self.assertJSONEqual(res.content, {'caid':i_caid, 'errno':0})
 # list cart
         res = self.client.get(u'/cart/list', {'username':self.username, 'token':self.token,})
-        self.assertJSONEqual(res.content, {'clothes':json.loads(self.clothes), 'errno':0})
+        self.assertJSONEqual(res.content, {'data':json.loads(self.clothes), 'clothes':json.loads(self.clothes), 'errno':0})
 
