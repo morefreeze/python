@@ -2,6 +2,9 @@
 from django import forms
 
 class BillSubmitForm(forms.Form):
+    Payment_Choices = (
+        ('pos',         u'Pos机'),
+    )
     username = forms.CharField(required = True,
                            min_length=2,max_length=255)
     token = forms.CharField(required = True,
@@ -13,7 +16,7 @@ class BillSubmitForm(forms.Form):
     return_time_0 = forms.DateTimeField(required = True)
     return_time_1 = forms.DateTimeField(required = True)
     aid = forms.IntegerField(required = True)
-    payment = forms.CharField(required = True)
+    payment = forms.ChoiceField(required = True, choices=Payment_Choices)
     comment = forms.CharField(required = False,
                               max_length=255)
     score = forms.IntegerField(required = False)
@@ -86,3 +89,10 @@ class MyCouponListForm(forms.Form):
                              max_length=255)
     type = forms.IntegerField(required = True)
 
+class MyCouponCalcForm(forms.Form):
+    username = forms.CharField(required = True,
+                           min_length=2,max_length=255)
+    token = forms.CharField(required = True,
+                             max_length=255)
+    clothes = forms.CharField(required = True,
+                             max_length=65535)

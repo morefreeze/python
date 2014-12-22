@@ -1,14 +1,13 @@
 # coding=utf-8
 from django.shortcuts import render
 from django.core.paginator import Paginator
-from django.db.models import Q
 from WCLib.views import *
 from WCBill.serializers import BillSerializer, FeedbackSerializer, MyCouponSerializer
 from WCBill.models import Bill, Feedback, Cart
 from WCBill.forms import BillSubmitForm, BillListForm, BillInfoForm, BillCancelForm, \
         BillFeedbackForm, BillGetFeedbackForm
 from WCBill.forms import CartSubmitForm, CartListForm
-from WCBill.forms import MyCouponListForm
+from WCBill.forms import MyCouponListForm, MyCouponCalcForm
 from WCUser.models import User
 from WCBill.models import Bill, Coupon, MyCoupon
 from WCLogistics.models import Address, OrderQueue
@@ -78,10 +77,21 @@ def submit(request):
         mo_bill.deleted = True
         mo_bill.status = Bill.ERROR
         mo_bill.save()
-        return JSONResponse({'errmsg': 'some error happen, please contact admin'})
+        return JSONResponse({'errmsg': 'some error happened, please contact admin'})
+# minue user score
     mo_user.score -= i_score
     mo_user.save()
+# mark coupon used
+    try:
+        mo_mycoupon = MyCoupon.objects.get(mcid=mo_bill.ext.get('mcid'))
+        mo_mycoupon.used = True
+        mo_mycoupon.save()
+    except (MyCoupon.DoesNotExist) as e:
+        mo_bill.add_error(e.__str__())
+        mo_bill.save()
+# remove cart seltcted clothes
     Cart.remove_bill_clothes(mo_user, mo_bill)
+# add order push queue
     dt_fetch_time = mo_bill.get_time_0
     OrderQueue.objects.create(bill=mo_bill, type=OrderQueue.AddFetchOrder,
                               status=OrderQueue.TODO, time=dt_fetch_time)
@@ -175,10 +185,20 @@ def cancel(request):
         mo_user.score += mo_bill.score
     mo_bill.status = Bill.USER_CANCEL
     mo_bill.save()
-    a_orderqueue = OrderQueue.objects.filter(bill=mo_bill)
+# remove order push
+    a_orderqueue = OrderQueue.objects.filter(bill=mo_bill, status__lte=OrderQueue.TODO)
     for it_orderqueue in a_orderqueue:
         it_orderqueue.status = OrderQueue.NO_DO_BUT_DONE
         it_orderqueue.save()
+# return coupon
+    if mo_bill.ext.get('use_mycoupon'):
+        try:
+            mo_mycoupon = MyCoupon.objects.get(mcid=mo_bill.ext.get('use_mycoupon'))
+            if mo_mycoupon.used:
+                mo_mycoupon.used = False
+        except (MyCoupon.DoesNotExist) as e:
+            mo_bill.add_error(e.__str__())
+            mo_bill.save()
     return JSONResponse({'errno':0})
 
 def feedback(request):
@@ -248,8 +268,11 @@ def submit_cart(request):
     if None == mo_user:
         return JSONResponse({'errmsg':'username or password or permission error'})
     mo_cart, created = Cart.objects.get_or_create(own=mo_user)
+    mo_cart.clear_error()
     mo_cart.clothes = mo_cart.format_cloth(d_data.get('clothes'))
     mo_cart.save()
+    if mo_cart.ext.get('error'):
+        return JSONResponse({'errmsg':'some error happened, please contact admin'})
     return JSONResponse({'caid':mo_cart.caid, 'errno':0})
 
 def list_cart(request):
@@ -284,33 +307,46 @@ def list_mycoupon(request):
     mo_user = User.get_user(s_name, s_token)
     if None == mo_user:
         return JSONResponse({'errmsg':'username or password or permission error'})
-    CAN_USE = 1
-    NOUSED = 2
-    USED_OR_EXPIRE = 3
-    ALL = 9
     i_type = d_data.get('type')
     dt_now = dt.datetime.now()
-    if CAN_USE == i_type:
-        a_mycoupon = MyCoupon.objects.filter(own=mo_user, used=False, \
-                        start_time__lte = dt_now, expire_time__gt = dt_now)
-    elif NOUSED == i_type:
-        a_mycoupon = MyCoupon.objects.filter(own=mo_user, used=False, \
-                        start_time__gte = dt_now, expire_time__gt = dt_now)
-    elif USED_OR_EXPIRE == i_type:
-        a_mycoupon = MyCoupon.objects.filter(Q(own=mo_user) & (Q(used=True) \
-                        | Q(expire_time__lte = dt_now)))
-    elif ALL == i_type:
-        a_mycoupon = MyCoupon.objects.filter(own=mo_user)
-    else:
+    a_mycoupons = MyCoupon.query_mycoupons(mo_user, i_type)
+    if None == a_mycoupons:
         return JSONResponse({'errmsg':'type error'})
-    a_mycoupon = a_mycoupon.order_by('used', 'start_time', 'expire_time', 'mcid')
     d_response = {
         'data': [],
         'errno': 0,
     }
     for it_mycoupon in a_mycoupon:
-        se_coupon = MyCouponSerializer(it_mycoupon)
-        d_response['data'].append(se_coupon.data)
+        se_mycoupon = MyCouponSerializer(it_mycoupon)
+        d_response['data'].append(se_mycoupon.data)
+    return JSONResponse(d_response)
+
+def calc_mycoupon(request):
+    if request.method != 'GET':
+        return JSONResponse({'errmsg':'method error'})
+    fo_mycoupon = MyCouponCalcForm(request.GET)
+    if not fo_mycoupon.is_valid():
+        return JSONResponse({'errmsg':fo_mycoupon.errors})
+    d_data = fo_mycoupon.cleaned_data
+    s_name = d_data.get('username')
+    s_token = d_data.get('token')
+    mo_user = User.get_user(s_name, s_token)
+    if None == mo_user:
+        return JSONResponse({'errmsg':'username or password or permission error'})
+    s_clothes = d_data.get('clothes')
+    a_mycoupons = MyCoupon.query_mycoupons(mo_user, MyCoupon.CAN_USE)
+    d_response = {
+        'data': [],
+        'errno': 0,
+    }
+    mo_bill = Bill()
+    mo_bill.clothes = json.loads(s_clothes)
+    mo_bill.format_cloth()
+    for it_mycoupon in a_mycoupons:
+        t_bill = Bill(clothes=mo_bill.clothes, own=mo_user)
+        if it_mycoupon.is_vali(t_bill):
+            se_mycoupon = MyCouponSerializer(it_mycoupon)
+            d_response['data'].append(se_mycoupon.data)
     return JSONResponse(d_response)
 
 """ method template (13 lines)

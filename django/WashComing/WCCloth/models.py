@@ -14,7 +14,7 @@ cloth is leaf
 class Cloth(models.Model):
     cid = models.AutoField(primary_key=True)
     is_leaf = models.BooleanField(default=True)
-    fa_cid = models.IntegerField(default=0)
+    fa_cid = models.ForeignKey('self', null=True,default=None,blank=True)
     name = models.CharField(max_length=32)
     image = models.ImageField(default='',blank=True,upload_to=get_cloth_filename)
     image_hiden = models.ImageField(default='',blank=True,upload_to=get_cloth_filename)
@@ -60,7 +60,7 @@ class Cloth(models.Model):
         return first category
         """
         try:
-            a_category = cls.objects.filter(fa_cid=0, is_leaf=False).order_by('-weight', 'cid')
+            a_category = cls.objects.filter(fa_cid=None, is_leaf=False).order_by('-weight', 'cid')
         except (cls.DoesNotExist) as e:
             return None
         return a_category
@@ -76,14 +76,26 @@ class Cloth(models.Model):
             return None
         return mo_cloth
 
+    @classmethod
+    def is_ancestor(cls, i_ancestor, i_child):
+        try:
+            mo_ancestor = cls.objects.get(cid=i_ancestor)
+            mo_child = cls.objects.get(cid=i_child)
+            for i in range(10):
+                if mo_ancestor.cid == mo_child.fa_cid.cid:
+                    return True
+                mo_child = mo_child.fa_cid
+        except (cls.DoesNotExist) as e:
+            return False
+
     def get_name(self):
-        if self.fa_cid > 0:
-            try:
-                mo_fa_cloth = self.__class__.objects.get(cid=self.fa_cid)
+        try:
+            if self.fa_cid:
+                mo_fa_cloth = self.fa_cid
 # self is third category cloth
-                if mo_fa_cloth.fa_cid > 0:
+                if mo_fa_cloth.fa_cid:
                     return "%s_%s" % (mo_fa_cloth.name, self.name)
-            except Exception as e:
-                return "NULL_%s" % (self.name)
-        return "%s" % (self.name)
+            return "%s" % (self.name)
+        except Exception as e:
+            return "NULL_%s" % (self.name)
 
