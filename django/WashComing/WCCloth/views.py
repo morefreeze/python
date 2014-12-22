@@ -82,7 +82,7 @@ def search(request):
     if None == mo_user:
         return JSONResponse({'errmsg':'username or password or permission error'})
     s_keyword = d_data.get('keyword')
-    a_clothes = Cloth.objects.filter(name__contains=s_keyword, fa_cid__gt=0)
+    a_clothes = Cloth.objects.filter(name__contains=s_keyword, fa_cid__isnull=False)
     d_response = dict()
     d_response['data'] = []
     for it_cloth in a_clothes:

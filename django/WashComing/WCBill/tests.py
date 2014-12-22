@@ -1,10 +1,11 @@
 #coding=utf-8
 from WCLib.tests import *
 from WCLib.serializers import *
-from WCBill.models import Bill, Coupon, Feedback, Cart
+from WCBill.models import Bill, Coupon, Feedback, Cart, MyCoupon
 from WCBill.serializers import BillSerializer, FeedbackSerializer
 from WCCloth.models import Cloth
 from WCLogistics.models import Address
+from WCUser.models import User
 import datetime as dt
 
 # Create your tests here.
@@ -60,7 +61,7 @@ class BillTest(BillBaseTest):
             {'username':self.username, 'token':self.token,
              'get_time_0':s_get_time_0, 'get_time_1':s_get_time_1,
              'return_time_0':s_return_time_0, 'return_time_1':s_return_time_1,
-             'aid':self.aid, 'clothes':self.clothes
+             'aid':self.aid, 'clothes':self.clothes, 'payment':'pos',
             })
         self.bid = json.loads(res.content)['bid']
         self.assertJSONEqual(res.content, {'bid':self.bid, 'total':749.0, 'errno':0})
@@ -77,7 +78,7 @@ class BillTest(BillBaseTest):
             {'username':self.username, 'token':self.token,
              'get_time_0':s_get_time_0, 'get_time_1':s_get_time_1,
              'return_time_0':s_return_time_0, 'return_time_1':s_return_time_1,
-             'aid':self.aid, 'clothes':self.clothes
+             'aid':self.aid, 'clothes':self.clothes, 'payment':'pos',
             })
         self.assertJSONEqual(res.content, {'errmsg':'get_time error'})
 # get_time_1 before get_time_0
@@ -90,7 +91,7 @@ class BillTest(BillBaseTest):
             {'username':self.username, 'token':self.token,
              'get_time_0':s_get_time_0, 'get_time_1':s_get_time_1,
              'return_time_0':s_return_time_0, 'return_time_1':s_return_time_1,
-             'aid':self.aid, 'clothes':self.clothes
+             'aid':self.aid, 'clothes':self.clothes, 'payment':'pos',
             })
         self.assertJSONEqual(res.content, {'errmsg':'get_time error'})
 # return_time_0 before get_time_1+96hrs
@@ -103,7 +104,7 @@ class BillTest(BillBaseTest):
             {'username':self.username, 'token':self.token,
              'get_time_0':s_get_time_0, 'get_time_1':s_get_time_1,
              'return_time_0':s_return_time_0, 'return_time_1':s_return_time_1,
-             'aid':self.aid, 'clothes':self.clothes
+             'aid':self.aid, 'clothes':self.clothes, 'payment':'pos',
             })
         self.assertJSONEqual(res.content, {'errmsg':'return_time error'})
 # return_time_1 before return_time_0
@@ -116,7 +117,7 @@ class BillTest(BillBaseTest):
             {'username':self.username, 'token':self.token,
              'get_time_0':s_get_time_0, 'get_time_1':s_get_time_1,
              'return_time_0':s_return_time_0, 'return_time_1':s_return_time_1,
-             'aid':self.aid, 'clothes':self.clothes
+             'aid':self.aid, 'clothes':self.clothes, 'payment':'pos',
             })
         self.assertJSONEqual(res.content, {'errmsg':'return_time error'})
 
@@ -132,7 +133,7 @@ class BillTest(BillBaseTest):
             {'username':self.username, 'token':self.token,
              'get_time_0':s_get_time_0, 'get_time_1':s_get_time_1,
              'return_time_0':s_return_time_0, 'return_time_1':s_return_time_1,
-             'aid':i_aid, 'clothes':self.clothes
+             'aid':i_aid, 'clothes':self.clothes, 'payment':'pos',
             })
         self.assertJSONEqual(res.content, {'errmsg':'address error'})
 
@@ -148,7 +149,7 @@ class BillTest(BillBaseTest):
             {'username':self.username, 'token':self.token,
              'get_time_1':s_get_time_1,
              'return_time_0':s_return_time_0, 'return_time_1':s_return_time_1,
-             'aid':self.aid, 'clothes':self.clothes
+             'aid':self.aid, 'clothes':self.clothes, 'payment':'pos',
             })
         self.assertJSONEqual(res.content, {'errmsg': {'get_time_0': ['This field is required.']}})
 
@@ -158,7 +159,7 @@ class BillTest(BillBaseTest):
             {'username':self.username, 'token':self.token,
              'get_time_0':s_get_time_0,
              'return_time_0':s_return_time_0, 'return_time_1':s_return_time_1,
-             'aid':self.aid, 'clothes':self.clothes
+             'aid':self.aid, 'clothes':self.clothes, 'payment':'pos',
             })
         self.assertJSONEqual(res.content, {'errmsg': {'get_time_1': ['This field is required.']}})
 
@@ -168,7 +169,7 @@ class BillTest(BillBaseTest):
             {'username':self.username, 'token':self.token,
              'get_time_0':s_get_time_0, 'get_time_1':s_get_time_1,
              'return_time_1':s_return_time_1,
-             'aid':self.aid, 'clothes':self.clothes
+             'aid':self.aid, 'clothes':self.clothes, 'payment':'pos',
             })
         self.assertJSONEqual(res.content, {'errmsg': {'return_time_0': ['This field is required.']}})
 
@@ -178,7 +179,7 @@ class BillTest(BillBaseTest):
             {'username':self.username, 'token':self.token,
              'get_time_0':s_get_time_0, 'get_time_1':s_get_time_1,
              'return_time_0':s_return_time_0,
-             'aid':self.aid, 'clothes':self.clothes
+             'aid':self.aid, 'clothes':self.clothes, 'payment':'pos',
             })
         self.assertJSONEqual(res.content, {'errmsg': {'return_time_1': ['This field is required.']}})
 
@@ -195,7 +196,7 @@ class FeedbackTest(BillBaseTest):
             {'username':self.username, 'token':self.token,
              'get_time_0':s_get_time_0, 'get_time_1':s_get_time_1,
              'return_time_0':s_return_time_0, 'return_time_1':s_return_time_1,
-             'aid':self.aid, 'clothes':self.clothes
+             'aid':self.aid, 'clothes':self.clothes, 'payment':'pos',
             })
         self.bid = json.loads(res.content)['bid']
         self.assertJSONEqual(res.content, {'bid':self.bid, 'total':749.0, 'errno':0})
@@ -222,7 +223,7 @@ class FeedbackTest(BillBaseTest):
             {'username':self.username, 'token':self.token,
              'get_time_0':s_get_time_0, 'get_time_1':s_get_time_1,
              'return_time_0':s_return_time_0, 'return_time_1':s_return_time_1,
-             'aid':self.aid, 'clothes':self.clothes
+             'aid':self.aid, 'clothes':self.clothes, 'payment':'pos',
             })
         self.bid = json.loads(res.content)['bid']
         self.assertJSONEqual(res.content, {'bid':self.bid, 'total':749.0, 'errno':0})
@@ -253,7 +254,7 @@ class FeedbackTest(BillBaseTest):
             {'username':self.username, 'token':self.token,
              'get_time_0':s_get_time_0, 'get_time_1':s_get_time_1,
              'return_time_0':s_return_time_0, 'return_time_1':s_return_time_1,
-             'aid':self.aid, 'clothes':self.clothes
+             'aid':self.aid, 'clothes':self.clothes, 'payment':'pos',
             })
         self.bid = json.loads(res.content)['bid']
         self.assertJSONEqual(res.content, {'bid':self.bid, 'total':749.0, 'errno':0})
@@ -280,4 +281,36 @@ class CartTest(BillBaseTest):
 # list cart
         res = self.client.get(u'/cart/list', {'username':self.username, 'token':self.token,})
         self.assertJSONEqual(res.content, {'data':json.loads(self.clothes), 'clothes':json.loads(self.clothes), 'errno':0})
+
+
+class MyCouponTest(TestCase):
+    _user = None
+    _mycoupon = None
+    _bill = None
+    _clothes = []
+
+    @classmethod
+    def setUpClass(cls):
+        cls._user = User.objects.create(name='14345678901', token='token', phone='14345678901')
+        dt_start = dt.datetime.today()
+        dt_expire = dt.datetime.today() + dt.timedelta(days=1)
+        cls._mycoupon = MyCoupon.objects.create(mcid=1, own=cls._user, start_time=dt_start, expire_time=dt_expire, price_thd=80, price_dst=10)
+        cls._clothes.append(Cloth.objects.create(name='root',is_leaf=False))
+        cls._clothes.append(Cloth.objects.create(name='a',is_leaf=True,price=10, fa_cid=cls._clothes[0]))
+        cls._clothes.append(Cloth.objects.create(name='b',is_leaf=True,price=20, fa_cid=cls._clothes[0]))
+        mo_cloth_a = cls._clothes[1]
+        cls._bill = Bill.objects.create(clothes=[{"cid":mo_cloth_a.cid,"number":8}], own=cls._user, \
+                get_time_0=dt_start, get_time_1=dt_start, return_time_0=dt_expire,return_time_1=dt_expire)
+
+    def test_is_vali(self):
+        res = self._mycoupon.is_vali(self._bill)
+        self.assertEqual(res, 70)
+
+    def test_calc_mycoupon(self):
+        s_clothes = json.dumps(self._bill.clothes)
+        print type(s_clothes)
+        res = self.client.get(u'/mycoupon/calc', {'username':self._user.name, 'token':'token', \
+                                                  'clothes':s_clothes, })
+        print res
+        self.assertEqual(res.status_code, 200)
 

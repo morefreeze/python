@@ -59,7 +59,7 @@ class RFD(models.Model):
     def ImportOrders(cls, mo_bill):
         mo_shop = mo_bill.shop
         if None == mo_shop:
-            return {'ResultCode':1, 'ResultMessage':'no shop info'}
+            return {'ResultCode':'ImportFailure', 'ResultMessage':'no shop info'}
         s_method_name = sys._getframe().f_code.co_name
         with open(os.path.join(cls.conf_dir, 'rfd.conf'), 'r') as rfdconf:
             cls.config.readfp(rfdconf)
@@ -74,7 +74,6 @@ class RFD(models.Model):
         s_url = "http://%s:%s/api/" %(s_url, s_port)
         s_return_start = mo_bill.return_time_0.strftime(DATETIME_FORMAT_SHORT)
         s_return_end = mo_bill.return_time_1.strftime(DATETIME_FORMAT_SHORT)
-        f_total = float(mo_bill.total)
         d_import_orders = {
             "company": s_company,
             "dt": dt.datetime.now().strftime("%Y%m%d%H%M%S"),
@@ -85,7 +84,7 @@ class RFD(models.Model):
             "shop_province": mo_shop.province,
             "shop_city": mo_shop.city,
             "shop_area": mo_shop.area,
-            "shop_address": mo_shop.address,
+            "shop_address": u"洗来了" + mo_shop.address,
             "shop_phone": mo_shop.phone,
             "bill_total": mo_bill.total,
             "bill_paid": mo_bill.paid,
@@ -94,9 +93,9 @@ class RFD(models.Model):
             "user_province": mo_bill.province,
             "user_city": mo_bill.city,
             "user_area": mo_bill.area,
-            "user_address": mo_bill.address,
+            "user_address": u"洗来了" + mo_bill.address,
             "user_phone": mo_bill.phone,
-            "comment": "%s至%s取 应收%.2f元 上门POS机" %(s_return_start, s_return_end, f_total),
+            "comment": "%s至%s送" %(s_return_start, s_return_end),
             "order_details": "",
         }
         js_cloth = mo_bill.clothes
@@ -163,23 +162,24 @@ class RFD(models.Model):
             s_default_zipcode = cls.config.get('common', 'default_zipcode')
 
         js_clothes = mo_bill.format_cloth()
-        s_remark = ''
+        s_dt_start = mo_bill.get_time_0.strftime(DATETIME_FORMAT_SHORT)
+        s_dt_end = mo_bill.get_time_1.strftime(DATETIME_FORMAT_SHORT)
+        f_total = float(mo_bill.total)
+        s_remark = u"%s至%s取 应收%.2f元 POS机" %(s_dt_start, s_dt_end, f_total)
         if len(js_clothes) == 0:
             d_res = {'IsSucceed':false, 'Message':'format clothes error', 'Exception':e.__str__()}
             return d_res
+        s_clothes = ''
         for it_cloth in js_clothes:
             mo_cloth = Cloth.objects.get(cid=it_cloth['cid'])
 # inquiry don't send to rfd
             if 'inquiry' in mo_cloth.ext and mo_cloth.ext['inquiry']:
                 continue
-            s_remark += " %s %d" %(mo_cloth.get_name(), it_cloth['number'])
-        s_dt_start = mo_bill.get_time_0.strftime(DATETIME_FORMAT_SHORT)
-        s_dt_end = mo_bill.get_time_1.strftime(DATETIME_FORMAT_SHORT)
-        s_remark += u" %s至%s取" %(s_dt_start, s_dt_end)
+            s_clothes += " %s %d" %(mo_cloth.get_name(), it_cloth['number'])
 # rfd remark len is 100
-        if len(s_remark.encode('utf-8')) > 100:
-            s_remark = u"订单品类过多，请联系客服获取详细信息 "
-            s_remark += u" %s至%s送" %(s_dt_start, s_dt_end)
+        if len(s_remark.encode('utf-8')) + len(s_clothes.encode('utf-8')) > 100:
+            s_clothes = u" 订单品类过多，请联系客服获取详细信息 "
+        s_remark += s_clothes
         d_fetch_order = {
             "SendBy": mo_bill.real_name,
             "MobilePhone": mo_bill.phone,
@@ -189,7 +189,7 @@ class RFD(models.Model):
             "SendProvinceName": mo_bill.province,
             "SendCityName": mo_bill.city,
             "SendAreaName": mo_bill.area,
-            "SendAddress": mo_bill.address,
+            "SendAddress": u"[洗来了]" + mo_bill.address,
             "NeedAmount": mo_bill.total,
             "ProtectPrice": 0,
             "Remark": s_remark,
@@ -307,12 +307,13 @@ class RFD(models.Model):
     def update(cls, d_st_info):
         s_operate_id = d_st_info.get('OperateId')
         s_custom_order = d_st_info.get('CustomerOrder')
-# i_type 1,2 for get form, 3 for return form
+# i_type 1,2 for get form, 3 for return form, 4 for error
         try:
             if s_custom_order.startswith('SL'):
-                mo_rfd = cls.objects.get(get_order_no=s_custom_order)
                 i_type = 1
+                mo_rfd = cls.objects.get(get_order_no=s_custom_order)
             else:
+                i_type = 4
                 q_rfd = cls.objects.filter(
                     Q(get_form_no=s_custom_order) | Q(return_form_no=s_custom_order)
                 )
@@ -323,6 +324,8 @@ class RFD(models.Model):
                     i_type = 2
                 elif mo_rfd.return_form_no == s_custom_order:
                     i_type = 3
+                else:
+                    raise cls.DoesNotExist()
             s_waybill_no = d_st_info.get('WaybillNo')
             i_status = int(d_st_info.get('Status'))
             s_message = d_st_info.get('Result')
@@ -366,13 +369,7 @@ class RFD(models.Model):
             mo_rfd.save()
             mo_bill.save()
         except (cls.DoesNotExist) as e:
-            if i_type in [1, 2]:
-                mo_rfd.status = cls.GET_ABORT
-            elif 3 == i_type:
-                mo_rfd.status = cls.RETURN_ABORT
-            else:
-                mo_rfd.status = cls.ERROR
-            mo_rfd.save()
+            print "invalid rfd post status op_id[%s] custom[%s]" %(s_operate_id, s_custom_order)
             return {'Ret': 2, 'Message': e.__str__()}
         return {'Ret': 0, 'WaybillNo': s_waybill_no, 'OperateId': s_operate_id}
 
@@ -445,4 +442,5 @@ class OrderQueue(models.Model):
     message = models.CharField(max_length=8195)
     status = models.IntegerField(default=0,choices=Status_Choice)
     time = models.DateTimeField(db_index=True)
+    update_time = models.DateTimeField(auto_now=True)
 
