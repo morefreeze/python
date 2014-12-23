@@ -326,7 +326,8 @@ class RFD(models.Model):
                 )
                 if 0 == len(q_rfd):
                     d_ret['Ret'] = 1
-                    d_ret['Message'] = 'array is empty'
+                    d_ret['Message'] = 'array is empty op_id[%s] custom_order[%s]' \
+                            %(s_operate_id, s_custom_order)
                     return d_ret
                 mo_rfd = q_rfd[0]
                 if mo_rfd.get_form_no == s_custom_order:
@@ -343,9 +344,11 @@ class RFD(models.Model):
             try:
                 mo_bill = mo_rfd.bill_of
             except Exception as e:
-                mo_rfd.ext['error'] = 'no bill bind this rfd order'
+                mo_rfd.ext['error'] = e.__str__()
                 mo_rfd.save()
-                return {'Ret': 3, 'Message': e.__str__()}
+                d_ret['Ret'] = 3
+                d_ret['Message'] = 'no bill bind this rfd order'
+                return d_ret
             if i_type in [1, 2]:
                 if dt_operate_time < mo_rfd.get_operate_time:
                     d_ret['Ret'] = 0
@@ -378,7 +381,7 @@ class RFD(models.Model):
                     mo_bill.status = mo_bill.__class__.NEED_FEEDBACK
             mo_rfd.save()
             mo_bill.save()
-        except (cls.DoesNotExist) as e:
+        except (Exception) as e:
             logging.error("invalid rfd post status op_id[%s] custom[%s]" %(s_operate_id, s_custom_order))
             d_ret['Ret'] = 2
             d_ret['Message'] = e.__str__()
