@@ -268,7 +268,7 @@ def submit_cart(request):
     if None == mo_user:
         return JSONResponse({'errmsg':'username or password or permission error'})
     mo_cart, created = Cart.objects.get_or_create(own=mo_user)
-    mo_cart.clear_error()
+    mo_cart.clear_ext()
     mo_cart.clothes = mo_cart.format_cloth(d_data.get('clothes'))
     mo_cart.save()
     if mo_cart.ext.get('error'):

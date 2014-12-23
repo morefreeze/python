@@ -212,12 +212,14 @@ def post_status(request):
         d_status_info = RFD.get_status_info(it_status_info['StatusInfo'])
         a_st_info.append(d_status_info)
         d_sort_time[ d_status_info['OperateId'] ] = d_status_info['OperateTime']
-    sorted(d_sort_time.items(), key=lambda e:e[1])
+    d_sort_time = sorted(d_sort_time.items(), key=lambda e:e[1])
     a_res = []
     for s_OperateId, s_OperateTime in d_sort_time.items():
         for it_st_info in a_st_info:
             if it_st_info['OperateId'] == s_OperateId:
                 d_ret = RFD.update(it_st_info)
+                if d_ret['Ret'] != 0:
+                    logging.error("post status error: %s" %(d_ret['Message']))
                 a_res.append(d_ret)
     js_xml = RFD.PostStatus(a_res)
     logging.debug(js_xml['xml'])

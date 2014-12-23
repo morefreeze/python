@@ -24,7 +24,7 @@ class Mass_Clothes(models.Model):
             self.ext['error'] = []
         self.ext['error'].append(s_errmsg)
 
-    def clear_error(self):
+    def clear_ext(self):
         if None == self.ext:
             self.ext = {}
         self.ext['error'] = []
@@ -52,9 +52,18 @@ class Mass_Clothes(models.Model):
                 se_cloth = ClothSerializer(mo_cloth)
                 js_cloth['cid'] = se_cloth.data['cid']
                 js_cloth['number'] = it_cloth['number']
-                js_cloth['name'] = se_cloth.data['name']
                 js_cloth['price'] = se_cloth.data['price']
-                js_cloth['image'] = se_cloth.data['image']
+                mo_fa_cloth = mo_cloth.fa_cid
+                if None == mo_fa_cloth or None == mo_fa_cloth.fa_cid:
+# second category
+                    js_cloth['image'] = se_cloth.data['image']
+                    js_cloth['name'] = se_cloth.data['name']
+                else:
+# third category
+                    se_fa_cloth = ClothSerializer(mo_fa_cloth)
+                    js_cloth['image'] = se_fa_cloth.data['image']
+                    js_cloth['name'] = "%s(%s)" \
+                            %(se_fa_cloth.data['name'], se_cloth.data['name'])
                 a_new_clothes.append(js_cloth)
             self.clothes = a_new_clothes
         except (ValueError,Cloth.DoesNotExist) as e:
@@ -141,9 +150,9 @@ class Bill(Mass_Clothes):
         return u'未知'
 
     def __unicode__(self):
-        return u"%d(￥%.2f [%s] [%s] [%s %s] %s)" %(self.bid, self.total, \
-                Bill.get_status(self.status), self.real_name, self.area, \
-                self.address, self.phone)
+        return u"%d(￥%.2f [%s] [%s] [%s] [%s %s] %s)" %(self.bid, self.total, \
+                Bill.get_status(self.status), self.create_time, self.real_name, \
+                self.area, self.address, self.phone)
 
     def get_full_address(self):
         if 0 == len(self.province + self.city + self.area):
