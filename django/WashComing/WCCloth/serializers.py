@@ -4,4 +4,4 @@ from WCCloth.models import Cloth
 class ClothSerializer(serializers.ModelSerializer):
     class Meta:
         model = Cloth
-        fields = ('cid', 'is_leaf', 'fa_cid', 'name', 'detail', 'image', 'image_hiden', 'price', )
+        fields = ('cid', 'is_leaf', 'fa_cid', 'name', 'detail', 'image', 'image_hidden', 'price', )
