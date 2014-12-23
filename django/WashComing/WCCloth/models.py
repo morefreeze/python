@@ -17,7 +17,7 @@ class Cloth(models.Model):
     fa_cid = models.ForeignKey('self', null=True,default=None,blank=True)
     name = models.CharField(max_length=32)
     image = models.ImageField(default='',blank=True,upload_to=get_cloth_filename)
-    image_hiden = models.ImageField(default='',blank=True,upload_to=get_cloth_filename)
+    image_hidden = models.ImageField(default='',blank=True,upload_to=get_cloth_filename)
     detail = models.CharField(max_length=255,default='',blank=True)
     price = models.FloatField(default=0.)
 # show weight, bigger show first

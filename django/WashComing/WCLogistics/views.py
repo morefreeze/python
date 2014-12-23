@@ -199,20 +199,28 @@ def test_order(request):
     return JSONResponse(js_s)
 
 def post_status(request):
+    logging.debug(request.body)
     xml_res = ET.fromstring(request.body)
     d_xml = etree_to_dict(xml_res)
     if not 'Request' in d_xml:
         return HttpResponse("no Request")
     d_body = d_xml['Request'][1]['Body']
     a_st_info = []
+# to sort operate time
+    d_sort_time = {}
     for it_status_info in d_body:
         d_status_info = RFD.get_status_info(it_status_info['StatusInfo'])
         a_st_info.append(d_status_info)
+        d_sort_time[ d_status_info['OperateId'] ] = d_status_info['OperateTime']
+    sorted(d_sort_time.items(), key=lambda e:e[1])
     a_res = []
-    for it_st_info in a_st_info:
-        d_ret = RFD.update(it_st_info)
-        a_res.append(d_ret)
+    for s_OperateId, s_OperateTime in d_sort_time.items():
+        for it_st_info in a_st_info:
+            if it_st_info['OperateId'] == s_OperateId:
+                d_ret = RFD.update(it_st_info)
+                a_res.append(d_ret)
     js_xml = RFD.PostStatus(a_res)
+    logging.debug(js_xml['xml'])
     return HttpResponse(js_xml['xml'],content_type="application/xhtml+xml")
 
 def test_import(request):

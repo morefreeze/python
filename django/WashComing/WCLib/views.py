@@ -5,6 +5,7 @@ from django.http import HttpResponseRedirect, HttpResponse, HttpResponsePermanen
 from rest_framework.renderers import JSONRenderer
 from rest_framework.parsers import JSONParser
 from django.template import loader, Context
+import logging
 import xml.etree.ElementTree as ET
 import math
 

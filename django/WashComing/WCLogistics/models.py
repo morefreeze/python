@@ -84,7 +84,7 @@ class RFD(models.Model):
             "shop_province": mo_shop.province,
             "shop_city": mo_shop.city,
             "shop_area": mo_shop.area,
-            "shop_address": u"洗来了" + mo_shop.address,
+            "shop_address": mo_shop.address + u"[洗来了 %d]" %(mo_bill.bid),
             "shop_phone": mo_shop.phone,
             "bill_total": mo_bill.total,
             "bill_paid": mo_bill.paid,
@@ -93,7 +93,7 @@ class RFD(models.Model):
             "user_province": mo_bill.province,
             "user_city": mo_bill.city,
             "user_area": mo_bill.area,
-            "user_address": u"洗来了" + mo_bill.address,
+            "user_address": mo_bill.address + u"[洗来了 %d]" %(mo_bill.bid),
             "user_phone": mo_bill.phone,
             "comment": "%s至%s送" %(s_return_start, s_return_end),
             "order_details": "",
@@ -189,7 +189,7 @@ class RFD(models.Model):
             "SendProvinceName": mo_bill.province,
             "SendCityName": mo_bill.city,
             "SendAreaName": mo_bill.area,
-            "SendAddress": u"[洗来了]" + mo_bill.address,
+            "SendAddress": mo_bill.address + u"[洗来了 %d]" %(mo_bill.bid),
             "NeedAmount": mo_bill.total,
             "ProtectPrice": 0,
             "Remark": s_remark,
@@ -262,7 +262,7 @@ class RFD(models.Model):
 
     @classmethod
     def send_api(cls, s_url, s_xml):
-        print s_xml
+        logging.debug(s_xml)
         with open(os.path.join(cls.conf_dir, 'rfd.conf'), 'r') as rfdconf:
             cls.config.readfp(rfdconf)
             s_company = cls.config.get('common', 'company')
@@ -307,6 +307,13 @@ class RFD(models.Model):
     def update(cls, d_st_info):
         s_operate_id = d_st_info.get('OperateId')
         s_custom_order = d_st_info.get('CustomerOrder')
+        s_waybill_no = d_st_info.get('WaybillNo')
+        d_ret = {
+            'Ret': 9,
+            'Message': 'unknown error',
+            'WaybillNo': s_waybill_no,
+            'OperateId': s_operate_id,
+        }
 # i_type 1,2 for get form, 3 for return form, 4 for error
         try:
             if s_custom_order.startswith('SL'):
@@ -318,7 +325,9 @@ class RFD(models.Model):
                     Q(get_form_no=s_custom_order) | Q(return_form_no=s_custom_order)
                 )
                 if 0 == len(q_rfd):
-                    return {'Ret': 1, 'Message': 'array is empty'}
+                    d_ret['Ret'] = 1
+                    d_ret['Message'] = 'array is empty'
+                    return d_ret
                 mo_rfd = q_rfd[0]
                 if mo_rfd.get_form_no == s_custom_order:
                     i_type = 2
@@ -326,7 +335,6 @@ class RFD(models.Model):
                     i_type = 3
                 else:
                     raise cls.DoesNotExist()
-            s_waybill_no = d_st_info.get('WaybillNo')
             i_status = int(d_st_info.get('Status'))
             s_message = d_st_info.get('Result')
             dt_operate_time = dt.datetime.strptime(d_st_info.get('OperateTime'),"%Y%m%d%H%M%S")
@@ -340,8 +348,9 @@ class RFD(models.Model):
                 return {'Ret': 3, 'Message': e.__str__()}
             if i_type in [1, 2]:
                 if dt_operate_time < mo_rfd.get_operate_time:
-                    return {'Ret':0, 'WaybillNo': s_waybill_no,
-                            'OperateId': s_operate_id, 'Message':'operate time passed(not error) [%s]' %dt_operate_time}
+                    d_ret['Ret'] = 0
+                    d_ret['Message'] = 'operate time passed(not error) time[%s]' %dt_operate_time
+                    return d_ret
                 mo_rfd.get_message = s_message
                 mo_rfd.get_way_no = s_waybill_no
                 mo_rfd.get_operate_time = dt_operate_time
@@ -354,8 +363,9 @@ class RFD(models.Model):
                     mo_bill.status = mo_bill.__class__.WASHING
             elif 3 == i_type:
                 if dt_operate_time < mo_rfd.return_operate_time:
-                    return {'Ret':0, 'WaybillNo': s_waybill_no,
-                            'OperateId': s_operate_id, 'Message':'operate time passed(not error) [%s]' %dt_operate_time}
+                    d_ret['Ret'] = 0
+                    d_ret['Message'] = 'operate time passed(not error) time[%s]' %dt_operate_time
+                    return d_ret
                 mo_rfd.return_message = s_message
                 mo_rfd.return_way_no = s_waybill_no
                 mo_rfd.return_operate_time = dt_operate_time
@@ -369,9 +379,13 @@ class RFD(models.Model):
             mo_rfd.save()
             mo_bill.save()
         except (cls.DoesNotExist) as e:
-            print "invalid rfd post status op_id[%s] custom[%s]" %(s_operate_id, s_custom_order)
-            return {'Ret': 2, 'Message': e.__str__()}
-        return {'Ret': 0, 'WaybillNo': s_waybill_no, 'OperateId': s_operate_id}
+            logging.error("invalid rfd post status op_id[%s] custom[%s]" %(s_operate_id, s_custom_order))
+            d_ret['Ret'] = 2
+            d_ret['Message'] = e.__str__()
+            return d_ret
+        d_ret['Ret'] = 0
+        d_ret['Message'] = ''
+        return d_ret
 
 class Address(models.Model):
     aid = models.AutoField(primary_key=True)

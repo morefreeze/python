@@ -122,8 +122,28 @@ class Bill(Mass_Clothes):
     paid = models.FloatField(default=0.0)
     comment = models.CharField(max_length=1023, default='', blank=True)
 
+    @classmethod
+    def get_status(cls, i_status):
+        map = {
+            cls.READY : u'准备',
+            cls.CONFIRMING : u'确认中',
+            cls.WAITTING_GET : u'物流确认中',
+            cls.GETTING : u'取衣中',
+            cls.WASHING : u'洗衣中',
+            cls.RETURNNING : u'送衣中',
+            cls.NEED_FEEDBACK : u'待评价',
+            cls.DONE : u'订单完成',
+            cls.USER_CANCEL : u'用户取消',
+            cls.ERROR : u'发生错误',
+        }
+        if i_status in map:
+            return map[i_status]
+        return u'未知'
+
     def __unicode__(self):
-        return "%d" %(self.bid)
+        return u"%d(￥%.2f [%s] [%s] [%s %s] %s)" %(self.bid, self.total, \
+                Bill.get_status(self.status), self.real_name, self.area, \
+                self.address, self.phone)
 
     def get_full_address(self):
         if 0 == len(self.province + self.city + self.area):
@@ -312,7 +332,7 @@ class MyCoupon(models.Model):
         t_bill.ext['use_coupon'] = self.mcid
         t_bill.calc_total()
         if None != t_bill.ext.get('error') or None == t_bill.ext.get('use_coupon'):
-            print t_bill.ext
+            logging.error(t_bill.ext)
             return False
         return t_bill.total
 

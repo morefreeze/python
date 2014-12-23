@@ -22,12 +22,15 @@ def handleAddFetchOrder(mo_queue):
             mo_queue.message = 'add fetch success, but order is empty'
             return 2
         mo_rfd = mo_bill.lg
+        dt_now = dt.datetime.now()
         if None == mo_rfd:
             mo_rfd = RFD.objects.create(get_order_no=s_order_no,
-                                        status=RFD.TO_GET)
+                                        status=RFD.TO_GET,
+                                       get_operate_time=dt_now)
             mo_bill.lg = mo_rfd
         else:
             mo_rfd.get_order_no = s_order_no
+            mo_rfd.get_operate_time = dt_now
             mo_rfd.status = RFD.TO_GET
         mo_bill.status = Bill.GETTING
         mo_bill.save()
@@ -49,16 +52,18 @@ def handleImportOrders(mo_queue):
         mo_rfd = mo_bill.lg
         s_way_no = d_res['WaybillNo']
         s_form_no = d_res['FormCode']
+        dt_now = dt.datetime.now()
         if None == mo_rfd:
             mo_rfd = RFD.objects.create(return_way_no=s_way_no,
                                         return_form_no=s_form_no,
-                                        return_operate_time=None,
+                                        return_operate_time=dt_now,
                                         get_operate_time=None,
                                         status=RFD.TO_RETURN)
             mo_bill.lg = mo_rfd
         else:
             mo_rfd.return_way_no = s_way_no
             mo_rfd.return_form_no = s_form_no
+            mo_rfd.return_operate_time = dt_now
             mo_rfd.status = RFD.TO_RETURN
         mo_rfd.save()
     except Exception as e:
