@@ -72,27 +72,6 @@ class Mass_Clothes(models.Model):
         self.ext['format_cloth'] = True
         return self.clothes
 
-"""
-# JSONField has bug, if parent has JSONField will be escaped after update
-# so decode it expect insert
-    def save(self, *args, **kwargs):
-        if self.pk is not None:
-            try:
-                self.clothes = json.loads(self.clothes)
-            except Exception as e:
-                self.clothes = self.clothes
-            try:
-                self.ext = json.loads(self.ext)
-            except Exception as e:
-                self.ext = self.ext
-        else:
-            self.clothes = self.clothes
-            self.ext = self.ext
-
-# don't write self.__class__ in abstract, it will be derive class
-        super(Mass_Clothes, self).save(*args, **kwargs)
-        """
-
 SCORE_RMB_RATE = 0.01
 class Bill(Mass_Clothes):
     READY = 0
@@ -150,9 +129,9 @@ class Bill(Mass_Clothes):
         return u'未知'
 
     def __unicode__(self):
-        return u"%d(￥%.2f [%s] [%s] [%s] [%s %s] %s)" %(self.bid, self.total, \
+        return u"%d(￥%.2f [%s] [%s] [%s] [%s %s] [%s] 留言[%s])" %(self.bid, self.total, \
                 Bill.get_status(self.status), self.create_time, self.real_name, \
-                self.area, self.address, self.phone)
+                self.area, self.address, self.phone, self.comment)
 
     def get_full_address(self):
         if 0 == len(self.province + self.city + self.area):

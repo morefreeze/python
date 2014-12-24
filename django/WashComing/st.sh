@@ -1,5 +1,5 @@
 if [ -f dj.pid ];then
-    ps -p $(cat dj.pid)
+    ps -p $(cat dj.pid) >/dev/null 2>&1
     if [ $? -ne 0 ];then
         mv dj.log dj.log.bak
         nohup python manage.py runserver 127.0.0.1:8002 > dj.log 2>&1 &
@@ -10,3 +10,4 @@ else
     nohup python manage.py runserver 127.0.0.1:8002 > dj.log 2>&1 &
     echo $! > dj.pid
 fi
+ps -p $(cat dj.pid)

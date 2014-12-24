@@ -33,42 +33,42 @@ def get_android_latest_apk():
 #Create your models here.
 # score higher first
 USER_LEVEL = [
-    {'lower': 100000, 'name':'铂金',},
-    {'lower': 10000, 'name':'黄金',},
-    {'lower': 100, 'name':'白银',},
-    {'lower': 0, 'name':'青铜',},
+    {'lower': 100000, 'name':u'铂金',},
+    {'lower': 10000, 'name':u'黄金',},
+    {'lower': 100, 'name':u'白银',},
+    {'lower': 0, 'name':u'青铜',},
 ]
-NO_LEVEL = '暂无等级'
+NO_LEVEL = u'暂无等级'
 # follow rfd doc
 
-PRO_BJ = '北京'
+PRO_BJ = u'北京'
 Province_Choice = (
     (PRO_BJ, PRO_BJ),
 )
 
-CTY_BEIJING = '北京市'
+CTY_BEIJING = u'北京市'
 City_Choice = (
     (CTY_BEIJING, CTY_BEIJING),
 )
 
-ARE_BJ_XICHENG = '西城区'
-ARE_BJ_TONGZHOU = '通州区'
-ARE_BJ_SHIJINGSHAN = '石景山区'
-ARE_BJ_YANQING = '延庆县'
-ARE_BJ_DONGCHENG = '东城区'
-ARE_BJ_FENGTAI = '丰台区'
-ARE_BJ_FANGSHAN = '房山区'
-ARE_BJ_HAIDIAN = '海淀区'
-ARE_BJ_CHAOYANG = '朝阳区'
-ARE_BJ_MIYUN = '密云县'
-ARE_BJ_PINGGU = '平谷区'
-ARE_BJ_MENTOUGOU = '门头沟区'
-ARE_BJ_CHONGWEN = '崇文区'
-ARE_BJ_DAXING = '大兴区'
-ARE_BJ_CHANGPING = '昌平区'
-ARE_BJ_HUAIROU = '怀柔区'
-ARE_BJ_SHUNYI = '顺义区'
-ARE_BJ_XUANWU = '宣武区'
+ARE_BJ_XICHENG = u'西城区'
+ARE_BJ_TONGZHOU = u'通州区'
+ARE_BJ_SHIJINGSHAN = u'石景山区'
+ARE_BJ_YANQING = u'延庆县'
+ARE_BJ_DONGCHENG = u'东城区'
+ARE_BJ_FENGTAI = u'丰台区'
+ARE_BJ_FANGSHAN = u'房山区'
+ARE_BJ_HAIDIAN = u'海淀区'
+ARE_BJ_CHAOYANG = u'朝阳区'
+ARE_BJ_MIYUN = u'密云县'
+ARE_BJ_PINGGU = u'平谷区'
+ARE_BJ_MENTOUGOU = u'门头沟区'
+ARE_BJ_CHONGWEN = u'崇文区'
+ARE_BJ_DAXING = u'大兴区'
+ARE_BJ_CHANGPING = u'昌平区'
+ARE_BJ_HUAIROU = u'怀柔区'
+ARE_BJ_SHUNYI = u'顺义区'
+ARE_BJ_XUANWU = u'宣武区'
 Area_Choice = (
     (ARE_BJ_XICHENG,        ARE_BJ_XICHENG),
     (ARE_BJ_TONGZHOU,       ARE_BJ_TONGZHOU),
