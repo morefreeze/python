@@ -81,14 +81,15 @@ def submit(request):
 # minue user score
     mo_user.score -= i_score
     mo_user.save()
+    if mo_bill.ext.get('mcid') > 0:
 # mark coupon used
-    try:
-        mo_mycoupon = MyCoupon.objects.get(mcid=mo_bill.ext.get('mcid'))
-        mo_mycoupon.used = True
-        mo_mycoupon.save()
-    except (MyCoupon.DoesNotExist) as e:
-        mo_bill.add_error(e.__str__())
-        mo_bill.save()
+        try:
+            mo_mycoupon = MyCoupon.objects.get(mcid=mo_bill.ext.get('mcid'))
+            mo_mycoupon.used = True
+            mo_mycoupon.save()
+        except (MyCoupon.DoesNotExist) as e:
+            mo_bill.add_error(e.__str__())
+            mo_bill.save()
 # remove cart seltcted clothes
     Cart.remove_bill_clothes(mo_user, mo_bill)
 # add order push queue
@@ -316,7 +317,7 @@ def list_mycoupon(request):
         'data': [],
         'errno': 0,
     }
-    for it_mycoupon in a_mycoupon:
+    for it_mycoupon in a_mycoupons:
         se_mycoupon = MyCouponSerializer(it_mycoupon)
         d_response['data'].append(se_mycoupon.data)
     return JSONResponse(d_response)

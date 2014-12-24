@@ -93,16 +93,17 @@ class RFD(models.Model):
             "user_province": mo_bill.province,
             "user_city": mo_bill.city,
             "user_area": mo_bill.area,
-            "user_address": mo_bill.address + u"[洗来了 %d]" %(mo_bill.bid),
+            "user_address": mo_bill.address,
             "user_phone": mo_bill.phone,
             "comment": "%s至%s送" %(s_return_start, s_return_end),
             "order_details": "",
         }
         js_cloth = mo_bill.clothes
+        i_clothes_number = 0
         for it_cloth in js_cloth:
             try:
                 i_cid = it_cloth.get('cid')
-                i_num = it_cloth.get('number')
+                i_num = int(it_cloth.get('number'))
                 mo_cloth = Cloth.objects.get(cid=i_cid,is_leaf=True)
                 f_price = mo_cloth.price
                 if not eq_zero(f_price):
@@ -115,8 +116,11 @@ class RFD(models.Model):
                     }
                     c_order = Context(d_order_detail)
                     d_import_orders['order_details'] += t_order.render(c_order)
+                    i_clothes_number += i_num
             except (AttributeError, Cloth.DoesNotExist) as e:
                 continue
+
+        d_import_orders['user_address'] += u"[洗来了 id:%d 共%d件]" %(mo_bill.bid, i_clothes_number)
 
         t_response = loader.get_template(s_template_file)
         c_response = Context(d_import_orders)
@@ -170,12 +174,14 @@ class RFD(models.Model):
             d_res = {'IsSucceed':false, 'Message':'format clothes error', 'Exception':e.__str__()}
             return d_res
         s_clothes = ''
+        i_clothes_number = 0
         for it_cloth in js_clothes:
             mo_cloth = Cloth.objects.get(cid=it_cloth['cid'])
 # inquiry don't send to rfd
             if 'inquiry' in mo_cloth.ext and mo_cloth.ext['inquiry']:
                 continue
             s_clothes += " %s %d" %(mo_cloth.get_name(), it_cloth['number'])
+            i_clothes_number += int(it_cloth['number'])
 # rfd remark len is 100
         if len(s_remark.encode('utf-8')) + len(s_clothes.encode('utf-8')) > 100:
             s_clothes = u" 订单品类过多，请联系客服获取详细信息 "
@@ -189,7 +195,7 @@ class RFD(models.Model):
             "SendProvinceName": mo_bill.province,
             "SendCityName": mo_bill.city,
             "SendAreaName": mo_bill.area,
-            "SendAddress": mo_bill.address + u"[洗来了 %d]" %(mo_bill.bid),
+            "SendAddress": mo_bill.address + u"[洗来了 id:%d 共%d件]" %(mo_bill.bid, i_clothes_number),
             "NeedAmount": mo_bill.total,
             "ProtectPrice": 0,
             "Remark": s_remark,

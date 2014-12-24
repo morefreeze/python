@@ -212,9 +212,9 @@ def post_status(request):
         d_status_info = RFD.get_status_info(it_status_info['StatusInfo'])
         a_st_info.append(d_status_info)
         d_sort_time[ d_status_info['OperateId'] ] = d_status_info['OperateTime']
-    d_sort_time = sorted(d_sort_time.items(), key=lambda e:e[1])
+    l_sort_time = sorted(d_sort_time.items(), key=lambda e:e[1])
     a_res = []
-    for s_OperateId, s_OperateTime in d_sort_time.items():
+    for s_OperateId, s_OperateTime in l_sort_time:
         for it_st_info in a_st_info:
             if it_st_info['OperateId'] == s_OperateId:
                 d_ret = RFD.update(it_st_info)
