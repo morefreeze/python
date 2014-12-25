@@ -31,7 +31,11 @@ class User(models.Model):
     ext = JSONField(default={},blank=True)
 
     def __unicode__(self):
-        return "%s(%d)" %(self.name, self.uid)
+        if None != self.default_adr:
+            s_real_name = self.default_adr.real_name
+        else:
+            s_real_name = ''
+        return "%d([%s] [%s])" %(self.uid, s_real_name, self.name)
 
     def save(self, *args, **kwargs):
         # delete old file when replacing by updating the file

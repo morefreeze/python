@@ -138,6 +138,8 @@ class Bill(Mass_Clothes):
     def add_time(self, tag):
         if None == self.ext:
             self.ext = {}
+        if 'lg_time' not in self.ext:
+            self.ext['lg_time'] = {}
         self.ext['lg_time'][tag] = dt.datetime.now()
 
     def get_full_address(self):
@@ -174,6 +176,7 @@ class Bill(Mass_Clothes):
                         %('num*price<0', it_cloth.__str__()))
                 else:
                     f_total += i_num * f_price
+            self.ext['old_total'] = f_total
             if self.score >= 0:
                 if f_total - self.score * SCORE_RMB_RATE < 0:
                     self.add_error('score exceed total price')

@@ -8,7 +8,7 @@ class BillSerializer(serializers.ModelSerializer):
         fields = ('bid', 'create_time', 'get_time_0', 'get_time_1', \
                   'return_time_0', 'return_time_1', \
                   'own', 'lg', 'address', 'real_name', 'phone', \
-                  'status', 'deleted', \
+                  'status', 'deleted', 'score', \
                   'clothes', 'total', 'comment', 'ext')
 
     def transform_address(self, obj, value):
