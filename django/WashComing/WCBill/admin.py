@@ -17,6 +17,7 @@ def confirm_order(request, id):
         return JSONResponse({'errmsg':'bill not exist [%d]' %(id)})
     if Bill.CONFIRMING == mo_bill.status:
         mo_bill.status = Bill.WAITTING_GET
+        mo_bill.add_time(Bill.WAITTING_GET)
         mo_bill.save()
     return JSONResponse({})
 
@@ -29,12 +30,12 @@ def show_clothes(request, id):
 
 class BillAdmin(admin.ModelAdmin):
     buttons = [
-        {
-             'url': '_confirm',
-             'textname': u'确认订单',
-             'func': confirm_order,
-             'confirm': u'你想确认这个订单吗'
-        },
+#        {
+#             'url': '_confirm',
+#             'textname': u'确认订单',
+#             'func': confirm_order,
+#             'confirm': u'你想确认这个订单吗'
+#        },
         {
              'url': '_show_clothes',
              'textname': u'展示衣物',

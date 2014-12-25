@@ -390,9 +390,11 @@ class RFD(models.Model):
                                 cls.DELIVERY, cls.STAY, cls.OUT_WAREHOUSE]:
                     mo_rfd.status = cls.RETURNNING
                     mo_bill.status = mo_bill.__class__.RETURNNING
+                    mo_bill.add_time(mo_bill.__class__.RETURNNING)
                 if cls.SUCCESS == i_status:
                     mo_rfd.status = cls.CLIENT_SIGN
                     mo_bill.status = mo_bill.__class__.NEED_FEEDBACK
+                    mo_bill.add_time(mo_bill.__class__.NEED_FEEDBACK)
             mo_rfd.save()
             mo_bill.save()
         except (Exception) as e:
