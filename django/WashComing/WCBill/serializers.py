@@ -37,5 +37,5 @@ class MyCouponSerializer(serializers.ModelSerializer):
 
     def transform_category(self, obj, value):
         if None == value:
-            return u'全部'
+            return u'全场'
         return obj.cid_thd.name

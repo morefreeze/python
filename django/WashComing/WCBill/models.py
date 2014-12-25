@@ -84,6 +84,18 @@ class Bill(Mass_Clothes):
     DONE = 60
     USER_CANCEL = -10
     ERROR = -20
+    StatusChoices = (
+        (READY,         u'准备'),
+        (CONFIRMING,    u'订单确认中'),
+        (WAITTING_GET,  u'物流确认中'),
+        (GETTING,       u'取衣中'),
+        (WASHING,       u'洗衣中'),
+        (RETURNNING,    u'送衣中'),
+        (NEED_FEEDBACK, u'待评价'),
+        (DONE,          u'订单完成'),
+        (USER_CANCEL,   u'用户取消'),
+        (ERROR,         u'发生错误'),
+    )
 
     LOWEST_SHIPPING_FEE = 49.0
     SHIPPING_FEE = 10.0
@@ -95,15 +107,15 @@ class Bill(Mass_Clothes):
     return_time_0 = models.DateTimeField()
     return_time_1 = models.DateTimeField()
     own = models.ForeignKey(User) # own_id in db
-    lg = models.OneToOneField(RFD,null=True, related_name='bill_of') # lg_id in db
+    lg = models.OneToOneField(RFD,blank=True,null=True, related_name='bill_of') # lg_id in db
     province = models.CharField(max_length=15,default='',choices=Province_Choice)
     city = models.CharField(max_length=63,default='',choices=City_Choice)
     area = models.CharField(max_length=15,default='',choices=Area_Choice)
     address = models.CharField(max_length=511, default='')
     phone = models.CharField(max_length=12,default='')
     real_name = models.CharField(max_length=255,default='')
-    shop = models.ForeignKey(Shop,null=True)
-    status = models.IntegerField(default=0)
+    shop = models.ForeignKey(Shop,blank=True,null=True)
+    status = models.IntegerField(default=READY,choices=StatusChoices)
     deleted = models.BooleanField(default=False)
     score = models.PositiveIntegerField(default=0)
     total = models.FloatField(default=0.0)
@@ -112,18 +124,7 @@ class Bill(Mass_Clothes):
 
     @classmethod
     def get_status(cls, i_status):
-        map = {
-            cls.READY : u'准备',
-            cls.CONFIRMING : u'确认中',
-            cls.WAITTING_GET : u'物流确认中',
-            cls.GETTING : u'取衣中',
-            cls.WASHING : u'洗衣中',
-            cls.RETURNNING : u'送衣中',
-            cls.NEED_FEEDBACK : u'待评价',
-            cls.DONE : u'订单完成',
-            cls.USER_CANCEL : u'用户取消',
-            cls.ERROR : u'发生错误',
-        }
+        map = dict(cls.StatusChoices)
         if i_status in map:
             return map[i_status]
         return u'未知'
@@ -132,6 +133,12 @@ class Bill(Mass_Clothes):
         return u"%d(￥%.2f [%s] [%s] [%s] [%s %s] [%s] 留言[%s])" %(self.bid, self.total, \
                 Bill.get_status(self.status), self.create_time, self.real_name, \
                 self.area, self.address, self.phone, self.comment)
+
+# add timestamp to log
+    def add_time(self, tag):
+        if None == self.ext:
+            self.ext = {}
+        self.ext['lg_time'][tag] = dt.datetime.now()
 
     def get_full_address(self):
         if 0 == len(self.province + self.city + self.area):
@@ -194,7 +201,7 @@ class Bill(Mass_Clothes):
 # coupon calc end
 # shipping fee
             if f_total < self.LOWEST_SHIPPING_FEE:
-                f_total += SHIPPING_FEE
+                f_total += Bill.SHIPPING_FEE
                 self.ext['shipping_fee'] = True
             else:
                 self.ext['shipping_fee'] = False
@@ -305,7 +312,7 @@ class MyCoupon(models.Model):
         return a_mycoupons
 
 # return False or bill.total
-    def is_vali(self, mo_bill):
+    def is_vali(self, mo_bill, b_report_error=True):
         if None == mo_bill:
             return False
         if mo_bill.own != self.own:
@@ -320,7 +327,8 @@ class MyCoupon(models.Model):
         t_bill.ext['use_coupon'] = self.mcid
         t_bill.calc_total()
         if None != t_bill.ext.get('error') or None == t_bill.ext.get('use_coupon'):
-            logging.error(t_bill.ext)
+            if b_report_error:
+                logging.error(t_bill.ext)
             return False
         return t_bill.total
 

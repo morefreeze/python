@@ -54,6 +54,9 @@ class RFD(models.Model):
     conf_dir = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
     config = ConfigParser.ConfigParser()
 
+    def __unicode__(self):
+        return "%d get[%s] return[%s]" %(self.lid, self.get_way_no, self.return_way_no)
+
     @classmethod
     # return rfd response convert dict
     def ImportOrders(cls, mo_bill):
@@ -125,9 +128,11 @@ class RFD(models.Model):
         t_response = loader.get_template(s_template_file)
         c_response = Context(d_import_orders)
         s_xml = t_response.render(c_response).encode('utf-8')
+        logging.debug(s_xml)
         s_req_xml = cls.send_api(s_url, s_xml)
         d_res = {}
         try:
+            logging.debug(s_req_xml)
             xml_req = ET.fromstring(s_req_xml)
             no_xml = xml_req.find('.//ImportResultDetail')
             for no_child in no_xml:
@@ -207,6 +212,7 @@ class RFD(models.Model):
                                  's_lcid':s_lcid
                                 }
 
+        logging.debug(soap_msg)
         webservice = httplib.HTTP(s_url, s_port)
         webservice.putrequest("POST", "/DeliveryService.svc?wsdl")
         webservice.putheader("Content-type", "text/xml; charset=\"UTF-8\"")
@@ -367,9 +373,11 @@ class RFD(models.Model):
                                 cls.DELIVERY, cls.STAY, cls.OUT_WAREHOUSE]:
                     mo_rfd.status = cls.GETTING
                     mo_bill.status = mo_bill.__class__.GETTING
+                    mo_bill.add_time(mo_bill.__class__.GETTING)
                 if cls.SUCCESS == i_status:
                     mo_rfd.status = cls.GOT
                     mo_bill.status = mo_bill.__class__.WASHING
+                    mo_bill.add_time(mo_bill.__class__.WASHING)
             elif 3 == i_type:
                 if dt_operate_time < mo_rfd.return_operate_time:
                     d_ret['Ret'] = 0

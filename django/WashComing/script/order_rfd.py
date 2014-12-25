@@ -65,7 +65,9 @@ def handleImportOrders(mo_queue):
             mo_rfd.return_form_no = s_form_no
             mo_rfd.return_operate_time = dt_now
             mo_rfd.status = RFD.TO_RETURN
+        mo_bill.status = Bill.RETURNNING
         mo_rfd.save()
+        mo_bill.save()
     except Exception as e:
         mo_queue.message = traceback.format_exc()
         return 99

@@ -81,8 +81,12 @@ class Cloth(models.Model):
         try:
             mo_ancestor = cls.objects.get(cid=i_ancestor)
             mo_child = cls.objects.get(cid=i_child)
+            if None == mo_ancestor:
+                return False
             for i in range(10):
-                if mo_ancestor.cid == mo_child.fa_cid.cid:
+                if None == mo_child:
+                    break
+                if None != mo_child.fa_cid and mo_ancestor.cid == mo_child.fa_cid.cid:
                     return True
                 mo_child = mo_child.fa_cid
         except (cls.DoesNotExist) as e:
