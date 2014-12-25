@@ -14,14 +14,14 @@
             <MerchantCode>{{ merchant_code }}</MerchantCode>
             <FormCode>{{ bid }}</FormCode>
             <PerFormCode/>
-            <ToName>{{ shop_name }}</ToName>
-            <ToAddress>{{ shop_address }}</ToAddress>
-            <ToProvince>{{ shop_province }}</ToProvince>
-            <ToCity>{{ shop_city }}</ToCity>
-            <ToArea>{{ shop_area }}</ToArea>
-            <ToPostCode>100000</ToPostCode>
-            <ToMobile>{{ shop_phone }}</ToMobile>
-            <ToPhone>{{ shop_phone }}</ToPhone>
+            <FromName>{{ shop_name }}</FromName>
+            <FromAddress>{{ shop_address }}</FromAddress>
+            <FromProvince>{{ shop_province }}</FromProvince>
+            <FromCity>{{ shop_city }}</FromCity>
+            <FromArea>{{ shop_area }}</FromArea>
+            <FromPostCode>100000</FromPostCode>
+            <FromMobile>{{ shop_phone }}</FromMobile>
+            <FromPhone>{{ shop_phone }}</FromPhone>
             <OrderType>0</OrderType>
             <TotalAmount>{{ bill_total }}</TotalAmount>
             <PaidAmount>{{ bill_paid }}</PaidAmount>
@@ -30,14 +30,14 @@
             <InsureAmount>0</InsureAmount>
             <Weight>0</Weight>
             <Comment>{{ comment }}</Comment>
-            <FromName>{{ user_name }}</FromName>
-            <FromAddress>{{ user_address }}</FromAddress>
-            <FromProvince>{{ user_province }}</FromProvince>
-            <FromCity>{{ user_city }}</FromCity>
-            <FromArea>{{ user_area }}</FromArea>
-            <FromPostCode>100000</FromPostCode>
-            <FromMobile>{{ user_phone }}</FromMobile>
-            <FromPhone>{{ user_phone }}</FromPhone>
+            <ToName>{{ user_name }}</ToName>
+            <ToAddress>{{ user_address }}</ToAddress>
+            <ToProvince>{{ user_province }}</ToProvince>
+            <ToCity>{{ user_city }}</ToCity>
+            <ToArea>{{ user_area }}</ToArea>
+            <ToPostCode>100000</ToPostCode>
+            <ToMobile>{{ user_phone }}</ToMobile>
+            <ToPhone>{{ user_phone }}</ToPhone>
             <GoodsProperty>0</GoodsProperty>
             <GoodsCategory/>
             <OrderDetails>

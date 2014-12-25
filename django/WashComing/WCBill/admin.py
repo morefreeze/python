@@ -1,5 +1,6 @@
 # coding=utf-8
 from django.contrib import admin
+from WCLib.views import *
 from WCBill.models import Bill, Coupon, MyCoupon
 
 # Register your models here.
@@ -9,16 +10,35 @@ class CouponAdmin(admin.ModelAdmin):
 class MyCouponAdmin(admin.ModelAdmin):
     pass
 
-def add_logistics_order(request, id):
-    pass
+def confirm_order(request, id):
+    try:
+        mo_bill = Bill.objects.get(bid=id)
+    except (Bill.DoesNotExist) as e:
+        return JSONResponse({'errmsg':'bill not exist [%d]' %(id)})
+    if Bill.CONFIRMING == mo_bill.status:
+        mo_bill.status = Bill.WAITTING_GET
+        mo_bill.save()
+    return JSONResponse({})
+
+def show_clothes(request, id):
+    try:
+        mo_bill = Bill.objects.get(bid=id)
+    except (Bill.DoesNotExist) as e:
+        return JSONResponse({'errmsg':'bill not exist [%d]' %(id)})
+    return render_to_response('admin/WCBill/show_clothes.html', {'clothes':mo_bill.clothes})
 
 class BillAdmin(admin.ModelAdmin):
     buttons = [
         {
-            'url': '_ban_action',
-             'textname': 'Ban user',
-             'func': add_logistics_order,
-             'confirm': u'Do you want ban this user?'
+             'url': '_confirm',
+             'textname': u'确认订单',
+             'func': confirm_order,
+             'confirm': u'你想确认这个订单吗'
+        },
+        {
+             'url': '_show_clothes',
+             'textname': u'展示衣物',
+             'func': show_clothes,
         },
     ]
     def change_view(self, request, object_id, form_url='', extra_context={}):
