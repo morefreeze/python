@@ -96,12 +96,15 @@ def submit(request):
 # remove cart seltcted clothes
     Cart.remove_bill_clothes(mo_user, mo_bill)
 # add order push queue
-    dt_fetch_time = mo_bill.get_time_0
-    OrderQueue.objects.create(bill=mo_bill, type=OrderQueue.AddFetchOrder,
-                              status=OrderQueue.TODO, time=dt_fetch_time)
-    dt_import_time = mo_bill.return_time_0
-    OrderQueue.objects.create(bill=mo_bill, type=OrderQueue.ImportOrders,
-                              status=OrderQueue.TODO, time=dt_import_time)
+# if no need client helper confirm then send order queue directly
+# or send it after client helper confirm
+    if mo_bill.status == Bill.WAITTING_GET:
+        dt_fetch_time = mo_bill.get_time_0
+        OrderQueue.objects.create(bill=mo_bill, type=OrderQueue.AddFetchOrder,
+                                  status=OrderQueue.TODO, time=dt_fetch_time)
+        dt_import_time = mo_bill.return_time_0
+        OrderQueue.objects.create(bill=mo_bill, type=OrderQueue.ImportOrders,
+                                  status=OrderQueue.TODO, time=dt_import_time)
     return JSONResponse({'errno':0, 'bid':mo_bill.bid,
                          'total':mo_bill.total})
 
@@ -316,15 +319,10 @@ def list_mycoupon(request):
     i_type = d_data.get('type')
     dt_now = dt.datetime.now()
     a_mycoupons = MyCoupon.query_mycoupons(mo_user, i_type)
-    if None == a_mycoupons:
-        return JSONResponse({'errmsg':'type error'})
     d_response = {
-        'data': [],
+        'data': a_mycoupons,
         'errno': 0,
     }
-    for it_mycoupon in a_mycoupons:
-        se_mycoupon = MyCouponSerializer(it_mycoupon)
-        d_response['data'].append(se_mycoupon.data)
     return JSONResponse(d_response)
 
 def calc_mycoupon(request):
