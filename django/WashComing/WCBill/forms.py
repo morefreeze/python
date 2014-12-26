@@ -20,6 +20,7 @@ class BillSubmitForm(forms.Form):
     return_time_1 = forms.DateTimeField(required = True)
     aid = forms.IntegerField(required = True)
     payment = forms.ChoiceField(required = True, choices=Payment_Choices)
+    immediate = forms.BooleanField(required = False)
     comment = forms.CharField(required = False,
                               max_length=255)
     score = forms.IntegerField(required = False)

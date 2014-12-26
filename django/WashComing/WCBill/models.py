@@ -134,13 +134,21 @@ class Bill(Mass_Clothes):
                 Bill.get_status(self.status), self.create_time, self.real_name, \
                 self.area, self.address, self.phone, self.comment)
 
-# add timestamp to log
+# add until current(<=status) status timestamp to log
     def add_time(self, tag):
         if None == self.ext:
             self.ext = {}
         if 'lg_time' not in self.ext:
             self.ext['lg_time'] = {}
-        self.ext['lg_time'][tag] = dt.datetime.now()
+        tag = int(tag or 0)
+        if tag < Bill.ERROR or tag > Bill.DONE:
+            tag = Bill.ERROR
+        for i_status, s_ch in self.StatusChoices:
+            if i_status < 0:
+                continue
+            if tag < i_status:
+                break
+            self.ext['lg_time'][i_status] = dt.datetime.now()
 
     def get_full_address(self):
         if 0 == len(self.province + self.city + self.area):
@@ -193,6 +201,7 @@ class Bill(Mass_Clothes):
                         for it_cloth in js_cloth:
                             if not Cloth.is_ancestor(mo_cloth_thd.cid, it_cloth['cid']):
                                 raise ValueError("cid[%d] is not belong %s" %(it_cloth['cid'], mo_cloth_thd))
+                    logging.debug("%.2f %.2f" %(f_total, mo_mycoupon.price_thd))
                     if f_total < mo_mycoupon.price_thd:
                         raise ValueError("total is not enough")
                     if mo_mycoupon.percent_dst > 0:
@@ -217,6 +226,9 @@ class Bill(Mass_Clothes):
     def is_inquiry(self):
         js_cloth = self.clothes
         if self.comment != '':
+            self.ext['inquiry'] = True
+            return True
+        if self.ext.get('immediate'):
             self.ext['inquiry'] = True
             return True
         for it_cloth in js_cloth:
@@ -315,14 +327,15 @@ class MyCoupon(models.Model):
                                 | Q(expire_time__lte = dt_now)))
             else:
                 a_mycoupons = None
-                logging.debug('query_mycoupons type error [%d]' %(i_type))
+                logging.error('query_mycoupons type error [%d]' %(i_type))
             if None != a_mycoupons:
                 a_mycoupons = a_mycoupons.order_by('used', 'start_time', 'expire_time', 'mcid')
                 from WCBill.serializers import MyCouponSerializer
                 for it_mycoupon in a_mycoupons:
-                    se_mycoupon = MyCouponSerializer(it_mycoupon)
-                    se_mycoupon.data['status'] = i_type
-                    a_ret_mycoupons.append(se_mycoupon.data)
+                    # se_mycoupon = MyCouponSerializer(it_mycoupon)
+                    # se_mycoupon.data['status'] = i_type
+                    it_mycoupon.status = i_type
+                    a_ret_mycoupons.append(it_mycoupon)
         return a_ret_mycoupons
 
 # return False or bill.total
@@ -332,6 +345,8 @@ class MyCoupon(models.Model):
         if mo_bill.own != self.own:
             return False
         if self.used:
+            return False
+        if None != self.status and self.status != MyCoupon.CAN_USE:
             return False
         dt_now = dt.datetime.now()
         if dt_now < self.start_time or dt_now >= self.expire_time:

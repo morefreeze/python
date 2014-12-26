@@ -59,7 +59,9 @@ class RFD(models.Model):
 
     @classmethod
     # return rfd response convert dict
-    def ImportOrders(cls, mo_bill):
+    # reversed is True then send custom to wash shop order(getting clothes)
+    # reversed is False then returnning clothes
+    def ImportOrders(cls, mo_bill, reversed=False):
         mo_shop = mo_bill.shop
         if None == mo_shop:
             return {'ResultCode':'ImportFailure', 'ResultMessage':'no shop info'}
@@ -77,30 +79,56 @@ class RFD(models.Model):
         s_url = "http://%s:%s/api/" %(s_url, s_port)
         s_return_start = mo_bill.return_time_0.strftime(DATETIME_FORMAT_SHORT)
         s_return_end = mo_bill.return_time_1.strftime(DATETIME_FORMAT_SHORT)
-        d_import_orders = {
-            "company": s_company,
-            "dt": dt.datetime.now().strftime("%Y%m%d%H%M%S"),
-            "once_key": uuid.uuid4(),
-            "merchant_code": s_merchant_code,
-            "bid": mo_bill.bid,
-            "shop_name": mo_shop.name,
-            "shop_province": mo_shop.province,
-            "shop_city": mo_shop.city,
-            "shop_area": mo_shop.area,
-            "shop_address": mo_shop.address,
-            "shop_phone": mo_shop.phone,
-            "bill_total": mo_bill.total,
-            "bill_paid": mo_bill.paid,
-            "bill_receive": max(0, mo_bill.total - mo_bill.paid),
-            "user_name": mo_bill.real_name,
-            "user_province": mo_bill.province,
-            "user_city": mo_bill.city,
-            "user_area": mo_bill.area,
-            "user_address": mo_bill.address,
-            "user_phone": mo_bill.phone,
-            "comment": "%s至%s送" %(s_return_start, s_return_end),
-            "order_details": "",
-        }
+        if reversed: # (getting order)
+            d_import_orders = {
+                "company": s_company,
+                "dt": dt.datetime.now().strftime("%Y%m%d%H%M%S"),
+                "once_key": uuid.uuid4(),
+                "merchant_code": s_merchant_code,
+                "bid": mo_bill.bid,
+                "user_name": mo_shop.name,
+                "user_province": mo_shop.province,
+                "user_city": mo_shop.city,
+                "user_area": mo_shop.area,
+                "user_address": mo_shop.address,
+                "user_phone": mo_shop.phone,
+                "bill_total": mo_bill.total,
+                "bill_paid": mo_bill.paid,
+                "bill_receive": max(0, mo_bill.total - mo_bill.paid),
+                "shop_name": mo_bill.real_name,
+                "shop_province": mo_bill.province,
+                "shop_city": mo_bill.city,
+                "shop_area": mo_bill.area,
+                "shop_address": mo_bill.address,
+                "shop_phone": mo_bill.phone,
+                "comment": "%s至%s送" %(s_return_start, s_return_end),
+                "order_details": "",
+            }
+        else: # reversed == False (returnning order)
+            d_import_orders = {
+                "company": s_company,
+                "dt": dt.datetime.now().strftime("%Y%m%d%H%M%S"),
+                "once_key": uuid.uuid4(),
+                "merchant_code": s_merchant_code,
+                "bid": mo_bill.bid,
+                "shop_name": mo_shop.name,
+                "shop_province": mo_shop.province,
+                "shop_city": mo_shop.city,
+                "shop_area": mo_shop.area,
+                "shop_address": mo_shop.address,
+                "shop_phone": mo_shop.phone,
+                "bill_total": mo_bill.total,
+                "bill_paid": mo_bill.paid,
+                "bill_receive": max(0, mo_bill.total - mo_bill.paid),
+                "user_name": mo_bill.real_name,
+                "user_province": mo_bill.province,
+                "user_city": mo_bill.city,
+                "user_area": mo_bill.area,
+                "user_address": mo_bill.address,
+                "user_phone": mo_bill.phone,
+                "comment": "%s至%s送" %(s_return_start, s_return_end),
+                "order_details": "",
+            }
         js_cloth = mo_bill.clothes
         i_clothes_number = 0
         for it_cloth in js_cloth:
@@ -129,7 +157,6 @@ class RFD(models.Model):
         t_response = loader.get_template(s_template_file)
         c_response = Context(d_import_orders)
         s_xml = t_response.render(c_response).encode('utf-8')
-        logging.debug(s_xml)
         s_req_xml = cls.send_api(s_url, s_xml)
         d_res = {}
         try:
@@ -463,11 +490,13 @@ class OrderQueue(models.Model):
     AddFetchOrder = 1
     ImportOrders = 2
     GetOrderLog = 3
+    ImportGettingOrders = 4
     Type_Choice = (
         (Nothing, 'Nothing'),
         (AddFetchOrder, 'AddFetchOrder'),
         (ImportOrders, 'ImportOrders'),
         (GetOrderLog, 'GetOrderLog'),
+        (ImportGettingOrders, 'ImportGettingOrders'),
     )
 
     qid = models.AutoField(primary_key=True)
