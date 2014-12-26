@@ -87,7 +87,7 @@ class RFD(models.Model):
             "shop_province": mo_shop.province,
             "shop_city": mo_shop.city,
             "shop_area": mo_shop.area,
-            "shop_address": mo_shop.address + u"[洗来了 %d]" %(mo_bill.bid),
+            "shop_address": mo_shop.address,
             "shop_phone": mo_shop.phone,
             "bill_total": mo_bill.total,
             "bill_paid": mo_bill.paid,
@@ -123,6 +123,7 @@ class RFD(models.Model):
             except (AttributeError, Cloth.DoesNotExist) as e:
                 continue
 
+        d_import_orders['shop_address'] += u"[洗来了 id:%d 共%d件]" %(mo_bill.bid, i_clothes_number)
         d_import_orders['user_address'] += u"[洗来了 id:%d 共%d件]" %(mo_bill.bid, i_clothes_number)
 
         t_response = loader.get_template(s_template_file)

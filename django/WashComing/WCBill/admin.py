@@ -16,9 +16,18 @@ def confirm_order(request, id):
     except (Bill.DoesNotExist) as e:
         return JSONResponse({'errmsg':'bill not exist [%d]' %(id)})
     if Bill.CONFIRMING == mo_bill.status:
+        if None == mo_bill.shop and mo_bill.ext.get('immediate'):
+            return HttpResponse(u'因为该单为立即下单，请选择一家店铺后再确认订单')
         mo_bill.status = Bill.WAITTING_GET
         mo_bill.add_time(Bill.WAITTING_GET)
         mo_bill.save()
+
+        dt_fetch_time = mo_bill.get_time_0
+        OrderQueue.objects.create(bill=mo_bill, type=OrderQueue.AddFetchOrder,
+                                  status=OrderQueue.TODO, time=dt_fetch_time)
+        dt_import_time = mo_bill.return_time_0
+        OrderQueue.objects.create(bill=mo_bill, type=OrderQueue.ImportOrders,
+                                  status=OrderQueue.TODO, time=dt_import_time)
     return JSONResponse({})
 
 def show_clothes(request, id):

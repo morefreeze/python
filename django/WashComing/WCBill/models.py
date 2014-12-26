@@ -298,21 +298,32 @@ class MyCoupon(models.Model):
         if None == mo_user:
             return None
         dt_now = dt.datetime.now()
-        if MyCoupon.CAN_USE == i_type:
-            a_mycoupons = MyCoupon.objects.filter(own=mo_user, used=False, \
-                            start_time__lte = dt_now, expire_time__gt = dt_now)
-        elif MyCoupon.NOUSED == i_type:
-            a_mycoupons = MyCoupon.objects.filter(own=mo_user, used=False, \
-                            start_time__gte = dt_now, expire_time__gt = dt_now)
-        elif MyCoupon.USED_OR_EXPIRE == i_type:
-            a_mycoupons = MyCoupon.objects.filter(Q(own=mo_user) & (Q(used=True) \
-                            | Q(expire_time__lte = dt_now)))
-        elif MyCoupon.ALL == i_type:
-            a_mycoupons = MyCoupon.objects.filter(own=mo_user)
+        if MyCoupon.ALL == i_type:
+            s_status = [MyCoupon.CAN_USE, MyCoupon.NOUSED, MyCoupon.USED_OR_EXPIRE]
         else:
-            return None
-        a_mycoupons = a_mycoupons.order_by('used', 'start_time', 'expire_time', 'mcid')
-        return a_mycoupons
+            s_status = [i_type]
+        a_ret_mycoupons = []
+        for i_type in s_status:
+            if MyCoupon.CAN_USE == i_type:
+                a_mycoupons = MyCoupon.objects.filter(own=mo_user, used=False, \
+                                start_time__lte = dt_now, expire_time__gt = dt_now)
+            elif MyCoupon.NOUSED == i_type:
+                a_mycoupons = MyCoupon.objects.filter(own=mo_user, used=False, \
+                                start_time__gte = dt_now, expire_time__gt = dt_now)
+            elif MyCoupon.USED_OR_EXPIRE == i_type:
+                a_mycoupons = MyCoupon.objects.filter(Q(own=mo_user) & (Q(used=True) \
+                                | Q(expire_time__lte = dt_now)))
+            else:
+                a_mycoupons = None
+                logging.debug('query_mycoupons type error [%d]' %(i_type))
+            if None != a_mycoupons:
+                a_mycoupons = a_mycoupons.order_by('used', 'start_time', 'expire_time', 'mcid')
+                from WCBill.serializers import MyCouponSerializer
+                for it_mycoupon in a_mycoupons:
+                    se_mycoupon = MyCouponSerializer(it_mycoupon)
+                    se_mycoupon.data['status'] = i_type
+                    a_ret_mycoupons.append(se_mycoupon.data)
+        return a_ret_mycoupons
 
 # return False or bill.total
     def is_vali(self, mo_bill, b_report_error=True):
