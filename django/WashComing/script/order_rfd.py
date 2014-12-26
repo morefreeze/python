@@ -36,15 +36,15 @@ def handleAddFetchOrder(mo_queue):
         mo_bill.save()
         mo_rfd.save()
     except Exception as e:
-        # todo: logging
+        logging.error(traceback.format_exc())
         mo_queue.message = traceback.format_exc()
         return 99
     return 0
 
-def handleImportOrders(mo_queue):
+def handleImportOrders(mo_queue, reversed=False):
     try:
         mo_bill = mo_queue.bill
-        d_res = RFD.ImportOrders(mo_bill)
+        d_res = RFD.ImportOrders(mo_bill, reversed)
         print d_res
         if 'ResultCode' not in d_res or not d_res['ResultCode'].startswith('IsSuccess'):
             mo_queue.message = d_res.get('ResultMessage')
@@ -57,7 +57,6 @@ def handleImportOrders(mo_queue):
             mo_rfd = RFD.objects.create(return_way_no=s_way_no,
                                         return_form_no=s_form_no,
                                         return_operate_time=dt_now,
-                                        get_operate_time=None,
                                         status=RFD.TO_RETURN)
             mo_bill.lg = mo_rfd
         else:
@@ -72,6 +71,9 @@ def handleImportOrders(mo_queue):
         mo_queue.message = traceback.format_exc()
         return 99
     return 0
+
+def handleImportGettingOrders(mo_queue):
+    return handleImportOrders(mo_queue, reversed=True)
 
 if __name__ == '__main__':
     trigger_time = dt.datetime.now() + dt.timedelta(hours=8)
@@ -88,6 +90,7 @@ if __name__ == '__main__':
     mo_queue.save()
     handle = {
         OrderQueue.AddFetchOrder: handleAddFetchOrder,
+        OrderQueue.ImportGettingOrders: handleImportGettingOrders,
         OrderQueue.ImportOrders: handleImportOrders,
     }
     i_ret_code = handle[mo_queue.type](mo_queue)

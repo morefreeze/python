@@ -35,8 +35,10 @@ def submit(request):
     mo_bill.get_time_0 = d_data.get('get_time_0')
     mo_bill.get_time_1 = d_data.get('get_time_1')
     dt_now = dt.datetime.now()
-    if mo_bill.get_time_1 <= mo_bill.get_time_0 or mo_bill.get_time_0 <= dt_now:
-        return JSONResponse({'errmsg':'get_time error'})
+    # reserve bill will check get_time
+    if not d_data.get('immediate'):
+        if mo_bill.get_time_1 <= mo_bill.get_time_0 or mo_bill.get_time_0 <= dt_now:
+            return JSONResponse({'errmsg':'get_time error'})
     mo_bill.return_time_0 = d_data.get('return_time_0')
     mo_bill.return_time_1 = d_data.get('return_time_1')
     if mo_bill.return_time_1 <= mo_bill.return_time_0:
@@ -65,8 +67,16 @@ def submit(request):
     if i_score < 0 or mo_user.score < i_score:
         return JSONResponse({'errmsg':'score error'})
     mo_bill.score = i_score
+    mo_bill.ext['use_coupon'] = d_data.get('mcid')
+# above all init for calc_total
+
     mo_bill.calc_total()
+
+
 # if no inquiry cloth will confirm directly
+# immediate send order after client helper confirm
+    if d_data.get('immediate'):
+        mo_bill.ext['immediate'] = True
     if mo_bill.is_inquiry():
         mo_bill.status = Bill.CONFIRMING
         mo_bill.add_time(Bill.CONFIRMING)
@@ -84,10 +94,11 @@ def submit(request):
 # minue user score
     mo_user.score -= i_score
     mo_user.save()
-    if mo_bill.ext.get('mcid') > 0:
+    i_use_coupon = mo_bill.ext.get('use_coupon')
+    if i_use_coupon > 0:
 # mark coupon used
         try:
-            mo_mycoupon = MyCoupon.objects.get(mcid=mo_bill.ext.get('mcid'))
+            mo_mycoupon = MyCoupon.objects.get(mcid=i_use_coupon)
             mo_mycoupon.used = True
             mo_mycoupon.save()
         except (MyCoupon.DoesNotExist) as e:
@@ -320,9 +331,12 @@ def list_mycoupon(request):
     dt_now = dt.datetime.now()
     a_mycoupons = MyCoupon.query_mycoupons(mo_user, i_type)
     d_response = {
-        'data': a_mycoupons,
+        'data': [],
         'errno': 0,
     }
+    for it_mycoupon in a_mycoupons:
+        se_mycoupon = MyCouponSerializer(it_mycoupon)
+        d_response['data'].append(se_mycoupon.data)
     return JSONResponse(d_response)
 
 def calc_mycoupon(request):
@@ -350,6 +364,7 @@ def calc_mycoupon(request):
         t_bill = Bill(clothes=mo_bill.clothes, own=mo_user)
         if it_mycoupon.is_vali(t_bill, b_report_error=False):
             se_mycoupon = MyCouponSerializer(it_mycoupon)
+            #se_mycoupon.data['status'] = it_mycoupon.status
             d_response['data'].append(se_mycoupon.data)
     return JSONResponse(d_response)
 

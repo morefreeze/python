@@ -15,7 +15,7 @@ class BillSerializer(serializers.ModelSerializer):
         return obj.get_full_address()
 
     def transform_status(self, obj, value):
-        return int(value * 0.1) * 10
+        return value
 
 class FeedbackSerializer(serializers.ModelSerializer):
     class Meta:
@@ -29,11 +29,17 @@ class MyCouponSerializer(serializers.ModelSerializer):
     price_threshold = serializers.CharField(source='price_thd')
     price_discount = serializers.FloatField(source='price_dst')
     percent_discount = serializers.IntegerField(source='percent_dst')
+    status = serializers.IntegerField(source='status')
 
     class Meta:
         model = MyCoupon
         fields = ('mcid', 'own', 'start_time', 'expire_time', 'price_threshold', 'price_discount', \
-                 'percent_discount', 'used', 'category')
+                 'percent_discount', 'used', 'category', 'status')
+
+    def transform_status(self, obj, value):
+        if None != value:
+            return value
+        return 0
 
     def transform_category(self, obj, value):
         if None == value:

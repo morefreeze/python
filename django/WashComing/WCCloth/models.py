@@ -83,6 +83,8 @@ class Cloth(models.Model):
             mo_child = cls.objects.get(cid=i_child)
             if None == mo_ancestor:
                 return False
+            if i_ancestor == i_child:
+                return True
             for i in range(10):
                 if None == mo_child:
                     break
