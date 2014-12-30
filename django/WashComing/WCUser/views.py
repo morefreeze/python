@@ -1,3 +1,4 @@
+# coding=utf-8
 from django.db import IntegrityError
 from django.http import HttpResponseRedirect
 from django.core.urlresolvers import reverse
@@ -11,6 +12,7 @@ from WCUser.forms import UserRegisterForm, UserLoginForm, UserInfoForm, \
         UserResendResetForm, UserResetPasswordForm, UserResetPasswordConfirmForm, \
         UserFeedbackForm, UserUploadAvatarForm, UserThirdBindForm, UserThirdLoginForm, \
         UserBindEmailForm
+from WCBill.models import Coupon
 import datetime as dt
 
 # Create your views here.
@@ -38,6 +40,11 @@ def register(request):
     try:
         mo_user.save()
         se_user = UserSerializer(mo_user)
+# add new user coupon
+        a_coupons = Coupon.objects.filter(name__contains=u'诞生礼')
+        logging.debug('add coupons uid[%d] %s' %(mo_user.uid, a_coupons))
+        for it_coupon in a_coupons:
+            it_coupon.add_user(mo_user)
         return JSONResponse({'errno':0, 'uid':se_user.data.get('uid'), 'username':mo_user.name, 'token':s_token})
 # duplicate username
     except IntegrityError as e:

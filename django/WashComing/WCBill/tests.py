@@ -21,6 +21,8 @@ class BillBaseTest(TestCase):
     return_time_0 = get_time_0 + dt.timedelta(days=4)
     return_time_1 = return_time_0 + dt.timedelta(hours=3)
     clothes = ''
+    c1 = None
+    c2 = None
 
     def setUp(self):
 # register
@@ -47,6 +49,8 @@ class BillBaseTest(TestCase):
         c2 = Cloth.objects.create(name='b', price=42)
         self.clothes = '[{"price":35,"name":"a","number":7,"cid":%d,"image":""},{"price":42,"name":"b","number":12,"cid":%d,"image":""}]' \
                 %(c1.cid, c2.cid)
+        self.c1 = c1
+        self.c2 = c2
 
 class BillTest(BillBaseTest):
 
@@ -183,6 +187,51 @@ class BillTest(BillBaseTest):
             })
         self.assertJSONEqual(res.content, {'errmsg': {'return_time_1': ['This field is required.']}})
 
+    def test_submit_with_coupon(self):
+        s_get_time_0 = self.get_time_0.strftime(FULL_DATETIME_FORMAT)
+        s_get_time_1 = self.get_time_1.strftime(FULL_DATETIME_FORMAT)
+        s_return_time_0 = self.return_time_0.strftime(FULL_DATETIME_FORMAT)
+        s_return_time_1 = self.return_time_1.strftime(FULL_DATETIME_FORMAT)
+
+        mo_user = User.objects.get(name=self.username)
+        dt_now = dt.datetime.now()
+        dt_tomorrow = dt.datetime.today() + dt.timedelta(days=1)
+# c1 100 - 10
+        mo_myco0 = MyCoupon.objects.create(own=mo_user, start_time=dt_now, cid_thd=self.c1, expire_time=dt_tomorrow, \
+            percent_dst=0, price_thd=100, price_dst=10)
+        res = self.client.get(
+            u'/bill/submit',
+            {'username':self.username, 'token':self.token,
+             'get_time_0':s_get_time_0, 'get_time_1':s_get_time_1,
+             'return_time_0':s_return_time_0, 'return_time_1':s_return_time_1,
+             'aid':self.aid, 'clothes':self.clothes, 'payment':'pos', 'mcid': mo_myco0.mcid,
+            })
+        self.bid = json.loads(res.content)['bid']
+        self.assertJSONEqual(res.content, {'bid':self.bid, 'total':739.0, 'errno':0})
+# all category 150 - 15
+        mo_myco0 = MyCoupon.objects.create(own=mo_user, start_time=dt_now, cid_thd=None, expire_time=dt_tomorrow, \
+            percent_dst=0, price_thd=150, price_dst=15)
+        res = self.client.get(
+            u'/bill/submit',
+            {'username':self.username, 'token':self.token,
+             'get_time_0':s_get_time_0, 'get_time_1':s_get_time_1,
+             'return_time_0':s_return_time_0, 'return_time_1':s_return_time_1,
+             'aid':self.aid, 'clothes':self.clothes, 'payment':'pos', 'mcid': mo_myco0.mcid,
+            })
+        self.bid = json.loads(res.content)['bid']
+        self.assertJSONEqual(res.content, {'bid':self.bid, 'total':734.0, 'errno':0})
+# c1 250 - 20 but c1 not enough
+        mo_myco0 = MyCoupon.objects.create(own=mo_user, start_time=dt_now, cid_thd=self.c1, expire_time=dt_tomorrow, \
+            percent_dst=0, price_thd=250, price_dst=20)
+        res = self.client.get(
+            u'/bill/submit',
+            {'username':self.username, 'token':self.token,
+             'get_time_0':s_get_time_0, 'get_time_1':s_get_time_1,
+             'return_time_0':s_return_time_0, 'return_time_1':s_return_time_1,
+             'aid':self.aid, 'clothes':self.clothes, 'payment':'pos', 'mcid': mo_myco0.mcid,
+            })
+        self.assertJSONEqual(res.content, {'errmsg':"some error happened, please contact admin"})
+
 class FeedbackTest(BillBaseTest):
 
     def test_feedback(self):
@@ -308,9 +357,9 @@ class MyCouponTest(TestCase):
 
     def test_calc_mycoupon(self):
         s_clothes = json.dumps(self._bill.clothes)
-        print type(s_clothes)
+        #print type(s_clothes)
         res = self.client.get(u'/mycoupon/calc', {'username':self._user.name, 'token':'token', \
                                                   'clothes':s_clothes, })
-        print res
+        #print res
         self.assertEqual(res.status_code, 200)
 

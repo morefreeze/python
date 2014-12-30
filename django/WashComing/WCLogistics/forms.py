@@ -14,7 +14,7 @@ class AddressAddForm(forms.Form):
     phone = forms.CharField(required = True,
                              min_length=7,max_length=12)
     address = forms.CharField(required = True,
-                             min_length=3,max_length=255)
+                             min_length=3,max_length=15)
     set_default = forms.BooleanField(required = False)
 
 class AddressUpdateForm(forms.Form):
@@ -32,7 +32,7 @@ class AddressUpdateForm(forms.Form):
     area = forms.CharField(required = True,
                              min_length=2,max_length=15)
     address = forms.CharField(required = False,
-                             min_length=3,max_length=255)
+                             min_length=3,max_length=15)
     phone = forms.CharField(required = False,
                              min_length=7,max_length=12)
 

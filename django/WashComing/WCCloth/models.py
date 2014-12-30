@@ -13,16 +13,22 @@ cloth is leaf
 """
 class Cloth(models.Model):
     cid = models.AutoField(primary_key=True)
-    is_leaf = models.BooleanField(default=True)
-    fa_cid = models.ForeignKey('self', null=True,default=None,blank=True)
-    name = models.CharField(max_length=32)
-    image = models.ImageField(default='',blank=True,upload_to=get_cloth_filename)
-    image_hidden = models.ImageField(default='',blank=True,upload_to=get_cloth_filename)
-    detail = models.CharField(max_length=255,default='',blank=True)
-    price = models.FloatField(default=0.)
+    is_leaf = models.BooleanField(default=True, verbose_name=u'衣物标志', \
+        help_text=u'打勾则为衣物，否则为分类（一级或二级）')
+    fa_cid = models.ForeignKey('self', null=True,default=None,blank=True, verbose_name=u'上级分类id', \
+        help_text=u'如果为空，则该分类为一级分类')
+    name = models.CharField(max_length=32, verbose_name=u'衣物名称', help_text=u'')
+    image = models.ImageField(default='',blank=True,upload_to=get_cloth_filename, \
+        verbose_name=u'衣物选中图标', help_text=u'')
+    image_hidden = models.ImageField(default='',blank=True,upload_to=get_cloth_filename, \
+        verbose_name=u'衣物未选中图标', help_text=u'只有一级分类此项有值')
+    detail = models.CharField(max_length=255,default='',blank=True, verbose_name=u'详情', \
+        help_text=u'')
+    price = models.FloatField(default=0., verbose_name=u'单价', help_text=u'')
 # show weight, bigger show first
-    weight = models.IntegerField(default=0)
-    ext = JSONField(default={},blank=True)
+    weight = models.IntegerField(default=0, verbose_name=u'权重', \
+        help_text=u'权重越大则在同级排序下越靠前，取值[0,10000]')
+    ext = JSONField(default={},blank=True, verbose_name=u'扩展字段', help_text=u'')
 
     def __unicode__(self):
         return "%s(%d %.2f)" % (self.get_name(), self.cid, self.price)

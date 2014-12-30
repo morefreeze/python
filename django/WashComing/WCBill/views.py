@@ -78,17 +78,14 @@ def submit(request):
     if d_data.get('immediate'):
         mo_bill.ext['immediate'] = True
     if mo_bill.is_inquiry():
-        mo_bill.status = Bill.CONFIRMING
-        mo_bill.add_time(Bill.CONFIRMING)
+        mo_bill.change_status(Bill.CONFIRMING)
     else:
-        mo_bill.status = Bill.WAITTING_GET
-        mo_bill.add_time(Bill.WAITTING_GET)
+        mo_bill.change_status(Bill.WAITTING_GET)
     s_errmsg = mo_bill.ext.get('error')
     mo_bill.save()
     if None != s_errmsg and '' != s_errmsg:
         mo_bill.deleted = True
-        mo_bill.status = Bill.ERROR
-        mo_bill.add_time(Bill.ERROR)
+        mo_bill.change_status(Bill.ERROR)
         mo_bill.save()
         return JSONResponse({'errmsg': 'some error happened, please contact admin'})
 # minue user score
@@ -201,8 +198,7 @@ def cancel(request):
     s_errmsg = mo_bill.ext.get('error')
     if None == s_errmsg or '' == s_errmsg and mo_bill.score > 0:
         mo_user.score += mo_bill.score
-    mo_bill.status = Bill.USER_CANCEL
-    mo_bill.add_time(Bill.USER_CANCEL)
+    mo_bill.change_status(Bill.USER_CANCEL)
     mo_bill.save()
 # remove order push
     a_orderqueue = OrderQueue.objects.filter(bill=mo_bill, status__lte=OrderQueue.TODO)
@@ -245,8 +241,7 @@ def feedback(request):
     mo_fb.rate = i_rate
     mo_fb.content = s_content
     mo_fb.save()
-    mo_bill.status = Bill.DONE
-    mo_bill.add_time(Bill.DONE)
+    mo_bill.change_status(Bill.DONE)
     mo_bill.save()
     if mo_bill.total > 0:
         mo_user.exp += int(mo_bill.total)

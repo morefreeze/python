@@ -18,8 +18,7 @@ def confirm_order(request, id):
     except (Bill.DoesNotExist) as e:
         return JSONResponse({'errmsg':'bill not exist [%d]' %(id)})
     if Bill.CONFIRMING == mo_bill.status:
-        mo_bill.status = Bill.WAITTING_GET
-        mo_bill.add_time(Bill.WAITTING_GET)
+        mo_bill.change_status(Bill.WAITTING_GET)
 
         if mo_bill.ext.get('immediate'):
             if None == mo_bill.shop:
@@ -40,9 +39,25 @@ def confirm_order(request, id):
 def show_clothes(request, id):
     try:
         mo_bill = Bill.objects.get(bid=id)
+        t_map = {
+            "name": u'名称',
+            "image": u'图标',
+            "price": u'单价',
+            "number": u'数量',
+            "cid": u'衣物编号',
+        }
+        a_clothes = []
+        for it_cloth in mo_bill.clothes:
+            d_cloth = {}
+            for k,v in t_map.items():
+                if k in it_cloth:
+                    d_cloth[v] = it_cloth[k]
+            if 'price' in it_cloth and 'number' in it_cloth:
+                d_cloth[u'总价'] = int(it_cloth['number']) * it_cloth['price']
+            a_clothes.append(d_cloth)
     except (Bill.DoesNotExist) as e:
         return JSONResponse({'errmsg':'bill not exist [%d]' %(id)})
-    return render_to_response('admin/WCBill/show_clothes.html', {'clothes':mo_bill.clothes})
+    return render_to_response('admin/WCBill/show_clothes.html', {'clothes':a_clothes})
 
 class BillAdmin(admin.ModelAdmin):
     buttons = [
