@@ -11,24 +11,34 @@ import json
 
 # Create your models here.
 class User(models.Model):
-    uid = models.AutoField(primary_key=True)
-    name = models.CharField(unique=True,max_length=255)
-    token = models.CharField(max_length=255)
+    uid = models.AutoField(primary_key=True, verbose_name=u'用户id', help_text=u'')
+    name = models.CharField(unique=True,max_length=255, verbose_name=u'用户名', \
+        help_text=u'目前和手机号相同')
+    token = models.CharField(max_length=255, verbose_name=u'用户token', \
+        help_text=u'用户登陆凭据，由密码加密而来')
 # qq$12345|wb$54321|
-    third_uids = models.CharField(max_length=255,default='',blank=True)
-    third_token = models.CharField(max_length=255,default='',blank=True)
-    avatar = models.ImageField(default='', upload_to=get_avatar_filename,blank=True)
-    phone = models.CharField(max_length=12,default='',blank=True)
-    email = models.CharField(max_length=128,default='',blank=True)
-    default_adr = models.OneToOneField('WCLogistics.Address',null=True,blank=True)
-    create_time = models.DateTimeField(auto_now_add=True,blank=True)
-    last_time = models.DateTimeField(auto_now=True)
-    score = models.IntegerField(default=0)
-    exp = models.IntegerField(default=0)
-    invited = models.ForeignKey('self',null=True,default=None,blank=True)
-    is_active = models.BooleanField(default=True)
-    deleted = models.BooleanField(default=False)
-    ext = JSONField(default={},blank=True)
+    third_uids = models.CharField(max_length=255,default='',blank=True, \
+        verbose_name=u'第三方登陆用户名', help_text=u'格式为"qq$12345|wb$54321|"')
+    third_token = models.CharField(max_length=255,default='',blank=True, \
+        verbose_name=u'第三方登陆token', help_text=u'第三方最近一次登陆凭据')
+    avatar = models.ImageField(default='', upload_to=get_avatar_filename,blank=True, \
+        verbose_name=u'头像', help_text=u'')
+    phone = models.CharField(max_length=12,default='',blank=True, \
+        verbose_name=u'手机', help_text=u'')
+    email = models.CharField(max_length=128,default='',blank=True, \
+        verbose_name=u'邮箱', help_text=u'')
+    default_adr = models.OneToOneField('WCLogistics.Address',null=True,blank=True, \
+        verbose_name=u'默认收货地址', help_text=u'')
+    create_time = models.DateTimeField(auto_now_add=True,blank=True, \
+        verbose_name=u'注册时间', help_text=u'')
+    last_time = models.DateTimeField(auto_now=True, verbose_name=u'上次操作时间', help_text=u'')
+    score = models.IntegerField(default=0, verbose_name=u'积分', help_text=u'')
+    exp = models.IntegerField(default=0, verbose_name=u'经验值', help_text=u'')
+    invited = models.ForeignKey('self',null=True,default=None,blank=True, \
+        verbose_name=u'被邀请用户', help_text=u'被邀请用户将会得到额外积分在该用户积分结算时')
+    is_active = models.BooleanField(default=True, verbose_name=u'激活标志', help_text=u'')
+    deleted = models.BooleanField(default=False, verbose_name=u'删除标志', help_text=u'')
+    ext = JSONField(default={},blank=True, verbose_name=u'扩展字段', help_text=u'')
 
     def __unicode__(self):
         if None != self.default_adr:
@@ -150,16 +160,23 @@ class User(models.Model):
 #=============User end
 
 class Shop(models.Model):
-    sid = models.AutoField(primary_key=True)
-    name = models.CharField(unique=True,max_length=255,default='')
-    real_name = models.CharField(max_length=255,default='')
-    province = models.CharField(max_length=15,default='',choices=Province_Choice)
-    city = models.CharField(max_length=63,default='',choices=City_Choice)
-    area = models.CharField(max_length=15,default='',choices=Area_Choice)
-    address = models.CharField(max_length=255,default='')
-    phone = models.CharField(max_length=12,default='')
-    deleted = models.BooleanField(default=False)
-    ext = JSONField(default={})
+    sid = models.AutoField(primary_key=True, verbose_name=u'店铺id', help_text=u'')
+    name = models.CharField(unique=True,max_length=255,default='', \
+        verbose_name=u'店铺名', help_text=u'采用缩写使用和物流对照')
+    real_name = models.CharField(max_length=255,default='', verbose_name=u'店长姓名', help_text=u'')
+    province = models.CharField(max_length=15,default='',choices=Province_Choice, \
+        verbose_name=u'省', help_text=u'')
+    city = models.CharField(max_length=63,default='',choices=City_Choice, \
+        verbose_name=u'市', help_text=u'')
+    area = models.CharField(max_length=15,default='',choices=Area_Choice, \
+        verbose_name=u'区', help_text=u'')
+    address = models.CharField(max_length=255,default='', verbose_name=u'店铺地址', help_text=u'')
+    phone = models.CharField(max_length=12,default='', verbose_name=u'电话', help_text=u'')
+# shop get clothes from logistics and return it
+    byself = models.BooleanField(default=False, verbose_name=u'自取标志', \
+        help_text=u'是否去物流站点自取')
+    deleted = models.BooleanField(default=False, verbose_name=u'删除标志', help_text=u'')
+    ext = JSONField(default={}, verbose_name=u'扩展字段', help_text=u'')
 
     def __unicode__(self):
         return "%s(%d)" %(self.name, self.sid)
@@ -174,8 +191,8 @@ class Shop(models.Model):
 #============Shop end
 
 class Feedback(models.Model):
-    fid = models.AutoField(primary_key=True)
-    own = models.ForeignKey(User)
-    create_time = models.DateTimeField(auto_now_add=True)
-    content = models.CharField(max_length=1023)
+    fid = models.AutoField(primary_key=True, verbose_name=u'用户反馈id', help_text=u'')
+    own = models.ForeignKey(User, verbose_name=u'用户名', help_text=u'')
+    create_time = models.DateTimeField(auto_now_add=True, verbose_name=u'反馈时间', help_text=u'')
+    content = models.CharField(max_length=1023, verbose_name=u'反馈内容', help_text=u'')
 

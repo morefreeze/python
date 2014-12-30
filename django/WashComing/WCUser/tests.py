@@ -2,6 +2,7 @@
 from WCLib.tests import *
 from WCUser.models import User, Feedback
 from WCUser.serializers import UserSerializer
+from WCBill.models import Coupon, MyCoupon
 
 # Create your tests here.
 class UserTest(TestCase):
@@ -233,3 +234,16 @@ class UserTest(TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertJSONEqual(res.content, {'errmsg':'this account has been binded'})
 
+    def test_register_add_coupon(self):
+        dt_now = dt.datetime.now()
+        Coupon.objects.create(name=u'诞生礼20', start_time=dt_now, expire_time=dt_now, keep_time=dt_now)
+        Coupon.objects.create(name=u'诞生礼30', start_time=dt_now, expire_time=dt_now, keep_time=dt_now)
+        Coupon.objects.create(name=u'诞生礼50', start_time=dt_now, expire_time=dt_now, keep_time=dt_now)
+
+        res = self.client.get(u'/user/register', {'phone':'13345678922', 'password':'abcdef',})
+        self.assertEqual(res.status_code, 200)
+        s_token = json.loads(res.content)["token"]
+        self.assertEqual(json.loads(res.content)["token"], s_token)
+
+        mo_user = User.objects.get(phone='13345678922')
+        self.assertEqual(len(MyCoupon.objects.filter(own=mo_user)), 3)

@@ -8,6 +8,7 @@ import json
 import traceback
 import datetime as dt
 import sys
+import logging
 
 def handleAddFetchOrder(mo_queue):
     try:

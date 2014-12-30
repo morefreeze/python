@@ -45,3 +45,6 @@ class MyCouponSerializer(serializers.ModelSerializer):
         if None == value:
             return u'全场'
         return obj.cid_thd.name
+
+    def transform_expire_time(self, obj, value):
+        return value - dt.timedelta(seconds=1)

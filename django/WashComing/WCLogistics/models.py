@@ -37,18 +37,28 @@ class RFD(models.Model):
     REFUSAL = 5
     OUT_WAREHOUSE = 10
 
-    lid = models.AutoField(primary_key=True)
-    status = models.IntegerField(default=0)
-    get_order_no = models.CharField(max_length=31,unique=True,default='',blank=True)
-    get_way_no = models.CharField(max_length=31,default='',blank=True)
-    get_form_no = models.CharField(max_length=31,default='',blank=True)
-    get_message = models.CharField(max_length=255,default='',blank=True)
-    get_operate_time = models.DateTimeField(default=dt.datetime(2000,1,1),blank=True)
-    return_way_no = models.CharField(max_length=31,default='',blank=True)
-    return_form_no = models.CharField(max_length=31,default='',blank=True)
-    return_message = models.CharField(max_length=255,default='',blank=True)
-    return_operate_time = models.DateTimeField(default=dt.datetime(2000,1,1),blank=True)
-    ext = JSONField(default=[],blank=True)
+    lid = models.AutoField(primary_key=True, verbose_name=u'如风达信息编号')
+    status = models.IntegerField(default=0, verbose_name=u'信息状态')
+    get_order_no = models.CharField(max_length=31,unique=True,default='',blank=True, \
+        verbose_name=u'取衣订单号', help_text=u'')
+    get_way_no = models.CharField(max_length=31,default='',blank=True, \
+        verbose_name=u'取衣运单号', help_text=u'')
+    get_form_no = models.CharField(max_length=31,default='',blank=True, \
+        verbose_name=u'取衣我方单号', help_text=u'这里实际和取衣订单号一致')
+    get_message = models.CharField(max_length=255,default='',blank=True, \
+        verbose_name=u'取衣最近一次信息', help_text=u'')
+    get_operate_time = models.DateTimeField(default=dt.datetime(2000,1,1),blank=True, \
+        verbose_name=u'最衣最近一次更新时间', help_text=u'')
+    return_way_no = models.CharField(max_length=31,default='',blank=True, \
+        verbose_name=u'送衣运单号', help_text=u'')
+    return_form_no = models.CharField(max_length=31,default='',blank=True, \
+        verbose_name=u'送衣我方单号', help_text=u'这里和我方物流号一致')
+    return_message = models.CharField(max_length=255,default='',blank=True, \
+        verbose_name=u'送衣最近一次信息', help_text=u'')
+    return_operate_time = models.DateTimeField(default=dt.datetime(2000,1,1),blank=True, \
+        verbose_name=u'送衣最近一次更新时间', help_text=u'')
+    ext = JSONField(default=[],blank=True, verbose_name=u'扩展字段', \
+        help_text=u'里面包含每次如风达更新状态信息')
 
 # in parent directory
     conf_dir = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
@@ -101,7 +111,7 @@ class RFD(models.Model):
                 "shop_area": mo_bill.area,
                 "shop_address": mo_bill.address,
                 "shop_phone": mo_bill.phone,
-                "comment": "%s至%s送" %(s_return_start, s_return_end),
+                "comment": "%s至%s送 洗来了单号 %d" %(s_return_start, s_return_end, mo_bill.bid),
                 "order_details": "",
             }
         else: # reversed == False (returnning order)
@@ -117,16 +127,17 @@ class RFD(models.Model):
                 "shop_area": mo_shop.area,
                 "shop_address": mo_shop.address,
                 "shop_phone": mo_shop.phone,
-                "bill_total": mo_bill.total,
-                "bill_paid": mo_bill.paid,
-                "bill_receive": max(0, mo_bill.total - mo_bill.paid),
+# get cloth order DOES NOT paid
+                "bill_total": 0,
+                "bill_paid": 0,
+                "bill_receive": 0,
                 "user_name": mo_bill.real_name,
                 "user_province": mo_bill.province,
                 "user_city": mo_bill.city,
                 "user_area": mo_bill.area,
                 "user_address": mo_bill.address,
                 "user_phone": mo_bill.phone,
-                "comment": "%s至%s送" %(s_return_start, s_return_end),
+                "comment": "%s至%s送 洗来了单号 %d" %(s_return_start, s_return_end, mo_bill.bid),
                 "order_details": "",
             }
         js_cloth = mo_bill.clothes
@@ -151,8 +162,10 @@ class RFD(models.Model):
             except (AttributeError, Cloth.DoesNotExist) as e:
                 continue
 
-        d_import_orders['shop_address'] += u"[洗来了 id:%d 共%d件]" %(mo_bill.bid, i_clothes_number)
-        d_import_orders['user_address'] += u"[洗来了 id:%d 共%d件]" %(mo_bill.bid, i_clothes_number)
+        d_import_orders['shop_address'] = u"【洗来了 id:%d 共%d件】" \
+            %(mo_bill.bid, i_clothes_number) + d_import_orders['shop_address']
+        d_import_orders['user_address'] = u"【洗来了 id:%d 共%d件】" \
+            %(mo_bill.bid, i_clothes_number) + d_import_orders['user_address']
 
         t_response = loader.get_template(s_template_file)
         c_response = Context(d_import_orders)
@@ -202,7 +215,8 @@ class RFD(models.Model):
         s_dt_start = mo_bill.get_time_0.strftime(DATETIME_FORMAT_SHORT)
         s_dt_end = mo_bill.get_time_1.strftime(DATETIME_FORMAT_SHORT)
         f_total = float(mo_bill.total)
-        s_remark = u"%s至%s取 应收%.2f元 POS机" %(s_dt_start, s_dt_end, f_total)
+        #s_remark = u"%s至%s取 应收%.2f元 POS机" %(s_dt_start, s_dt_end, f_total)
+        s_remark = u"%s至%s取 POS机" %(s_dt_start, s_dt_end)
         if len(js_clothes) == 0:
             d_res = {'IsSucceed':false, 'Message':'format clothes error', 'Exception':e.__str__()}
             return d_res
@@ -228,7 +242,7 @@ class RFD(models.Model):
             "SendProvinceName": mo_bill.province,
             "SendCityName": mo_bill.city,
             "SendAreaName": mo_bill.area,
-            "SendAddress": mo_bill.address + u"[洗来了 id:%d 共%d件]" %(mo_bill.bid, i_clothes_number),
+            "SendAddress": u"【洗来了 id:%d 共%d件】" %(mo_bill.bid, i_clothes_number) + mo_bill.address,
             "NeedAmount": mo_bill.total,
             "ProtectPrice": 0,
             "Remark": s_remark,
@@ -400,12 +414,10 @@ class RFD(models.Model):
                 if i_status in [cls.ASSIGNED_SITE, cls.IN_WAREHOUSE,
                                 cls.DELIVERY, cls.STAY, cls.OUT_WAREHOUSE]:
                     mo_rfd.status = cls.GETTING
-                    mo_bill.status = mo_bill.__class__.GETTING
-                    mo_bill.add_time(mo_bill.__class__.GETTING)
+                    mo_bill.change_status(mo_bill.__class__.GETTING)
                 if cls.SUCCESS == i_status:
                     mo_rfd.status = cls.GOT
-                    mo_bill.status = mo_bill.__class__.WASHING
-                    mo_bill.add_time(mo_bill.__class__.WASHING)
+                    mo_bill.change_status(mo_bill.__class__.WASHING)
             elif 3 == i_type:
                 if dt_operate_time < mo_rfd.return_operate_time:
                     d_ret['Ret'] = 0
@@ -417,12 +429,10 @@ class RFD(models.Model):
                 if i_status in [cls.ASSIGNED_SITE, cls.IN_WAREHOUSE,
                                 cls.DELIVERY, cls.STAY, cls.OUT_WAREHOUSE]:
                     mo_rfd.status = cls.RETURNNING
-                    mo_bill.status = mo_bill.__class__.RETURNNING
-                    mo_bill.add_time(mo_bill.__class__.RETURNNING)
+                    mo_bill.change_status(mo_bill.__class__.RETURNNING)
                 if cls.SUCCESS == i_status:
                     mo_rfd.status = cls.CLIENT_SIGN
-                    mo_bill.status = mo_bill.__class__.NEED_FEEDBACK
-                    mo_bill.add_time(mo_bill.__class__.NEED_FEEDBACK)
+                    mo_bill.change_status(mo_bill.__class__.NEED_FEEDBACK)
             mo_rfd.save()
             mo_bill.save()
         except (Exception) as e:
@@ -435,15 +445,19 @@ class RFD(models.Model):
         return d_ret
 
 class Address(models.Model):
-    aid = models.AutoField(primary_key=True)
-    own = models.ForeignKey('WCUser.User')
-    real_name = models.CharField(max_length=255,default='')
-    phone = models.CharField(max_length=12,default='')
-    province = models.CharField(max_length=15,default='',choices=Province_Choice)
-    city = models.CharField(max_length=63,default='',choices=City_Choice)
-    area = models.CharField(max_length=15,default='',choices=Area_Choice)
-    address = models.CharField(max_length=255,default='')
-    deleted = models.BooleanField(default=False)
+    aid = models.AutoField(primary_key=True, verbose_name=u'地址id', help_text=u'')
+    own = models.ForeignKey('WCUser.User', verbose_name=u'用户id', help_text=u'')
+    real_name = models.CharField(max_length=255,default='', verbose_name=u'姓名', help_text=u'')
+    phone = models.CharField(max_length=12,default='', verbose_name=u'手机', help_text=u'')
+    province = models.CharField(max_length=15,default='',choices=Province_Choice, \
+        verbose_name=u'省', help_text=u'')
+    city = models.CharField(max_length=63,default='',choices=City_Choice, \
+        verbose_name=u'市', help_text=u'')
+    area = models.CharField(max_length=15,default='',choices=Area_Choice, \
+        verbose_name=u'区', help_text=u'')
+    address = models.CharField(max_length=255,default='', verbose_name=u'地址', \
+        help_text=u'')
+    deleted = models.BooleanField(default=False, verbose_name=u'删除标志', help_text=u'')
 
     def __unicode__(self):
         return "%d(%s)" % (self.aid, self.real_name)
@@ -499,11 +513,15 @@ class OrderQueue(models.Model):
         (ImportGettingOrders, 'ImportGettingOrders'),
     )
 
-    qid = models.AutoField(primary_key=True)
-    bill = models.ForeignKey('WCBill.Bill',default=None,blank=True)
-    type = models.IntegerField(default=0,choices=Type_Choice)
-    message = models.CharField(max_length=8195)
-    status = models.IntegerField(default=0,choices=Status_Choice)
-    time = models.DateTimeField(db_index=True)
-    update_time = models.DateTimeField(auto_now=True)
+    qid = models.AutoField(primary_key=True, verbose_name=u'发单队列id', help_text=u'')
+    bill = models.ForeignKey('WCBill.Bill',default=None,blank=True, verbose_name=u'关联订单', help_text=u'')
+    type = models.IntegerField(default=0,choices=Type_Choice, verbose_name=u'发单类型', \
+        help_text=u'取衣发受理单，取衣发订单（立即下单），送衣发订单')
+    message = models.CharField(max_length=8195, verbose_name=u'错误信息', help_text=u'')
+    status = models.IntegerField(default=0,choices=Status_Choice, \
+        verbose_name=u'状态', help_text=u'')
+    time = models.DateTimeField(db_index=True, verbose_name=u'触发时间', \
+        help_text=u'系统时间大于这个时间则开始发单')
+    update_time = models.DateTimeField(auto_now=True, verbose_name=u'更新时间', \
+        help_text=u'最近一次尝试发单时间')
 

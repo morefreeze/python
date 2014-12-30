@@ -15,8 +15,8 @@ class Mass_Clothes(models.Model):
     class Meta:
         abstract = True
 
-    clothes = JSONField(default=[])
-    ext = JSONField(default={})
+    clothes = JSONField(default=[], verbose_name=u'衣物')
+    ext = JSONField(default={}, verbose_name=u'扩展字段')
     def add_error(self, s_errmsg):
         if None == self.ext:
             self.ext = {}
@@ -102,25 +102,25 @@ class Bill(Mass_Clothes):
 
     bid = models.AutoField(primary_key=True)
     create_time = models.DateTimeField(auto_now_add=True)
-    get_time_0 = models.DateTimeField()
-    get_time_1 = models.DateTimeField()
-    return_time_0 = models.DateTimeField()
-    return_time_1 = models.DateTimeField()
-    own = models.ForeignKey(User) # own_id in db
-    lg = models.OneToOneField(RFD,blank=True,null=True, related_name='bill_of') # lg_id in db
-    province = models.CharField(max_length=15,default='',choices=Province_Choice)
-    city = models.CharField(max_length=63,default='',choices=City_Choice)
-    area = models.CharField(max_length=15,default='',choices=Area_Choice)
-    address = models.CharField(max_length=511, default='')
-    phone = models.CharField(max_length=12,default='')
-    real_name = models.CharField(max_length=255,default='')
-    shop = models.ForeignKey(Shop,blank=True,null=True)
-    status = models.IntegerField(default=READY,choices=StatusChoices)
-    deleted = models.BooleanField(default=False)
-    score = models.PositiveIntegerField(default=0)
-    total = models.FloatField(default=0.0)
-    paid = models.FloatField(default=0.0)
-    comment = models.CharField(max_length=1023, default='', blank=True)
+    get_time_0 = models.DateTimeField(verbose_name=u'取衣开始时间')
+    get_time_1 = models.DateTimeField(verbose_name=u'取衣结束时间')
+    return_time_0 = models.DateTimeField(verbose_name=u'送衣开始时间')
+    return_time_1 = models.DateTimeField(verbose_name=u'送衣结束时间')
+    own = models.ForeignKey(User,verbose_name=u'下单用户') # own_id in db
+    lg = models.OneToOneField(RFD,blank=True,null=True, related_name='bill_of', verbose_name=u'物流') # lg_id in db
+    province = models.CharField(max_length=15,default='',choices=Province_Choice, verbose_name=u'省')
+    city = models.CharField(max_length=63,default='',choices=City_Choice, verbose_name=u'市')
+    area = models.CharField(max_length=15,default='',choices=Area_Choice, verbose_name=u'区')
+    address = models.CharField(max_length=511, default='', verbose_name=u'地址')
+    phone = models.CharField(max_length=12,default='', verbose_name=u'手机')
+    real_name = models.CharField(max_length=255,default='', verbose_name=u'姓名')
+    shop = models.ForeignKey(Shop,blank=True,null=True, verbose_name=u'店铺')
+    status = models.IntegerField(default=READY,choices=StatusChoices, verbose_name=u'订单状态')
+    deleted = models.BooleanField(default=False, verbose_name=u'删除标志')
+    score = models.PositiveIntegerField(default=0, verbose_name=u'使用积分')
+    total = models.FloatField(default=0.0, verbose_name=u'总价')
+    paid = models.FloatField(default=0.0, verbose_name=u'已付款')
+    comment = models.CharField(max_length=1023, default='', blank=True, verbose_name=u'备注')
 
     @classmethod
     def get_status(cls, i_status):
@@ -134,19 +134,24 @@ class Bill(Mass_Clothes):
                 Bill.get_status(self.status), self.create_time, self.real_name, \
                 self.area, self.address, self.phone, self.comment)
 
+    def change_status(self, i_status):
+        if i_status < Bill.READY or (i_status >= Bill.READY and self.status < i_status):
+            self.status = i_status
+            self.add_time(i_status)
+
 # add until current(<=status) status timestamp to log
-    def add_time(self, tag):
+    def add_time(self, pi_status):
         if None == self.ext:
             self.ext = {}
         if 'lg_time' not in self.ext:
             self.ext['lg_time'] = {}
-        tag = int(tag or 0)
-        if tag < Bill.ERROR or tag > Bill.DONE:
-            tag = Bill.ERROR
+        pi_status = int(pi_status or 0)
+        if pi_status < Bill.ERROR or pi_status > Bill.DONE:
+            pi_status = Bill.ERROR
         for i_status, s_ch in self.StatusChoices:
             if i_status < 0:
                 continue
-            if tag < i_status:
+            if pi_status < i_status:
                 break
             self.ext['lg_time'][i_status] = dt.datetime.now()
 
@@ -171,10 +176,9 @@ class Bill(Mass_Clothes):
                 break
             for it_cloth in js_cloth:
                 try:
-                    i_cid = it_cloth.get('cid')
-                    i_num = it_cloth.get('number')
-                    mo_cloth = Cloth.objects.get(cid=i_cid,is_leaf=True)
-                    f_price = mo_cloth.price
+                    i_cid = it_cloth['cid']
+                    i_num = it_cloth['number']
+                    f_price = it_cloth['price']
                 except (AttributeError, Cloth.DoesNotExist) as e:
                     self.add_error("%s(it_cloth:%s,maybe category)" \
                         %(e.__str__(), it_cloth.__str__()))
@@ -185,32 +189,49 @@ class Bill(Mass_Clothes):
                 else:
                     f_total += i_num * f_price
             self.ext['old_total'] = f_total
-            if self.score >= 0:
-                if f_total - self.score * SCORE_RMB_RATE < 0:
-                    self.add_error('score exceed total price')
-                else:
-                    f_total -= self.score * SCORE_RMB_RATE
 # coupon calc
             i_mcid = self.ext.get('use_coupon') or 0
             if i_mcid > 0:
+# use for calc mycoupon
+                f_cid_total = 0.0
                 try:
                     mo_mycoupon = MyCoupon.objects.get(mcid=i_mcid)
                     mo_cloth_thd = mo_mycoupon.cid_thd
 # all bill clothes is belong cid_thd
                     if None != mo_cloth_thd:
                         for it_cloth in js_cloth:
-                            if not Cloth.is_ancestor(mo_cloth_thd.cid, it_cloth['cid']):
-                                raise ValueError("cid[%d] is not belong %s" %(it_cloth['cid'], mo_cloth_thd))
-                    logging.debug("%.2f %.2f" %(f_total, mo_mycoupon.price_thd))
-                    if f_total < mo_mycoupon.price_thd:
-                        raise ValueError("total is not enough")
+                            i_cid = it_cloth['cid']
+                            i_num = it_cloth['number']
+                            f_price = it_cloth['price']
+                            if Cloth.is_ancestor(mo_cloth_thd.cid, i_cid):
+                                f_cid_total += max(0, i_num*f_price)
+                    else:
+# all category, so all clothes will apply discount
+                        f_cid_total += f_total
+
+                    logging.debug("f_cid[%.2f] price_thd[%.2f]" %(f_cid_total, mo_mycoupon.price_thd))
+                    f_old_cid_total = f_cid_total
+                    if f_cid_total < mo_mycoupon.price_thd:
+                        raise ValueError("cid total is not enough")
                     if mo_mycoupon.percent_dst > 0:
-                        f_total *= mo_mycoupon.percent_dst * 0.01
-                    f_total -= mo_mycoupon.price_dst
+                        f_cid_total *= (100-mo_mycoupon.percent_dst) * 0.01
+                        self.ext['percent_dst'] = f_cid_total * mo_mycoupon.percent_dst * 0.01
+                    f_cid_total -= mo_mycoupon.price_dst
+                    self.ext['price_dst'] = mo_mycoupon.price_dst
+                    f_total -= f_old_cid_total - f_cid_total
                 except (ValueError, MyCoupon.DoesNotExist) as e:
                     self.add_error(e.__str__())
                     del self.ext['use_coupon']
 # coupon calc end
+
+# score calc
+            if self.score >= 0:
+                if f_total - self.score * SCORE_RMB_RATE < 0:
+                    self.add_error('score exceed total price')
+                else:
+                    f_total -= self.score * SCORE_RMB_RATE
+# score calc end
+
 # shipping fee
             if f_total < self.LOWEST_SHIPPING_FEE:
                 f_total += Bill.SHIPPING_FEE
@@ -259,26 +280,55 @@ class Bill(Mass_Clothes):
 
 class Coupon(models.Model):
     coid = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=255, verbose_name=u'代金券名称')
     create_time = models.DateTimeField(auto_now_add=True)
-    start_time = models.DateTimeField()
-    expire_time = models.DateTimeField()
+    start_time = models.DateTimeField(verbose_name=u'开始时间')
+    expire_time = models.DateTimeField(verbose_name=u'截止时间')
+# keep_time start at getting coupon,
+# max(now, start_time) ~ min(now + keep_time, expire_time)
+# this is timedelta type, start with start_time(see code)
+    keep_time = models.DateTimeField(verbose_name=u'持续时间', \
+        help_text=u'如果有则从开始时间算起，否则和开始时间完全相同，对，我说的是包括时分秒')
 # exp threshold user's exp must greater than this
-    exp_thd = models.IntegerField(default=0)
+    exp_thd = models.IntegerField(default=0, verbose_name=u'经验值阈值', \
+        help_text=u'至少有这么多经验值的用户才能使用，分发会验证')
 # cloth threshold this can be first category, bill must contain at least one
 # cloth which cid equal cid_thd, null represent all clothes
-    cid_thd = models.ForeignKey(Cloth, blank=True, null=True)
+    cid_thd = models.ForeignKey(Cloth, blank=True, null=True, verbose_name=u'适用衣物分类', \
+        help_text=u'可以是一级分类，如果全场适用则不选')
 # price threshold total price greater than this
-    price_thd = models.FloatField(default=0)
+    price_thd = models.FloatField(default=0, verbose_name=u'价格阈值', \
+        help_text=u'所有该衣物分类下的所有衣物加起来的价格>=这个值')
 # percent discount [0,100] like 10% off, percent discount will be calc before price
-    percent_dst = models.IntegerField(default=0)
+    percent_dst = models.IntegerField(default=0, verbose_name=u'折扣', \
+        help_text=u'取值[0,100]，0表示不打折，20表示8折，以此类推')
 # price discount minus price directly
-    price_dst = models.FloatField(default=0)
+    price_dst = models.FloatField(default=0, verbose_name=u'价格减免')
 # max use limit each user, 0 for no limit
-    max_limit = models.IntegerField(default=0)
+    max_limit = models.IntegerField(default=0, verbose_name=u'最大拥有量', \
+        help_text=u'每个用户最大持有该代金券数量，0表示无限量，目前都未开发限量情况')
 
     def __unicode__(self):
-        return self.name
+        return "%d(%s)" %(self.coid, self.name)
+
+# return mcid or 0
+    def add_user(self, mo_user):
+        if None == mo_user:
+            return 0
+        dt_now = dt.datetime.now()
+        dt_delta = self.keep_time - self.start_time
+        logging.debug(dt_delta)
+# keep_time valid
+        if dt_delta.total_seconds() > 0:
+            dt_start_time = max(dt_now, self.start_time)
+            dt_expire_time = min(dt_now+dt_delta, self.expire_time)
+        else:
+            dt_start_time = self.start_time
+            dt_expire_time = self.expire_time
+        mo_mycoupon = MyCoupon.objects.create(own=mo_user,\
+            start_time=dt_start_time, expire_time=dt_expire_time,\
+            price_thd=self.price_thd, percent_dst=self.percent_dst, price_dst=self.price_dst)
+        return mo_mycoupon.mcid
 
 class MyCoupon(models.Model):
     CAN_USE = 1
@@ -286,23 +336,28 @@ class MyCoupon(models.Model):
     USED_OR_EXPIRE = 3
     ALL = 9
 
-    mcid = models.AutoField(primary_key=True)
-    own = models.ForeignKey('WCUser.User', db_index=True)
-    used = models.BooleanField(default=False)
-    start_time = models.DateTimeField(default=dt.datetime(2000,1,1))
-    expire_time = models.DateTimeField(default=dt.datetime(2000,1,1))
-    cid_thd = models.ForeignKey(Cloth, blank=True, null=True)
-    price_thd = models.FloatField(default=0)
-    percent_dst = models.IntegerField(default=0)
-    price_dst = models.FloatField(default=0)
-    ext = JSONField(default={})
+    mcid = models.AutoField(primary_key=True, verbose_name=u'代金券id')
+    own = models.ForeignKey('WCUser.User', db_index=True, verbose_name=u'用户id')
+# use for coupon.max_limit
+    #coupon = models.ForeignKey('WCBill.Coupon', verbose_name=u'原代金券id')
+    used = models.BooleanField(default=False, verbose_name=u'已用过标志')
+    start_time = models.DateTimeField(default=dt.datetime(2000,1,1), verbose_name=u'开始时间')
+    expire_time = models.DateTimeField(default=dt.datetime(2000,1,1), verbose_name=u'截止时间')
+    cid_thd = models.ForeignKey(Cloth, blank=True, null=True, verbose_name=u'适用衣物分类', \
+        help_text=u'可以是一级分类，如果全场适用则不选')
+    price_thd = models.FloatField(default=0, verbose_name=u'价格阈值', \
+        help_text=u'所有该衣物分类下的所有衣物加起来的价格>=这个值')
+    percent_dst = models.IntegerField(default=0, verbose_name=u'折扣', \
+        help_text=u'取值[0,100]，0表示不打折，20表示8折，以此类推')
+    price_dst = models.FloatField(default=0, verbose_name=u'价格减免')
+    ext = JSONField(default={}, verbose_name=u'扩展字段')
 
     def __unicode__(self):
         if None == self.cid_thd:
-            return "%s([%.0f,%s] -%.0f -%d%%)" %(self.own.name, self.price_thd, \
+            return "%d([%s] [%.0f,%s] -%.0f -%d%%)" %(self.mcid, self.own.name, self.price_thd, \
                         'ALL', self.price_dst, self.percent_dst)
 
-        return "%s([%.0f,%s] -%.0f -%d%%)" % (self.own.name, self.price_thd, \
+        return "%d([%s][%.0f,%s] -%.0f -%d%%)" % (self.mcid, self.own.name, self.price_thd, \
                         self.cid_thd.name, self.price_dst, self.percent_dst)
 
     @classmethod
@@ -346,7 +401,7 @@ class MyCoupon(models.Model):
             return False
         if self.used:
             return False
-        if None != self.status and self.status != MyCoupon.CAN_USE:
+        if hasattr(self, 'status') and self.status != MyCoupon.CAN_USE:
             return False
         dt_now = dt.datetime.now()
         if dt_now < self.start_time or dt_now >= self.expire_time:
