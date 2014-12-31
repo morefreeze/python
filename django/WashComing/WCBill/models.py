@@ -428,6 +428,16 @@ class Cart(Mass_Clothes):
     own = models.ForeignKey(User, unique=True)
     update_time = models.DateTimeField(auto_now=True)
 
+    def __unicode__(self):
+        s_name = ''
+        s_name += '%d' %(self.caid)
+        if self.own:
+            if self.own.default_adr:
+                s_name += '(%s)' %(self.own.default_adr.real_name)
+            else:
+                s_name += '(%s)' %(self.own.name)
+        return s_name
+
     @classmethod
 # return caid
     def remove_bill_clothes(cls, own, mo_bill):

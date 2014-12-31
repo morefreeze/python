@@ -1,12 +1,15 @@
 # coding=utf-8
 from django.contrib import admin
 from WCLib.views import *
-from WCBill.models import Bill, Coupon, MyCoupon
+from WCBill.models import Bill, Coupon, MyCoupon, Cart
 from WCLogistics.models import OrderQueue
 import datetime as dt
 
 # Register your models here.
 class CouponAdmin(admin.ModelAdmin):
+    pass
+
+class CartAdmin(admin.ModelAdmin):
     pass
 
 class MyCouponAdmin(admin.ModelAdmin):
@@ -84,5 +87,6 @@ class BillAdmin(admin.ModelAdmin):
         return my_urls + urls
 
 admin.site.register(Coupon,CouponAdmin)
+admin.site.register(Cart,CartAdmin)
 admin.site.register(MyCoupon,MyCouponAdmin)
 admin.site.register(Bill,BillAdmin)
