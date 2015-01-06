@@ -72,18 +72,18 @@ def submit(request):
 
     mo_bill.calc_total()
 
-
 # if no inquiry cloth will confirm directly
 # immediate send order after client helper confirm
     if d_data.get('immediate'):
         mo_bill.ext['immediate'] = True
-    if mo_bill.is_inquiry():
+# every bill custom helper SHOULD confirm
+    if True or mo_bill.is_inquiry():
         mo_bill.change_status(Bill.CONFIRMING)
     else:
         mo_bill.change_status(Bill.WAITTING_GET)
-    s_errmsg = mo_bill.ext.get('error')
+    a_errmsg = mo_bill.ext.get('error')
     mo_bill.save()
-    if None != s_errmsg and '' != s_errmsg:
+    if len(a_errmsg or []) > 0:
         mo_bill.deleted = True
         mo_bill.change_status(Bill.ERROR)
         mo_bill.save()
@@ -106,12 +106,12 @@ def submit(request):
 # add order push queue
 # if no need client helper confirm then send order queue directly
 # or send it after client helper confirm
-    if mo_bill.status == Bill.WAITTING_GET:
+    if False and mo_bill.status == Bill.WAITTING_GET:
         dt_fetch_time = mo_bill.get_time_0
         OrderQueue.objects.create(bill=mo_bill, type=OrderQueue.AddFetchOrder,
                                   status=OrderQueue.TODO, time=dt_fetch_time)
         dt_import_time = mo_bill.return_time_0
-        OrderQueue.objects.create(bill=mo_bill, type=OrderQueue.ImportOrders,
+        OrderQueue.objects.create(bill=mo_bill, type=OrderQueue.AddReturnningFetchOrder,
                                   status=OrderQueue.TODO, time=dt_import_time)
     return JSONResponse({'errno':0, 'bid':mo_bill.bid,
                          'total':mo_bill.total})

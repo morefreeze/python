@@ -23,7 +23,7 @@ class RFD(models.Model):
     TO_GET = 5
     GETTING = 10
     GOT = 20
-    WASHING = 30
+    WASHING = 30 # nouse
     TO_RETURN = 40
     RETURNNING = 50
     CLIENT_SIGN = 100
@@ -40,22 +40,24 @@ class RFD(models.Model):
     lid = models.AutoField(primary_key=True, verbose_name=u'如风达信息编号')
     status = models.IntegerField(default=0, verbose_name=u'信息状态')
     get_order_no = models.CharField(max_length=31,unique=True,default='',blank=True, \
-        verbose_name=u'取衣订单号', help_text=u'')
+        verbose_name=u'取衣受理单号', help_text=u'')
     get_way_no = models.CharField(max_length=31,default='',blank=True, \
         verbose_name=u'取衣运单号', help_text=u'')
     get_form_no = models.CharField(max_length=31,default='',blank=True, \
         verbose_name=u'取衣我方单号', help_text=u'这里实际和取衣订单号一致')
     get_message = models.CharField(max_length=255,default='',blank=True, \
         verbose_name=u'取衣最近一次信息', help_text=u'')
-    get_operate_time = models.DateTimeField(default=dt.datetime(2000,1,1),blank=True, \
+    get_operate_time = models.DateTimeField(default=dt.datetime(2014,1,1),blank=True, \
         verbose_name=u'最衣最近一次更新时间', help_text=u'')
+    return_order_no = models.CharField(max_length=31,default='',blank=True, \
+        verbose_name=u'送衣受理单号', help_text=u'')
     return_way_no = models.CharField(max_length=31,default='',blank=True, \
         verbose_name=u'送衣运单号', help_text=u'')
     return_form_no = models.CharField(max_length=31,default='',blank=True, \
         verbose_name=u'送衣我方单号', help_text=u'这里和我方物流号一致')
     return_message = models.CharField(max_length=255,default='',blank=True, \
         verbose_name=u'送衣最近一次信息', help_text=u'')
-    return_operate_time = models.DateTimeField(default=dt.datetime(2000,1,1),blank=True, \
+    return_operate_time = models.DateTimeField(default=dt.datetime(2014,1,1),blank=True, \
         verbose_name=u'送衣最近一次更新时间', help_text=u'')
     ext = JSONField(default=[],blank=True, verbose_name=u'扩展字段', \
         help_text=u'里面包含每次如风达更新状态信息')
@@ -65,13 +67,13 @@ class RFD(models.Model):
     config = ConfigParser.ConfigParser()
 
     def __unicode__(self):
-        return "%d get[%s] return[%s]" %(self.lid, self.get_way_no, self.return_way_no)
+        return "%d get[%s,%s] return[%s]" %(self.lid, self.get_way_no, self.get_order_no, self.return_way_no)
 
     @classmethod
     # return rfd response convert dict
-    # reversed is True then send custom to wash shop order(getting clothes)
-    # reversed is False then returnning clothes
-    def ImportOrders(cls, mo_bill, reversed=False):
+    # to_shop is True then send custom to wash shop order(getting clothes)
+    # to_shop is False then returnning clothes
+    def ImportOrders(cls, mo_bill, to_shop=False):
         mo_shop = mo_bill.shop
         if None == mo_shop:
             return {'ResultCode':'ImportFailure', 'ResultMessage':'no shop info'}
@@ -89,7 +91,7 @@ class RFD(models.Model):
         s_url = "http://%s:%s/api/" %(s_url, s_port)
         s_return_start = mo_bill.return_time_0.strftime(DATETIME_FORMAT_SHORT)
         s_return_end = mo_bill.return_time_1.strftime(DATETIME_FORMAT_SHORT)
-        if reversed: # (getting order)
+        if to_shop: # (getting order)
             d_import_orders = {
                 "company": s_company,
                 "dt": dt.datetime.now().strftime("%Y%m%d%H%M%S"),
@@ -111,10 +113,10 @@ class RFD(models.Model):
                 "shop_area": mo_bill.area,
                 "shop_address": mo_bill.address,
                 "shop_phone": mo_bill.phone,
-                "comment": "%s至%s送 洗来了单号 %d" %(s_return_start, s_return_end, mo_bill.bid),
+                "comment": "%s至%s取 洗来了单号 %d" %(s_return_start, s_return_end, mo_bill.bid),
                 "order_details": "",
             }
-        else: # reversed == False (returnning order)
+        else: # to_shop == False (returnning order)
             d_import_orders = {
                 "company": s_company,
                 "dt": dt.datetime.now().strftime("%Y%m%d%H%M%S"),
@@ -137,7 +139,7 @@ class RFD(models.Model):
                 "user_area": mo_bill.area,
                 "user_address": mo_bill.address,
                 "user_phone": mo_bill.phone,
-                "comment": "%s至%s送 洗来了单号 %d" %(s_return_start, s_return_end, mo_bill.bid),
+                "comment": "%s至%s送到客户 洗来了单号 %d" %(s_return_start, s_return_end, mo_bill.bid),
                 "order_details": "",
             }
         js_cloth = mo_bill.clothes
@@ -187,7 +189,13 @@ class RFD(models.Model):
 
     @classmethod
     # return rfd response json
-    def AddFetchOrder(cls, mo_bill):
+    # to_shop is True then send custom to wash shop order(getting clothes)
+    # to_shop is False then returnning clothes
+    def AddFetchOrder(cls, mo_bill, to_shop=True):
+        mo_shop = mo_bill.shop
+        if not to_shop and None == mo_shop:
+            d_res = {'IsSucceed':false, 'Message':'no shop info', 'Exception':''}
+            return d_res
         SM_TEMPLATE = '''<?xml version="1.0" encoding="UTF-8"?>
             <SOAP-ENV:Envelope
             xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
@@ -214,9 +222,11 @@ class RFD(models.Model):
         js_clothes = mo_bill.format_cloth()
         s_dt_start = mo_bill.get_time_0.strftime(DATETIME_FORMAT_SHORT)
         s_dt_end = mo_bill.get_time_1.strftime(DATETIME_FORMAT_SHORT)
-        f_total = float(mo_bill.total)
-        #s_remark = u"%s至%s取 应收%.2f元 POS机" %(s_dt_start, s_dt_end, f_total)
-        s_remark = u"%s至%s取 POS机" %(s_dt_start, s_dt_end)
+        f_total = float(mo_bill.total - mo_bill.paid)
+        if to_shop:
+            s_remark = u"%s至%s取" %(s_dt_start, s_dt_end)
+        else:
+            s_remark = u"%s至%s送到客户 应收%.2f元 POS机" %(s_dt_start, s_dt_end, f_total)
         if len(js_clothes) == 0:
             d_res = {'IsSucceed':false, 'Message':'format clothes error', 'Exception':e.__str__()}
             return d_res
@@ -233,20 +243,36 @@ class RFD(models.Model):
         if len(s_remark.encode('utf-8')) + len(s_clothes.encode('utf-8')) > 100:
             s_clothes = u" 订单品类过多，请联系客服获取详细信息 "
         s_remark += s_clothes
-        d_fetch_order = {
-            "SendBy": mo_bill.real_name,
-            "MobilePhone": mo_bill.phone,
-            "Telephone": mo_bill.phone,
-            "PostCode": s_default_zipcode,
-            "Company": s_company,
-            "SendProvinceName": mo_bill.province,
-            "SendCityName": mo_bill.city,
-            "SendAreaName": mo_bill.area,
-            "SendAddress": u"【洗来了 id:%d 共%d件】" %(mo_bill.bid, i_clothes_number) + mo_bill.address,
-            "NeedAmount": mo_bill.total,
-            "ProtectPrice": 0,
-            "Remark": s_remark,
-        }
+        if to_shop: # (getting order) sender is custom
+            d_fetch_order = {
+                "SendBy": mo_bill.real_name,
+                "MobilePhone": mo_bill.phone,
+                "Telephone": mo_bill.phone,
+                "PostCode": s_default_zipcode,
+                "Company": s_company,
+                "SendProvinceName": mo_bill.province,
+                "SendCityName": mo_bill.city,
+                "SendAreaName": mo_bill.area,
+                "SendAddress": u"【洗来了id:%d 共%d件】" %(mo_bill.bid, i_clothes_number) + mo_bill.address,
+                "NeedAmount": f_total,
+                "ProtectPrice": 0,
+                "Remark": s_remark,
+            }
+        else: # to_shop == False (returnning order) sender is wash shop
+            d_fetch_order = {
+                "SendBy": mo_shop.name,
+                "MobilePhone": mo_shop.phone,
+                "Telephone": mo_shop.phone,
+                "PostCode": s_default_zipcode,
+                "Company": s_company,
+                "SendProvinceName": mo_shop.province,
+                "SendCityName": mo_shop.city,
+                "SendAreaName": mo_shop.area,
+                "SendAddress": u"【洗来了id:%d 共%d件】" %(mo_bill.bid, i_clothes_number) + mo_shop.address,
+                "NeedAmount": f_total,
+                "ProtectPrice": 0,
+                "Remark": s_remark,
+            }
         s_fetch_order = cls.sign_data(d_fetch_order, s_pk_file)
 
         soap_msg = SM_TEMPLATE %{'method_name':s_method_name,
@@ -266,6 +292,7 @@ class RFD(models.Model):
 
         statuscode, statusmessage, header = webservice.getreply()
         s_xmlres = webservice.getfile().read()
+        logging.debug(s_xmlres)
         xml_res = ET.fromstring(s_xmlres)
         try:
             no_res = xml_res.find('.//{%s}AddFetchOrderResult' %(s_xmlns))
@@ -505,12 +532,14 @@ class OrderQueue(models.Model):
     ImportOrders = 2
     GetOrderLog = 3
     ImportGettingOrders = 4
+    AddReturnningFetchOrder = 5
     Type_Choice = (
         (Nothing, 'Nothing'),
         (AddFetchOrder, 'AddFetchOrder'),
         (ImportOrders, 'ImportOrders'),
         (GetOrderLog, 'GetOrderLog'),
         (ImportGettingOrders, 'ImportGettingOrders'),
+        (AddReturnningFetchOrder, 'AddReturnningFetchOrder'),
     )
 
     qid = models.AutoField(primary_key=True, verbose_name=u'发单队列id', help_text=u'')

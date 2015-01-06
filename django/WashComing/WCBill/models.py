@@ -120,7 +120,7 @@ class Bill(Mass_Clothes):
     score = models.PositiveIntegerField(default=0, verbose_name=u'使用积分')
     total = models.FloatField(default=0.0, verbose_name=u'总价')
     paid = models.FloatField(default=0.0, verbose_name=u'已付款')
-    comment = models.CharField(max_length=1023, default='', blank=True, verbose_name=u'备注')
+    comment = models.CharField(max_length=1023, default='', blank=True, verbose_name=u'留言')
 
     @classmethod
     def get_status(cls, i_status):
@@ -152,8 +152,9 @@ class Bill(Mass_Clothes):
             if i_status < 0:
                 continue
             if pi_status < i_status:
-                break
-            self.ext['lg_time'][i_status] = dt.datetime.now()
+                continue
+            if i_status not in self.ext['lg_time']:
+                self.ext['lg_time'][i_status] = dt.datetime.now()
 
     def get_full_address(self):
         if 0 == len(self.province + self.city + self.area):
@@ -215,13 +216,12 @@ class Bill(Mass_Clothes):
                         raise ValueError("cid total is not enough")
                     if mo_mycoupon.percent_dst > 0:
                         f_cid_total *= (100-mo_mycoupon.percent_dst) * 0.01
-                        self.ext['percent_dst'] = f_cid_total * mo_mycoupon.percent_dst * 0.01
+                        self.ext['percent_dst'] = f_old_cid_total - f_cid_total
                     f_cid_total -= mo_mycoupon.price_dst
                     self.ext['price_dst'] = mo_mycoupon.price_dst
                     f_total -= f_old_cid_total - f_cid_total
                 except (ValueError, MyCoupon.DoesNotExist) as e:
                     self.add_error(e.__str__())
-                    del self.ext['use_coupon']
 # coupon calc end
 
 # score calc
@@ -235,9 +235,9 @@ class Bill(Mass_Clothes):
 # shipping fee
             if f_total < self.LOWEST_SHIPPING_FEE:
                 f_total += Bill.SHIPPING_FEE
-                self.ext['shipping_fee'] = True
+                self.ext['shipping_fee'] = Bill.SHIPPING_FEE
             else:
-                self.ext['shipping_fee'] = False
+                self.ext['shipping_fee'] = 0.0
 # shipping fee end
             break # while True
         self.total = f_total
@@ -341,8 +341,8 @@ class MyCoupon(models.Model):
 # use for coupon.max_limit
     #coupon = models.ForeignKey('WCBill.Coupon', verbose_name=u'原代金券id')
     used = models.BooleanField(default=False, verbose_name=u'已用过标志')
-    start_time = models.DateTimeField(default=dt.datetime(2000,1,1), verbose_name=u'开始时间')
-    expire_time = models.DateTimeField(default=dt.datetime(2000,1,1), verbose_name=u'截止时间')
+    start_time = models.DateTimeField(default=dt.datetime(2014,1,1), verbose_name=u'开始时间')
+    expire_time = models.DateTimeField(default=dt.datetime(2014,1,1), verbose_name=u'截止时间')
     cid_thd = models.ForeignKey(Cloth, blank=True, null=True, verbose_name=u'适用衣物分类', \
         help_text=u'可以是一级分类，如果全场适用则不选')
     price_thd = models.FloatField(default=0, verbose_name=u'价格阈值', \
@@ -436,6 +436,10 @@ class Cart(Mass_Clothes):
                 s_name += '(%s)' %(self.own.default_adr.real_name)
             else:
                 s_name += '(%s)' %(self.own.name)
+        i_clothes_num = 0
+        for it_cloth in self.clothes:
+            i_clothes_num += int(it_cloth.get('number') or 0)
+        s_name += u'[%d]件' %(i_clothes_num)
         return s_name
 
     @classmethod
