@@ -10,7 +10,7 @@ import datetime as dt
 import sys
 import logging
 
-def handleAddFetchOrder(mo_queue):
+def handleAddFetchOrder(mo_queue, to_shop=True):
     try:
         mo_bill = mo_queue.bill
         d_res = RFD.AddFetchOrder(mo_bill)
@@ -25,15 +25,28 @@ def handleAddFetchOrder(mo_queue):
         mo_rfd = mo_bill.lg
         dt_now = dt.datetime.now()
         if None == mo_rfd:
-            mo_rfd = RFD.objects.create(get_order_no=s_order_no,
-                                        status=RFD.TO_GET,
-                                       get_operate_time=dt_now)
+            if to_shop:
+                mo_rfd = RFD.objects.create(get_order_no=s_order_no,
+                                            status=RFD.TO_GET,
+                                           get_operate_time=dt_now)
+            else:
+                mo_rfd = RFD.objects.create(return_order_no=s_order_no,
+                                            status=RFD.TO_RETURN,
+                                           return_operate_time=dt_now)
             mo_bill.lg = mo_rfd
         else:
-            mo_rfd.get_order_no = s_order_no
-            mo_rfd.get_operate_time = dt_now
-            mo_rfd.status = RFD.TO_GET
-        mo_bill.status = Bill.GETTING
+            if to_shop:
+                mo_rfd.get_order_no = s_order_no
+                mo_rfd.get_operate_time = dt_now
+                mo_rfd.status = RFD.TO_GET
+            else:
+                mo_rfd.return_order_no = s_order_no
+                mo_rfd.return_operate_time = dt_now
+                mo_rfd.status = RFD.TO_RETURN
+        if to_shop:
+            mo_bill.change_status(Bill.GETTING)
+        else:
+            mo_bill.change_status(Bill.RETURNNING)
         mo_bill.save()
         mo_rfd.save()
     except Exception as e:
@@ -42,10 +55,10 @@ def handleAddFetchOrder(mo_queue):
         return 99
     return 0
 
-def handleImportOrders(mo_queue, reversed=False):
+def handleImportOrders(mo_queue, to_shop=False):
     try:
         mo_bill = mo_queue.bill
-        d_res = RFD.ImportOrders(mo_bill, reversed)
+        d_res = RFD.ImportOrders(mo_bill, to_shop)
         print d_res
         if 'ResultCode' not in d_res or not d_res['ResultCode'].startswith('IsSuccess'):
             mo_queue.message = d_res.get('ResultMessage')
@@ -74,7 +87,10 @@ def handleImportOrders(mo_queue, reversed=False):
     return 0
 
 def handleImportGettingOrders(mo_queue):
-    return handleImportOrders(mo_queue, reversed=True)
+    return handleImportOrders(mo_queue, to_shop=True)
+
+def handleAddReturnningFetchOrder(mo_queue):
+    return handleAddFetchOrder(mo_queue, to_shop=False)
 
 if __name__ == '__main__':
     trigger_time = dt.datetime.now() + dt.timedelta(hours=8)
@@ -93,6 +109,7 @@ if __name__ == '__main__':
         OrderQueue.AddFetchOrder: handleAddFetchOrder,
         OrderQueue.ImportGettingOrders: handleImportGettingOrders,
         OrderQueue.ImportOrders: handleImportOrders,
+        OrderQueue.AddReturnningFetchOrder: handleAddReturnningFetchOrder,
     }
     i_ret_code = handle[mo_queue.type](mo_queue)
     if i_ret_code > 0:
