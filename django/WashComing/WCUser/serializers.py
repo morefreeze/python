@@ -3,10 +3,13 @@ from WCLib.serializers import *
 from WCUser.models import User
 
 class UserSerializer(serializers.ModelSerializer):
+    third_bind = serializers.CharField(source='third_uids')
+
     class Meta:
         model = User
         fields = ('uid', 'name', 'token', 'third_token', 'avatar', 'last_time', \
-                  'score', 'exp', 'phone', 'email', 'is_active')
+                  'score', 'exp', 'phone', 'email', 'is_active', 'third_bind', )
+
     def transform_last_time(self, obj, value):
         return value.strftime(DATETIME_FORMAT)
 
@@ -14,4 +17,11 @@ class UserSerializer(serializers.ModelSerializer):
         if '$' in value:
             tmp, value = value.split('$')
         return value
+
+    def transform_third_bind(self, obj, value):
+        a_ret = []
+        for it_third in value.split('|'):
+            if '$' in it_third:
+                a_ret.append(it_third[:it_third.find('$')])
+        return a_ret
 
