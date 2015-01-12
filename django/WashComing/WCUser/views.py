@@ -4,6 +4,7 @@ from django.http import HttpResponseRedirect
 from django.core.urlresolvers import reverse
 from django.template import RequestContext
 from django.core.mail import send_mail
+from django.views.decorators.http import require_http_methods
 from WCLib.views import *
 from WCUser.serializers import UserSerializer
 from WCUser.models import User, Feedback
@@ -16,10 +17,9 @@ from WCBill.models import Coupon
 import datetime as dt
 
 # Create your views here.
+@require_http_methods(['POST', 'GET'])
 def register(request):
-    if request.method != 'GET':
-        return JSONResponse({'errmsg':'method error'})
-    fo_user = UserRegisterForm(request.GET)
+    fo_user = UserRegisterForm(dict(request.GET.items() + request.POST.items()))
     if not fo_user.is_valid():
         return JSONResponse({'errmsg':fo_user.errors})
     d_data = fo_user.cleaned_data
@@ -50,10 +50,9 @@ def register(request):
     except IntegrityError as e:
         return JSONResponse({'errmsg':'username has been registered'})
 
+@require_http_methods(['POST', 'GET'])
 def login(request):
-    if request.method != 'GET':
-        return JSONResponse({'errmsg':'method error'})
-    fo_user = UserLoginForm(request.GET)
+    fo_user = UserLoginForm(dict(request.GET.items() + request.POST.items()))
     if not fo_user.is_valid():
         return JSONResponse({'errmsg':fo_user.errors})
     d_data = fo_user.cleaned_data
@@ -68,10 +67,9 @@ def login(request):
     d_response['errno'] = 0
     return JSONResponse(d_response)
 
+@require_http_methods(['POST', 'GET'])
 def info(request):
-    if request.method != 'GET':
-        return JSONResponse({'errmsg':'method error'})
-    fo_user = UserInfoForm(request.GET)
+    fo_user = UserInfoForm(dict(request.GET.items() + request.POST.items()))
     if not fo_user.is_valid():
         return JSONResponse({'errmsg':fo_user.errors})
     d_data = fo_user.cleaned_data
@@ -100,10 +98,9 @@ def info(request):
     d_response['errno'] = 0
     return JSONResponse(d_response)
 
+@require_http_methods(['POST', 'GET'])
 def update(request):
-    if request.method != 'GET':
-        return JSONResponse({'errmsg':'method error'})
-    fo_user = UserUpdateForm(request.GET)
+    fo_user = UserUpdateForm(dict(request.GET.items() + request.POST.items()))
     if not fo_user.is_valid():
         return JSONResponse({'errmsg':fo_user.errors})
     d_data = fo_user.cleaned_data
@@ -123,10 +120,9 @@ def update(request):
     d_response = {'errno':0}
     return JSONResponse(d_response)
 
+@require_http_methods(['POST', 'GET'])
 def change_password(request):
-    if request.method != 'GET':
-        return JSONResponse({'errmsg':'method error'})
-    fo_user = UserChangePasswordForm(request.GET)
+    fo_user = UserChangePasswordForm(dict(request.GET.items() + request.POST.items()))
     if not fo_user.is_valid():
         return JSONResponse({'errmsg':fo_user.errors})
     d_data = fo_user.cleaned_data
@@ -141,10 +137,9 @@ def change_password(request):
     d_response['token'] = mo_user.token
     return JSONResponse(d_response)
 
+@require_http_methods(['POST', 'GET'])
 def resend_active(request):
-    if request.method != 'GET':
-        return JSONResponse({'errmsg':'method error'})
-    fo_user = UserResendActiveForm(request.GET)
+    fo_user = UserResendActiveForm(dict(request.GET.items() + request.POST.items()))
     if not fo_user.is_valid():
         return JSONResponse({'errmsg':fo_user.errors})
     d_data = fo_user.cleaned_data
@@ -158,10 +153,9 @@ def resend_active(request):
     d_response = {'errno':0, 'html':s_html}
     return JSONResponse(d_response)
 
+@require_http_methods(['POST', 'GET'])
 def active(request):
-    if request.method != 'GET':
-        return JSONResponse({'errmsg':'method error'})
-    fo_user = UserActiveForm(request.GET)
+    fo_user = UserActiveForm(dict(request.GET.items() + request.POST.items()))
     if not fo_user.is_valid():
         return JSONResponse({'errmsg':fo_user.errors})
     d_data = fo_user.cleaned_data
@@ -188,10 +182,9 @@ def active(request):
 def reset_password(request):
     return render_to_response('reset/reset_password.html', {'form':UserResetPasswordForm})
 
+@require_http_methods(['POST', 'GET'])
 def resend_reset(request):
-    if request.method != 'GET':
-        return JSONResponse({'errmsg':'method error'})
-    fo_user = UserResendResetForm(request.GET)
+    fo_user = UserResendResetForm(dict(request.GET.items() + request.POST.items()))
     if not fo_user.is_valid():
         return JSONResponse({'errmsg':fo_user.errors})
     d_data = fo_user.cleaned_data
@@ -209,11 +202,12 @@ def resend_reset(request):
     #d_response = {'errno':0, 'html':s_html}
     #return JSONResponse(d_response)
 
+@require_http_methods(['POST', 'GET'])
 def reset_password_confirm(request):
     if request.method != 'GET':
         return render(request, 'reset/reset_password_confirm.html', {'validlink':0})
         #return JSONResponse({'errmsg':'method error'})
-    fo_user = UserResetPasswordConfirmForm(request.GET)
+    fo_user = UserResetPasswordConfirmForm(dict(request.GET.items() + request.POST.items()))
     if not fo_user.is_valid():
         return render(request, 'reset/reset_password_confirm.html', {'validlink':0})
         return JSONResponse({'errmsg':fo_user.errors})
@@ -248,10 +242,9 @@ def reset_password_confirm(request):
 def reset_password_complete(request):
     return render_to_response('reset/reset_password.html')
 
+@require_http_methods(['POST', 'GET'])
 def feedback(request):
-    if request.method != 'GET':
-        return JSONResponse({'errmsg':'method error'})
-    fo_user = UserFeedbackForm(request.GET)
+    fo_user = UserFeedbackForm(dict(request.GET.items() + request.POST.items()))
     if not fo_user.is_valid():
         return JSONResponse({'errmsg':fo_user.errors})
     d_data = fo_user.cleaned_data
@@ -264,9 +257,8 @@ def feedback(request):
     mo_fb = Feedback.objects.create(own=mo_user, create_time=None, content=s_content)
     return JSONResponse({'fid': mo_fb.fid, 'errno': 0})
 
+@require_http_methods(['POST'])
 def upload_avatar(request):
-    if request.method != 'POST':
-        return JSONResponse({'errmsg':'method error'})
     fo_user = UserUploadAvatarForm(request.POST, request.FILES)
     if not fo_user.is_valid():
         return JSONResponse({'errmsg':fo_user.errors})
@@ -281,10 +273,9 @@ def upload_avatar(request):
     se_user = UserSerializer(mo_user)
     return JSONResponse({'avatar': se_user.data['avatar'], 'errno': 0})
 
+@require_http_methods(['POST', 'GET'])
 def bind_email(request):
-    if request.method != 'GET':
-        return JSONResponse({'errmsg':'method error'})
-    fo_user = UserBindEmailForm(request.GET)
+    fo_user = UserBindEmailForm(dict(request.GET.items() + request.POST.items()))
     if not fo_user.is_valid():
         return JSONResponse({'errmsg':fo_user.errors})
     d_data = fo_user.cleaned_data
@@ -300,10 +291,9 @@ def bind_email(request):
     se_user = UserSerializer(mo_user)
     return JSONResponse({'errno': 0})
 
+@require_http_methods(['POST', 'GET'])
 def third_bind(request):
-    if request.method != 'GET':
-        return JSONResponse({'errmsg':'method error'})
-    fo_user = UserThirdBindForm(request.GET)
+    fo_user = UserThirdBindForm(dict(request.GET.items() + request.POST.items()))
     if not fo_user.is_valid():
         return JSONResponse({'errmsg':fo_user.errors})
     d_data = fo_user.cleaned_data
@@ -313,8 +303,16 @@ def third_bind(request):
     if None == mo_user:
         return JSONResponse({'errmsg':'username or password error'})
     s_third_uid = "%s$%s|" %(d_data.get('third_tag'), d_data.get('third_uid'))
+    s_open_id = d_data.get('third_uid')
+    s_access_token = d_data.get('access_token')
+    s_tag = d_data.get('third_tag')
+    b_valid, s_ori_third_name = User.get_third_name(s_tag, third_uid=s_open_id, access_token=s_access_token)
+    if not b_valid:
+        return JSONResponse({'errmsg':'this third user is not valid'})
+    s_third_name = "%s$%s" %(s_tag, s_ori_third_name)
     a_user = User.objects.filter(third_uids__contains=s_third_uid, deleted=False)
     if len(a_user) > 1:
+        logging.error('this account[%s,%s] has been binded multiple user' %(s_third_uid, s_access_token))
         return JSONResponse({'errmsg':'this account has been binded multiple user'})
     elif len(a_user) == 1:
         mo_third_user = a_user[0]
@@ -322,44 +320,51 @@ def third_bind(request):
 # qq bind other user, or user bind other qq
             return JSONResponse({'errmsg':'this account has been binded'})
         else:
-# bind same account won't gen new token
-            se_user = UserSerializer(mo_user)
-            return JSONResponse({'errno':0, 'third_token':se_user.data['third_token']})
-    # len(a_user) == 0, third not be binded
-    if '|'+d_data.get('third_tag')+'$' in mo_user.third_uids \
-    or mo_user.third_uids.startswith(d_data.get('third_tag')+'$'):
+# user bind with same account, so gen third token again
+            pass
+    # len(a_user) == 0, third not be binded or third same
+    if s_third_uid not in mo_user.third_uids \
+    and ('|'+d_data.get('third_tag')+'$' in mo_user.third_uids \
+    or mo_user.third_uids.startswith(d_data.get('third_tag')+'$')):
         return JSONResponse({'errmsg':'this user has been binded other third account'})
+    if '' == mo_user.name:
+        mo_user.name = s_third_name
     mo_user.third_uids += s_third_uid
     mo_user.third_token = User.gen_token(s_third_uid)
     mo_user.save()
     se_user = UserSerializer(mo_user)
-    return JSONResponse({'errno':0, 'third_token':se_user.data['third_token']})
+    return JSONResponse({'errno':0, 'uid':se_user.data['uid'], 'username':s_third_uid, 'third_token':se_user.data['third_token']})
 
+@require_http_methods(['POST', 'GET'])
 def third_login(request):
-    if request.method != 'GET':
-        return JSONResponse({'errmsg':'method error'})
-    fo_user = UserThirdLoginForm(request.GET)
+    fo_user = UserThirdLoginForm(dict(request.GET.items() + request.POST.items()))
     if not fo_user.is_valid():
         return JSONResponse({'errmsg':fo_user.errors})
     d_data = fo_user.cleaned_data
-    s_third_name = "%s$%s" %(d_data.get('third_tag'), d_data.get('third_name'))
     s_third_uid = "%s$%s|" %(d_data.get('third_tag'), d_data.get('third_uid'))
+    s_open_id = d_data.get('third_uid')
+    s_access_token = d_data.get('access_token')
+    s_tag = d_data.get('third_tag')
+    b_valid, s_ori_third_name = User.get_third_name(s_tag, third_uid=s_open_id,  access_token=s_access_token)
+    if not b_valid:
+        return JSONResponse({'errmsg':'this third user is not valid'})
+    s_third_name = "%s$%s" %(s_tag, s_ori_third_name)
     a_user = User.objects.filter(third_uids__contains=s_third_uid, deleted=False)
     if len(a_user) > 1:
+        logging.error('this account[%s,%s] has been binded multiple user' %(s_third_uid, s_access_token))
         return JSONResponse({'errmsg':'this account has been binded multiple user'})
     elif len(a_user) == 1:
         mo_user = a_user[0]
-        if mo_user.name != s_third_name:
-            return JSONResponse({'errmsg':'this account has been binded'})
     else:
-        mo_user = User.objects.create(name=s_third_name)
-    mo_user.third_token = User.gen_token(s_third_name)
-    mo_user.third_uids += s_third_uid
-    if '' == mo_user.token:
+        mo_user = User.objects.create(name=s_third_uid)
+        mo_user.third_uids += s_third_uid
+    mo_user.third_token = User.gen_token(s_third_uid)
+# this is pure third user instead of binded
+    if '' == mo_user.token or s_third_name == mo_user.name:
         mo_user.token = mo_user.third_token
     mo_user.save()
     se_user = UserSerializer(mo_user)
-    return JSONResponse({'errno':0,'uid':se_user.data['uid'], 'username':mo_user.name, 'third_token':se_user.data['third_token']})
+    return JSONResponse({'errno':0, 'uid':se_user.data['uid'], 'username':s_third_uid, 'third_token':se_user.data['third_token']})
 
 """
 def admin_upload_avatar(request):
@@ -384,11 +389,10 @@ def admin_upload_avatar(request):
     return HttpResponseRedirect(reverse('WCUser.views.admin_upload_avatar'))
 """
 
-""" method template (12 lines)
+""" method template (11 lines)
+@require_http_methods(['POST', 'GET'])
 def info(request):
-    if request.method != 'GET':
-        return JSONResponse({'errmsg':'method error'})
-    fo_user = UserXXXXXForm(request.GET)
+    fo_user = UserXXXXXForm(dict(request.GET.items() + request.POST.items()))
     if not fo_user.is_valid():
         return JSONResponse({'errmsg':fo_user.errors})
     d_data = fo_user.cleaned_data

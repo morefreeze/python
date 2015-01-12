@@ -96,14 +96,16 @@ class UserThirdBindForm(forms.Form):
                              max_length=255)
     third_uid = forms.CharField(required = True,
                              max_length=63)
+    access_token = forms.CharField(required = True,
+                            max_length=255)
     third_tag = forms.CharField(required = True,
                              max_length=7)
 
 class UserThirdLoginForm(forms.Form):
     third_uid = forms.CharField(required = True,
                              max_length=63)
+    access_token = forms.CharField(required = True,
+                            max_length=255)
     third_tag = forms.CharField(required = True,
                              max_length=7)
-    third_name = forms.CharField(required = True,
-                                 min_length=2,max_length=63)
 

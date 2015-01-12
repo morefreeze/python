@@ -1,4 +1,5 @@
 # coding=utf-8
+from django.views.decorators.http import require_http_methods
 from WCLib.views import *
 from WCLogistics.models import RFD, Address
 from WCLogistics.forms import AddressAddForm, AddressUpdateForm, AddressDeleteForm, \
@@ -13,10 +14,9 @@ import json
 # Create your views here.
 
 #============Address method
+@require_http_methods(['POST', 'GET'])
 def add(request):
-    if request.method != 'GET':
-        return JSONResponse({'errmsg':'method error'})
-    fo_adr = AddressAddForm(request.GET)
+    fo_adr = AddressAddForm(dict(request.GET.items() + request.POST.items()))
     if not fo_adr.is_valid():
         return JSONResponse({'errmsg':fo_adr.errors})
     d_data = fo_adr.cleaned_data
@@ -33,10 +33,9 @@ def add(request):
         mo_user.save()
     return JSONResponse({'errno':0, 'aid':mo_adr.aid})
 
+@require_http_methods(['POST', 'GET'])
 def update(request):
-    if request.method != 'GET':
-        return JSONResponse({'errmsg':'method error'})
-    fo_adr = AddressUpdateForm(request.GET)
+    fo_adr = AddressUpdateForm(dict(request.GET.items() + request.POST.items()))
     if not fo_adr.is_valid():
         return JSONResponse({'errmsg':fo_adr.errors})
     d_data = fo_adr.cleaned_data
@@ -64,10 +63,9 @@ def update(request):
     mo_adr.save()
     return JSONResponse({'errno':0})
 
+@require_http_methods(['POST', 'GET'])
 def delete(request):
-    if request.method != 'GET':
-        return JSONResponse({'errmsg':'method error'})
-    fo_adr = AddressDeleteForm(request.GET)
+    fo_adr = AddressDeleteForm(dict(request.GET.items() + request.POST.items()))
     if not fo_adr.is_valid():
         return JSONResponse({'errmsg':fo_adr.errors})
     d_data = fo_adr.cleaned_data
@@ -84,10 +82,9 @@ def delete(request):
     mo_adr.save()
     return JSONResponse({'errno':0})
 
+@require_http_methods(['POST', 'GET'])
 def list(request):
-    if request.method != 'GET':
-        return JSONResponse({'errmsg':'method error'})
-    fo_adr = AddressListForm(request.GET)
+    fo_adr = AddressListForm(dict(request.GET.items() + request.POST.items()))
     if not fo_adr.is_valid():
         return JSONResponse({'errmsg':fo_adr.errors})
     d_data = fo_adr.cleaned_data
@@ -110,10 +107,9 @@ def list(request):
     d_response['errno'] = 0
     return JSONResponse(d_response)
 
+@require_http_methods(['POST', 'GET'])
 def set_default(request):
-    if request.method != 'GET':
-        return JSONResponse({'errmsg':'method error'})
-    fo_adr = AddressSetDefaultForm(request.GET)
+    fo_adr = AddressSetDefaultForm(dict(request.GET.items() + request.POST.items()))
     if not fo_adr.is_valid():
         return JSONResponse({'errmsg':fo_adr.errors})
     d_data = fo_adr.cleaned_data
@@ -130,10 +126,9 @@ def set_default(request):
     mo_user.save()
     return JSONResponse({'errno':0})
 
+@require_http_methods(['POST', 'GET'])
 def info(request):
-    if request.method != 'GET':
-        return JSONResponse({'errmsg':'method error'})
-    fo_adr = AddressInfoForm(request.GET)
+    fo_adr = AddressInfoForm(dict(request.GET.items() + request.POST.items()))
     if not fo_adr.is_valid():
         return JSONResponse({'errmsg':fo_adr.errors})
     d_data = fo_adr.cleaned_data
@@ -154,10 +149,9 @@ def info(request):
     return JSONResponse(d_response)
 
 #==============RFD method
+@require_http_methods(['POST', 'GET'])
 def list_lg(request):
-    if request.method != 'GET':
-        return JSONResponse({'errmsg':'method error'})
-    fo_adr = AddressXXXXXForm(request.GET)
+    fo_adr = AddressXXXXXForm(dict(request.GET.items() + request.POST.items()))
     if not fo_adr.is_valid():
         return JSONResponse({'errmsg':fo_adr.errors})
     d_data = fo_adr.cleaned_data
@@ -168,10 +162,9 @@ def list_lg(request):
         return JSONResponse({'errmsg':'username or password error'})
     # todo
 
+@require_http_methods(['POST', 'GET'])
 def info_lg(request):
-    if request.method != 'GET':
-        return JSONResponse({'errmsg':'method error'})
-    fo_adr = AddressXXXXXForm(request.GET)
+    fo_adr = AddressXXXXXForm(dict(request.GET.items() + request.POST.items()))
     if not fo_adr.is_valid():
         return JSONResponse({'errmsg':fo_adr.errors})
     d_data = fo_adr.cleaned_data
@@ -192,12 +185,7 @@ def sign_data(js_data):
     s_res = s_json + ',' + base64.b64encode(ct.sign(pk_prikey, s_hash, 'sha1'))
     return s_res
 
-def test_order(request):
-    mo_bill = Bill.objects.get(bid=request.GET.get('bid'))
-    tt = RFD()
-    js_s = tt.AddFetchOrder(mo_bill)
-    return JSONResponse(js_s)
-
+@require_http_methods(['POST', 'GET'])
 def post_status(request):
     logging.debug(request.body)
     xml_res = ET.fromstring(request.body)
@@ -225,26 +213,10 @@ def post_status(request):
     logging.debug(js_xml['xml'])
     return HttpResponse(js_xml['xml'],content_type="application/xhtml+xml")
 
-def test_import(request):
-    mo_shop = Shop.objects.get(sid=1)
-    mo_bill = Bill.objects.get(bid=2)
-    mo_bill.format_cloth()
-    mo_bill.save()
-    s_s = ''
-    """
-    for it_cloth in mo_bill.clothes:
-        mo_cloth = Cloth.objects.get(cid=it_cloth['cid'])
-        s_s += " %s %d" %(mo_cloth.get_name(), it_cloth['number'])
-    return HttpResponse(s_s)
-    """
-    d_res = RFD.ImportOrders(mo_bill)
-    return JSONResponse(d_res)
-
 """
+@require_http_methods(['POST', 'GET'])
 def submit(request):
-    if request.method != 'GET':
-        return JSONResponse({'errmsg':'method error'})
-    fo_adr = AddressXXXXXForm(request.GET)
+    fo_adr = AddressXXXXXForm(dict(request.GET.items() + request.POST.items()))
     if not fo_adr.is_valid():
         return JSONResponse({'errmsg':fo_adr.errors})
     d_data = fo_adr.cleaned_data
