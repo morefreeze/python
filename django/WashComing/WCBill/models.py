@@ -303,10 +303,13 @@ class Coupon(models.Model):
     percent_dst = models.IntegerField(default=0, verbose_name=u'折扣', \
         help_text=u'取值[0,100]，0表示不打折，20表示8折，以此类推')
 # price discount minus price directly
-    price_dst = models.FloatField(default=0, verbose_name=u'价格减免')
+    price_dst_low = models.IntegerField(default=0, verbose_name=u'价格减免下限')
+    price_dst_upp = models.IntegerField(default=0, verbose_name=u'价格减免上限')
 # max use limit each user, 0 for no limit
     max_limit = models.IntegerField(default=0, verbose_name=u'最大拥有量', \
         help_text=u'每个用户最大持有该代金券数量，0表示无限量，目前都未开发限量情况')
+    use_code = models.BooleanField(default=False, verbose_name=u'是否可用代码兑换')
+    code = models.CharField(max_length=12, default='', verbose_name=u'兑换代码，自动生成')
 
     def __unicode__(self):
         return "%d(%s)" %(self.coid, self.name)
@@ -325,10 +328,25 @@ class Coupon(models.Model):
         else:
             dt_start_time = self.start_time
             dt_expire_time = self.expire_time
+        import random
+        if self.price_dst_low > self.price_dst_upp:
+            logging.error('coupon price dst error low[%d] upp[%d]' %(self.price_dst_low, self.price_dst_upp))
+        i_price_dst = random.choice(range(self.price_dst_low, self.price_dst_upp+1) or [0])
         mo_mycoupon = MyCoupon.objects.create(own=mo_user,\
             start_time=dt_start_time, expire_time=dt_expire_time,\
-            price_thd=self.price_thd, percent_dst=self.percent_dst, price_dst=self.price_dst)
+            price_thd=self.price_thd, percent_dst=self.percent_dst, \
+            price_dst=i_price_dst, coupon=self)
         return mo_mycoupon.mcid
+
+    def gen_code(self):
+        import random
+        chars = 'ABCEFGHJKPQRSTWXYZ123456789'
+        return ''.join(random.sample(chars, 12))
+
+    def save(self, *args, **kwargs):
+        if self.use_code and (None == self.code or '' == self.code):
+            self.code = self.gen_code()
+        super(self.__class__, self).save(*args, **kwargs)
 
 class MyCoupon(models.Model):
     CAN_USE = 1
@@ -339,7 +357,7 @@ class MyCoupon(models.Model):
     mcid = models.AutoField(primary_key=True, verbose_name=u'代金券id')
     own = models.ForeignKey('WCUser.User', db_index=True, verbose_name=u'用户id')
 # use for coupon.max_limit
-    #coupon = models.ForeignKey('WCBill.Coupon', verbose_name=u'原代金券id')
+    coupon = models.ForeignKey(Coupon, default=None, blank=True, null=True, verbose_name=u'原代金券id')
     used = models.BooleanField(default=False, verbose_name=u'已用过标志')
     start_time = models.DateTimeField(default=dt.datetime(2014,1,1), verbose_name=u'开始时间')
     expire_time = models.DateTimeField(default=dt.datetime(2014,1,1), verbose_name=u'截止时间')

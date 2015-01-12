@@ -95,6 +95,8 @@ def info(request):
     d_response['phone'] = se_user.data['phone']
     d_response['email'] = se_user.data['email']
     d_response['is_active'] = se_user.data['is_active']
+    t_data = se_user.data
+    d_response['third_bind'] = se_user.data['third_bind']
     d_response['errno'] = 0
     return JSONResponse(d_response)
 

@@ -8,7 +8,7 @@ from WCBill.models import Bill, Feedback, Cart
 from WCBill.forms import BillSubmitForm, BillListForm, BillInfoForm, BillCancelForm, \
         BillFeedbackForm, BillGetFeedbackForm
 from WCBill.forms import CartSubmitForm, CartListForm
-from WCBill.forms import MyCouponListForm, MyCouponCalcForm, MyCouponInfoForm
+from WCBill.forms import MyCouponListForm, MyCouponCalcForm, MyCouponInfoForm, MyCouponAddForm
 from WCUser.models import User
 from WCBill.models import Bill, Coupon, MyCoupon
 from WCLogistics.models import Address, OrderQueue
@@ -370,6 +370,26 @@ def info_mycoupon(request):
         return JSONResponse({'errmsg':'coupon not exist'})
     se_mycoupon = MyCouponSerializer(mo_mycoupon)
     return JSONResponse(se_mycoupon.data)
+
+@require_http_methods(['POST', 'GET'])
+def add_mycoupon(request):
+    fo_mycoupon = MyCouponAddForm(dict(request.GET.items() + request.POST.items()))
+    if not fo_mycoupon.is_valid():
+        return JSONResponse({'errmsg':fo_mycoupon.errors})
+    d_data = fo_mycoupon.cleaned_data
+    s_name = d_data.get('username')
+    s_token = d_data.get('token')
+    mo_user = User.get_user(s_name, s_token)
+    if None == mo_user:
+        return JSONResponse({'errmsg':'username or password or permission error'})
+    s_code = d_data.get('code')
+    try:
+        mo_coupon = Coupon.objects.get(use_code=True, code=s_code)
+    except (Coupon.DoesNotExist) as e:
+        logging.error('coupon code does not exist %s' %(s_code))
+        return JSONResponse({'errmsg':'coupon code error'})
+    i_mcid = mo_coupon.add_user(mo_user)
+    return JSONResponse({'mcid':i_mcid, 'errno':0})
 
 """ method template (12 lines)
 @require_http_methods(['POST', 'GET'])

@@ -1,9 +1,10 @@
 from django.conf.urls import patterns, url
-from WCBill.views import list_mycoupon, calc_mycoupon, info_mycoupon
+from WCBill.views import list_mycoupon, calc_mycoupon, info_mycoupon, add_mycoupon
 
 urlpatterns = patterns(
     '',
     url(r'^list$', list_mycoupon),
     url(r'^calc$', calc_mycoupon),
     url(r'^info$', info_mycoupon),
+    url(r'^add$', add_mycoupon),
 )
