@@ -2,21 +2,72 @@
 from django.contrib import admin
 from django.contrib import messages
 from WCLib.views import *
-from WCBill.models import Bill, Coupon, MyCoupon, Cart
+from WCBill.models import Bill, Coupon, MyCoupon, Cart, Feedback
 from WCLogistics.models import OrderQueue
 import datetime as dt
 
 # Register your models here.
+def parse_clothes(pa_clothes):
+    a_clothes = []
+    for it_cloth in pa_clothes:
+        d_cloth = it_cloth
+        if 'price' in it_cloth and 'number' in it_cloth:
+            d_cloth['total'] = int(it_cloth['number']) * it_cloth['price']
+            #d_cloth[u'总价'] = int(it_cloth['number']) * it_cloth['price']
+        a_clothes.append(d_cloth)
+    return a_clothes
+
 class CouponAdmin(admin.ModelAdmin):
-    pass
+    readonly_fields = ['create_time', ]
 
 class CartAdmin(admin.ModelAdmin):
-    pass
+    readonly_fields = ['update_time', ]
+    def parse_cart(request, id):
+        try:
+            mo_cart = Cart.objects.get(caid=id)
+            t_map = {
+                "name": u'名称',
+                "image": u'图标',
+                "price": u'单价',
+                "number": u'数量',
+                "cid": u'衣物编号',
+            }
+            a_clothes = parse_clothes(mo_cart.clothes)
+        except (Cart.DoesNotExist) as e:
+            messages.error(request, u'订单号[%d]不存在！' %(id))
+        for it_cloth in a_clothes:
+            messages.info(request, u'衣物【%s】 数量【%s】 单价【%.2f】 总价【%.2f】 cid【%d】' \
+                %(it_cloth.get('name'), it_cloth.get('number'), it_cloth.get('price'), \
+                 it_cloth.get('total'), it_cloth.get('cid') ) \
+                )
+        if 0 == len(a_clothes):
+            messages.warning(request, u'暂无衣物信息')
+        return HttpResponseRedirect('..')
+
+    buttons = [
+        {
+             'url': '_parse_cart',
+             'textname': u'解析购物车',
+             'func': parse_cart,
+        },
+    ]
+
+    def change_view(self, request, object_id, form_url='', extra_context={}):
+        extra_context['buttons'] = self.buttons
+        return super(CartAdmin, self).change_view(request, object_id, form_url, extra_context=extra_context)
+
+    def get_urls(self):
+        from django.conf.urls import patterns, url, include
+        urls = super(CartAdmin, self).get_urls()
+        my_urls = list( (url(r'^(.+)/%(url)s/$' % b, self.admin_site.admin_view(b['func'])) for b in self.buttons) )
+        return my_urls + urls
 
 class MyCouponAdmin(admin.ModelAdmin):
     pass
 
 class BillAdmin(admin.ModelAdmin):
+    readonly_fields = ['create_time', ]
+
     def confirm_order(request, id):
         try:
             mo_bill = Bill.objects.get(bid=id)
@@ -50,31 +101,39 @@ class BillAdmin(admin.ModelAdmin):
                 "number": u'数量',
                 "cid": u'衣物编号',
             }
-            a_clothes = []
-            for it_cloth in mo_bill.clothes:
-                d_cloth = {}
-                """
-                for k,v in t_map.items():
-                    if k in it_cloth:
-                        d_cloth[v] = it_cloth[k]
-                        """
-                d_cloth = it_cloth
-                if 'price' in it_cloth and 'number' in it_cloth:
-                    d_cloth['total'] = int(it_cloth['number']) * it_cloth['price']
-                    #d_cloth[u'总价'] = int(it_cloth['number']) * it_cloth['price']
-                a_clothes.append(d_cloth)
+            a_clothes = parse_clothes(mo_bill.clothes)
         except (Bill.DoesNotExist) as e:
             messages.error(request, u'订单号[%d]不存在！' %(id))
         for it_cloth in a_clothes:
-            s_msg = ''
             messages.info(request, u'衣物【%s】 数量【%s】 单价【%.2f】 总价【%.2f】 cid【%d】' \
                 %(it_cloth.get('name'), it_cloth.get('number'), it_cloth.get('price'), \
                  it_cloth.get('total'), it_cloth.get('cid') ) \
                 )
+        if 0 == len(a_clothes):
+            messages.warning(request, u'暂无衣物信息')
         messages.info(request, u'总价【%.2f】' %(mo_bill.total))
-        messages.info(request, u'代金券【%d】' %(mo_bill.ext.get('use_coupon') or 0))
-        messages.info(request, u'支付方式【%s】' %(mo_bill.ext.get('payment')))
-        #return render_to_response('admin/WCBill/parse_bill.html', {'clothes':a_clothes})
+        i_mcid = mo_bill.ext.get('use_coupon') or 0
+        if i_mcid > 0:
+            try:
+                mo_mc = MyCoupon.objects.get(mcid=i_mcid)
+                messages.info(request, u'代金券【%s】' %(mo_mc))
+                messages.info(request, u'原价【%.2f】' %(mo_bill.ext['old_total']))
+                messages.info(request, u'价格减免【%.2f】' %(mo_bill.ext.get('price_dst') or 0))
+                messages.info(request, u'折扣减免【%.2f元】' %(mo_bill.ext.get('percent_dst') or 0))
+            except (MyCoupon.DoesNotExist) as e:
+                messages.error(request, u'代金券错误【%d】' %(i_mcid))
+        else:
+            messages.info(request, u'未使用代金券')
+        messages.info(request, u'邮费【%.2f】' %(mo_bill.ext.get('shipping_fee') or 0))
+        s_payment = mo_bill.ext.get('payment')
+        d_pay = {
+            'cash' :    u'现金',
+            'pos' :     u'POS机',
+        }
+        if s_payment in d_pay:
+            messages.info(request, u'支付方式【%s】' %(d_pay[s_payment]))
+        else:
+            messages.warning(request, u'支付方式未知')
         return HttpResponseRedirect('..')
 
     buttons = [
@@ -104,7 +163,11 @@ class BillAdmin(admin.ModelAdmin):
         my_urls = list( (url(r'^(.+)/%(url)s/$' % b, self.admin_site.admin_view(b['func'])) for b in self.buttons) )
         return my_urls + urls
 
+class FeedbackAdmin(admin.ModelAdmin):
+    readonly_fields = ['create_time', ]
+
 admin.site.register(Coupon,CouponAdmin)
 admin.site.register(Cart,CartAdmin)
 admin.site.register(MyCoupon,MyCouponAdmin)
 admin.site.register(Bill,BillAdmin)
+admin.site.register(Feedback,FeedbackAdmin)

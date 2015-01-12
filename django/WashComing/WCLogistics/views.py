@@ -25,7 +25,7 @@ def add(request):
     mo_user = User.get_user(s_name, s_token)
     if None == mo_user:
         return JSONResponse({'errmsg':'username or password error'})
-    mo_adr = Address.create(mo_user, request.GET)
+    mo_adr = Address.create(mo_user, d_data)
     mo_adr.save()
     b_set_default = d_data.get('set_default')
     if True == b_set_default:
