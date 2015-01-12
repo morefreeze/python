@@ -1,5 +1,6 @@
 from django.db import IntegrityError
 from django.shortcuts import render
+from django.views.decorators.http import require_http_methods
 from WCLib.views import *
 from WCUser.models import User
 from WCCloth.serializers import ClothSerializer
@@ -8,10 +9,9 @@ from WCCloth.forms import ClothCategoryForm, ClothInfoForm, ClothSearchForm
 
 # Create your views here.
 
+@require_http_methods(['POST', 'GET'])
 def category(request):
-    if request.method != 'GET':
-        return JSONResponse({'errmsg':'method error'})
-    fo_cloth = ClothCategoryForm(request.GET)
+    fo_cloth = ClothCategoryForm(dict(request.GET.items() + request.POST.items()))
     if not fo_cloth.is_valid():
         return JSONResponse({'errmsg':fo_cloth.errors})
     d_data = fo_cloth.cleaned_data
@@ -35,10 +35,9 @@ def category(request):
     d_response['errno'] = 0
     return JSONResponse(d_response)
 
+@require_http_methods(['POST', 'GET'])
 def info(request):
-    if request.method != 'GET':
-        return JSONResponse({'errmsg':'method error'})
-    fo_cloth = ClothInfoForm(request.GET)
+    fo_cloth = ClothInfoForm(dict(request.GET.items() + request.POST.items()))
     if not fo_cloth.is_valid():
         return JSONResponse({'errmsg':fo_cloth.errors})
     d_data = fo_cloth.cleaned_data
@@ -69,10 +68,9 @@ def info(request):
     d_response['errno'] = 0
     return JSONResponse(d_response)
 
+@require_http_methods(['POST', 'GET'])
 def search(request):
-    if request.method != 'GET':
-        return JSONResponse({'errmsg':'method error'})
-    fo_cloth = ClothSearchForm(request.GET)
+    fo_cloth = ClothSearchForm(dict(request.GET.items() + request.POST.items()))
     if not fo_cloth.is_valid():
         return JSONResponse({'errmsg':fo_cloth.errors})
     d_data = fo_cloth.cleaned_data
@@ -91,11 +89,10 @@ def search(request):
     d_response['errno'] = 0
     return JSONResponse(d_response)
 
-""" method template (7 lines)
+""" method template (6 lines)
+@require_http_methods(['POST', 'GET'])
 def info(request):
-    if request.method != 'GET':
-        return JSONResponse({'errmsg':'method error'})
-    fo_cloth = ClothXXXXXForm(request.GET)
+    fo_cloth = ClothXXXXXForm(dict(request.GET.items() + request.POST.items()))
     if not fo_cloth.is_valid():
         return JSONResponse({'errmsg':fo_cloth.errors})
     mo_cloth = Cloth.create(fo_cloth.cleaned_data)

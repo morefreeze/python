@@ -155,7 +155,7 @@ class BillTest(BillBaseTest):
              'return_time_0':s_return_time_0, 'return_time_1':s_return_time_1,
              'aid':self.aid, 'clothes':self.clothes, 'payment':'pos',
             })
-        self.assertJSONEqual(res.content, {'errmsg': {'get_time_0': ['This field is required.']}})
+        self.assertJSONEqual(res.content, {'errmsg': {'get_time_0': [u'这个字段是必填项。']}})
 
 # lost get_time_1
         res = self.client.get(
@@ -165,7 +165,7 @@ class BillTest(BillBaseTest):
              'return_time_0':s_return_time_0, 'return_time_1':s_return_time_1,
              'aid':self.aid, 'clothes':self.clothes, 'payment':'pos',
             })
-        self.assertJSONEqual(res.content, {'errmsg': {'get_time_1': ['This field is required.']}})
+        self.assertJSONEqual(res.content, {'errmsg': {'get_time_1': [u'这个字段是必填项。']}})
 
 # lost return_time_0
         res = self.client.get(
@@ -175,7 +175,7 @@ class BillTest(BillBaseTest):
              'return_time_1':s_return_time_1,
              'aid':self.aid, 'clothes':self.clothes, 'payment':'pos',
             })
-        self.assertJSONEqual(res.content, {'errmsg': {'return_time_0': ['This field is required.']}})
+        self.assertJSONEqual(res.content, {'errmsg': {'return_time_0': [u'这个字段是必填项。']}})
 
 # lost get_time_0
         res = self.client.get(
@@ -185,7 +185,7 @@ class BillTest(BillBaseTest):
              'return_time_0':s_return_time_0,
              'aid':self.aid, 'clothes':self.clothes, 'payment':'pos',
             })
-        self.assertJSONEqual(res.content, {'errmsg': {'return_time_1': ['This field is required.']}})
+        self.assertJSONEqual(res.content, {'errmsg': {'return_time_1': [u'这个字段是必填项。']}})
 
     def test_submit_with_coupon(self):
         s_get_time_0 = self.get_time_0.strftime(FULL_DATETIME_FORMAT)

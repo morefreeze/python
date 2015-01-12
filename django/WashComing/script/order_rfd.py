@@ -44,7 +44,7 @@ def handleAddFetchOrder(mo_queue, to_shop=True):
                 mo_rfd.return_operate_time = dt_now
                 mo_rfd.status = RFD.TO_RETURN
         if to_shop:
-            mo_bill.change_status(Bill.GETTING)
+            mo_bill.change_status(Bill.WAITTING_GET)
         else:
             mo_bill.change_status(Bill.RETURNNING)
         mo_bill.save()

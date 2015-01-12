@@ -1,6 +1,7 @@
 # coding=utf-8
 from django.shortcuts import render
 from django.core.paginator import Paginator
+from django.views.decorators.http import require_http_methods
 from WCLib.views import *
 from WCBill.serializers import BillSerializer, FeedbackSerializer, MyCouponSerializer
 from WCBill.models import Bill, Feedback, Cart
@@ -14,13 +15,10 @@ from WCLogistics.models import Address, OrderQueue
 import json
 import datetime as dt
 
-from datetime import datetime
-
 # Create your views here.
+@require_http_methods(['POST', 'GET'])
 def submit(request):
-    if request.method != 'GET':
-        return JSONResponse({'errmsg':'method error'})
-    fo_bill = BillSubmitForm(request.GET)
+    fo_bill = BillSubmitForm(dict(request.GET.items() + request.POST.items()))
     if not fo_bill.is_valid():
         return JSONResponse({'errmsg':fo_bill.errors})
     d_data = fo_bill.cleaned_data
@@ -116,10 +114,9 @@ def submit(request):
     return JSONResponse({'errno':0, 'bid':mo_bill.bid,
                          'total':mo_bill.total})
 
+@require_http_methods(['POST', 'GET'])
 def list(request):
-    if request.method != 'GET':
-        return JSONResponse({'errmsg':'method error'})
-    fo_bill = BillListForm(request.GET)
+    fo_bill = BillListForm(dict(request.GET.items() + request.POST.items()))
     if not fo_bill.is_valid():
         return JSONResponse({'errmsg':fo_bill.errors})
     d_data = fo_bill.cleaned_data
@@ -157,10 +154,9 @@ def list(request):
     d_response['count'] = len(d_response['data'])
     return JSONResponse(d_response)
 
+@require_http_methods(['POST', 'GET'])
 def info(request):
-    if request.method != 'GET':
-        return JSONResponse({'errmsg':'method error'})
-    fo_bill = BillInfoForm(request.GET)
+    fo_bill = BillInfoForm(dict(request.GET.items() + request.POST.items()))
     if not fo_bill.is_valid():
         return JSONResponse({'errmsg':fo_bill.errors})
     d_data = fo_bill.cleaned_data
@@ -178,10 +174,9 @@ def info(request):
     se_bill = BillSerializer(mo_bill)
     return JSONResponse(se_bill.data)
 
+@require_http_methods(['POST', 'GET'])
 def cancel(request):
-    if request.method != 'GET':
-        return JSONResponse({'errmsg':'method error'})
-    fo_bill = BillCancelForm(request.GET)
+    fo_bill = BillCancelForm(dict(request.GET.items() + request.POST.items()))
     if not fo_bill.is_valid():
         return JSONResponse({'errmsg':fo_bill.errors})
     d_data = fo_bill.cleaned_data
@@ -216,10 +211,9 @@ def cancel(request):
             mo_bill.save()
     return JSONResponse({'errno':0})
 
+@require_http_methods(['POST', 'GET'])
 def feedback(request):
-    if request.method != 'GET':
-        return JSONResponse({'errmsg':'method error'})
-    fo_bill = BillFeedbackForm(request.GET)
+    fo_bill = BillFeedbackForm(dict(request.GET.items() + request.POST.items()))
     if not fo_bill.is_valid():
         return JSONResponse({'errmsg':fo_bill.errors})
     d_data = fo_bill.cleaned_data
@@ -249,10 +243,9 @@ def feedback(request):
         mo_user.save()
     return JSONResponse({'fid':mo_fb.fid, 'errno':0})
 
+@require_http_methods(['POST', 'GET'])
 def get_feedback(request):
-    if request.method != 'GET':
-        return JSONResponse({'errmsg':'method error'})
-    fo_bill = BillGetFeedbackForm(request.GET)
+    fo_bill = BillGetFeedbackForm(dict(request.GET.items() + request.POST.items()))
     if not fo_bill.is_valid():
         return JSONResponse({'errmsg':fo_bill.errors})
     d_data = fo_bill.cleaned_data
@@ -270,10 +263,9 @@ def get_feedback(request):
     d_response['errno'] = 0
     return JSONResponse(d_response)
 
+@require_http_methods(['POST', 'GET'])
 def submit_cart(request):
-    if request.method != 'GET':
-        return JSONResponse({'errmsg':'method error'})
-    fo_bill = CartSubmitForm(request.GET)
+    fo_bill = CartSubmitForm(dict(request.GET.items() + request.POST.items()))
     if not fo_bill.is_valid():
         return JSONResponse({'errmsg':fo_bill.errors})
     d_data = fo_bill.cleaned_data
@@ -290,10 +282,9 @@ def submit_cart(request):
         return JSONResponse({'errmsg':'some error happened, please contact admin'})
     return JSONResponse({'caid':mo_cart.caid, 'errno':0})
 
+@require_http_methods(['POST', 'GET'])
 def list_cart(request):
-    if request.method != 'GET':
-        return JSONResponse({'errmsg':'method error'})
-    fo_bill = CartListForm(request.GET)
+    fo_bill = CartListForm(dict(request.GET.items() + request.POST.items()))
     if not fo_bill.is_valid():
         return JSONResponse({'errmsg':fo_bill.errors})
     d_data = fo_bill.cleaned_data
@@ -310,10 +301,9 @@ def list_cart(request):
     d_response['clothes'] = mo_cart.clothes
     return JSONResponse(d_response)
 
+@require_http_methods(['POST', 'GET'])
 def list_mycoupon(request):
-    if request.method != 'GET':
-        return JSONResponse({'errmsg':'method error'})
-    fo_mycoupon = MyCouponListForm(request.GET)
+    fo_mycoupon = MyCouponListForm(dict(request.GET.items() + request.POST.items()))
     if not fo_mycoupon.is_valid():
         return JSONResponse({'errmsg':fo_mycoupon.errors})
     d_data = fo_mycoupon.cleaned_data
@@ -334,10 +324,9 @@ def list_mycoupon(request):
         d_response['data'].append(se_mycoupon.data)
     return JSONResponse(d_response)
 
+@require_http_methods(['POST', 'GET'])
 def calc_mycoupon(request):
-    if request.method != 'GET':
-        return JSONResponse({'errmsg':'method error'})
-    fo_mycoupon = MyCouponCalcForm(request.GET)
+    fo_mycoupon = MyCouponCalcForm(dict(request.GET.items() + request.POST.items()))
     if not fo_mycoupon.is_valid():
         return JSONResponse({'errmsg':fo_mycoupon.errors})
     d_data = fo_mycoupon.cleaned_data
@@ -363,10 +352,9 @@ def calc_mycoupon(request):
             d_response['data'].append(se_mycoupon.data)
     return JSONResponse(d_response)
 
+@require_http_methods(['POST', 'GET'])
 def info_mycoupon(request):
-    if request.method != 'GET':
-        return JSONResponse({'errmsg':'method error'})
-    fo_mycoupon = MyCouponInfoForm(request.GET)
+    fo_mycoupon = MyCouponInfoForm(dict(request.GET.items() + request.POST.items()))
     if not fo_mycoupon.is_valid():
         return JSONResponse({'errmsg':fo_mycoupon.errors})
     d_data = fo_mycoupon.cleaned_data
@@ -383,11 +371,10 @@ def info_mycoupon(request):
     se_mycoupon = MyCouponSerializer(mo_mycoupon)
     return JSONResponse(se_mycoupon.data)
 
-""" method template (13 lines)
+""" method template (12 lines)
+@require_http_methods(['POST', 'GET'])
 def submit(request):
-    if request.method != 'GET':
-        return JSONResponse({'errmsg':'method error'})
-    fo_bill = BillXXXXXForm(request.GET)
+    fo_bill = BillXXXXXForm(dict(request.GET.items() + request.POST.items()))
     if not fo_bill.is_valid():
         return JSONResponse({'errmsg':fo_bill.errors})
     d_data = fo_bill.cleaned_data

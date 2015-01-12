@@ -8,6 +8,7 @@ from django.template import loader, Context
 import base64, hashlib, uuid
 import datetime as dt
 import json
+import urllib, urllib2
 
 # Create your models here.
 class User(models.Model):
@@ -85,12 +86,12 @@ class User(models.Model):
     def get_user(cls, name, token, is_active=None):
         try:
             if None == is_active:
-                mo_user = cls.objects.filter(Q(name=name),
-                                             Q(token=token) | Q(third_token=token),
+                mo_user = cls.objects.filter((Q(name=name) & Q(token=token))
+                                             | (Q(third_uids__contains=name) & Q(third_token=token)),
                                              Q(deleted=False))[0]
             else:
-                mo_user = cls.objects.filter(Q(name=name),
-                                             Q(token=token) | Q(third_token=token),
+                mo_user = cls.objects.filter((Q(name=name) & Q(token=token))
+                                             | (Q(third_uids__contains=name) & Q(third_token=token)),
                                              Q(is_active=is_active),
                                              Q(deleted=False))[0]
         except (cls.DoesNotExist, IndexError) as e:
@@ -156,6 +157,62 @@ class User(models.Model):
         self.save()
 
         return t_active.render(c_active)
+
+    @classmethod
+# return b_valid, s_third_name
+# if b_valid == False then s_third_name is None
+    def get_third_name(cls, s_tag, *args, **kwargs):
+        if '' != s_tag:
+            s_method_name = 'get_%s_third_name' %(s_tag)
+            logging.debug(s_method_name)
+            if hasattr(cls, s_method_name):
+                logging.debug(getattr(cls, s_method_name))
+                return getattr(cls, s_method_name)(*args, **kwargs)
+        return False, None
+
+    @classmethod
+    def get_wb_third_name(cls, *args, **kwargs):
+        s_url = 'https://api.weibo.com/2/users/show.json'
+        d_data = {
+            'uid':kwargs.get('third_uid'),
+            'access_token':kwargs.get('access_token'),
+        }
+        try:
+            req = urllib2.Request(s_url+'?'+urllib.urlencode(d_data))
+            logging.debug(req.get_full_url())
+            response = urllib2.urlopen(req)
+            s_page = response.read()
+            d_page = json.loads(s_page)
+            if 'screen_name' in d_page:
+                return True, d_page['screen_name']
+            else:
+                logging.error(d_page)
+        except (Exception) as e:
+            logging.error("%s" %(e.__str__()))
+        return False, None
+
+    @classmethod
+    def get_qq_third_name(cls, *args, **kwargs):
+        s_url = 'https://graph.qq.com/user/get_user_info'
+        d_data = {
+            'format':'json',
+            'oauth_consumer_key':kwargs.get('oauth_consumer_key') or '1103449549',
+            'openid':kwargs.get('third_uid'),
+            'access_token':kwargs.get('access_token'),
+        }
+        try:
+            req = urllib2.Request(s_url+'?'+urllib.urlencode(d_data))
+            logging.debug(req.get_full_url())
+            response = urllib2.urlopen(req)
+            s_page = response.read()
+            d_page = json.loads(s_page)
+            if 'nickname' in d_page:
+                return True, d_page['nickname']
+            else:
+                logging.error(d_page)
+        except (Exception) as e:
+            logging.error("%s" %(e.__str__()))
+        return False, None
 
 #=============User end
 

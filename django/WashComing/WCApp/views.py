@@ -1,4 +1,5 @@
 from django.shortcuts import render
+from django.views.decorators.http import require_http_methods
 from WCLib.views import *
 from WCApp.models import Android
 from WCApp.forms import AppGetNewestAndroidForm
@@ -6,10 +7,9 @@ from WCApp.serializers import AndroidSerializer
 from WCUser.models import User
 
 # Create your views here.
+@require_http_methods(['POST', 'GET'])
 def get_newest_android(request):
-    if request.method != 'GET':
-        return JSONResponse({'errmsg':'method error'})
-    fo_app = AppGetNewestAndroidForm(request.GET)
+    fo_app = AppGetNewestAndroidForm(dict(request.GET.items() + request.POST.items()))
     if not fo_app.is_valid():
         return JSONResponse({'errmsg':fo_app.errors})
     d_data = fo_app.cleaned_data
