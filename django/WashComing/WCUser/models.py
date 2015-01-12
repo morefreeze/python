@@ -253,3 +253,6 @@ class Feedback(models.Model):
     create_time = models.DateTimeField(auto_now_add=True, verbose_name=u'反馈时间', help_text=u'')
     content = models.CharField(max_length=1023, verbose_name=u'反馈内容', help_text=u'')
 
+    def __unicode__(self):
+        return "%s [%s]" %(self.content, self.own)
+

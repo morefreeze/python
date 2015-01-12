@@ -67,7 +67,7 @@ class RFD(models.Model):
     config = ConfigParser.ConfigParser()
 
     def __unicode__(self):
-        return "%d get[%s,%s] return[%s]" %(self.lid, self.get_way_no, self.get_order_no, self.return_way_no)
+        return "%d get[%s,%s] return[%s, %s]" %(self.lid, self.get_way_no, self.get_order_no, self.return_way_no, self.return_order_no)
 
     @classmethod
     # return rfd response convert dict
@@ -395,13 +395,34 @@ class RFD(models.Model):
             'WaybillNo': s_waybill_no,
             'OperateId': s_operate_id,
         }
-# i_type 1,2 for get form, 3 for return form, 4 for error
+# i_type 1 for get order, 2 for get form, 3 for return form, 4 for return order, 9 for error
         try:
             if s_custom_order.startswith('SL'):
-                i_type = 1
-                mo_rfd = cls.objects.get(get_order_no=s_custom_order)
+                i_type = 9
+                q_rfd = cls.objects.filter(
+                    Q(get_order_no=s_custom_order) | Q(return_order_no=s_custom_order)
+                )
+                if 0 == len(q_rfd):
+                    d_ret['Ret'] = 1
+                    d_ret['Message'] = 'array is empty op_id[%s] custom_order[%s]' \
+                            %(s_operate_id, s_custom_order)
+                    return d_ret
+                elif len(q_rfd) > 1:
+                    d_ret['Ret'] = 1
+                    d_ret['Message'] = 'array is large thon 1 op_id[%s] custom_order[%s]' \
+                            %(s_operate_id, s_custom_order)
+                    return d_ret
+                mo_rfd = q_rfd[0]
+                if mo_rfd.get_order_no == s_custom_order:
+                    i_type = 1
+                elif mo_rfd.return_order_no == s_custom_order:
+                    i_type = 4
+                else:
+                    logging.error('this is no science op_id[%s] custom_order[%s]' \
+                                  %(s_operate_id, s_custom_order))
+                    raise cls.DoesNotExist()
             else:
-                i_type = 4
+                i_type = 9
                 q_rfd = cls.objects.filter(
                     Q(get_form_no=s_custom_order) | Q(return_form_no=s_custom_order)
                 )
@@ -410,12 +431,19 @@ class RFD(models.Model):
                     d_ret['Message'] = 'array is empty op_id[%s] custom_order[%s]' \
                             %(s_operate_id, s_custom_order)
                     return d_ret
+                elif len(q_rfd) > 1:
+                    d_ret['Ret'] = 1
+                    d_ret['Message'] = 'array is large thon 1 op_id[%s] custom_order[%s]' \
+                            %(s_operate_id, s_custom_order)
+                    return d_ret
                 mo_rfd = q_rfd[0]
                 if mo_rfd.get_form_no == s_custom_order:
                     i_type = 2
                 elif mo_rfd.return_form_no == s_custom_order:
                     i_type = 3
                 else:
+                    logging.error('this is no science op_id[%s] custom_order[%s]' \
+                                  %(s_operate_id, s_custom_order))
                     raise cls.DoesNotExist()
             i_status = int(d_st_info.get('Status'))
             s_message = d_st_info.get('Result')
@@ -445,7 +473,7 @@ class RFD(models.Model):
                 if cls.SUCCESS == i_status:
                     mo_rfd.status = cls.GOT
                     mo_bill.change_status(mo_bill.__class__.WASHING)
-            elif 3 == i_type:
+            elif i_type in [3,4]:
                 if dt_operate_time < mo_rfd.return_operate_time:
                     d_ret['Ret'] = 0
                     d_ret['Message'] = 'operate time passed(not error) time[%s]' %dt_operate_time

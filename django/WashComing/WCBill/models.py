@@ -354,8 +354,8 @@ class MyCoupon(models.Model):
 
     def __unicode__(self):
         if None == self.cid_thd:
-            return "%d([%s] [%.0f,%s] -%.0f -%d%%)" %(self.mcid, self.own.name, self.price_thd, \
-                        'ALL', self.price_dst, self.percent_dst)
+            return u"%d([%s] [满%.0f,%s] -%.0f -%d%%)" %(self.mcid, self.own.name, self.price_thd, \
+                        u'全场', self.price_dst, self.percent_dst)
 
         return "%d([%s][%.0f,%s] -%.0f -%d%%)" % (self.mcid, self.own.name, self.price_thd, \
                         self.cid_thd.name, self.price_dst, self.percent_dst)
@@ -422,6 +422,14 @@ class Feedback(models.Model):
     create_time = models.DateTimeField(auto_now_add=True)
     rate = models.IntegerField(default=5)
     content = models.CharField(max_length=1023)
+
+    def __unicode__(self):
+        s_ret = ''
+        for i in range(self.rate):
+            s_ret += u'★'
+        s_ret += u' 评价[%s]' %(self.content)
+        s_ret += u' 订单[%d]' %(self.bill_id)
+        return s_ret
 
 class Cart(Mass_Clothes):
     caid = models.AutoField(primary_key=True)
