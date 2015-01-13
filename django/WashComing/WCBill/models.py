@@ -153,8 +153,9 @@ class Bill(Mass_Clothes):
                 continue
             if pi_status < i_status:
                 continue
-            if i_status not in self.ext['lg_time']:
-                self.ext['lg_time'][i_status] = dt.datetime.now()
+# in sql it save as string instead of int
+            if str(i_status) not in self.ext['lg_time']:
+                self.ext['lg_time'][str(i_status)] = dt.datetime.now()
 
     def get_full_address(self):
         if 0 == len(self.province + self.city + self.area):
@@ -309,7 +310,8 @@ class Coupon(models.Model):
     max_limit = models.IntegerField(default=0, verbose_name=u'最大拥有量', \
         help_text=u'每个用户最大持有该代金券数量，0表示无限量，目前都未开发限量情况')
     use_code = models.BooleanField(default=False, verbose_name=u'是否可用代码兑换')
-    code = models.CharField(max_length=12, default='', verbose_name=u'兑换代码，自动生成')
+    code = models.CharField(max_length=12, default='', verbose_name=u'兑换代码', \
+        help_text=u'自动生成')
 
     def __unicode__(self):
         return "%d(%s)" %(self.coid, self.name)
