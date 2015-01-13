@@ -71,24 +71,24 @@ class BillAdmin(admin.ModelAdmin):
     def confirm_order(request, id):
         try:
             mo_bill = Bill.objects.get(bid=id)
-        except (Bill.DoesNotExist) as e:
-            return JSONResponse({'errmsg':'bill not exist [%d]' %(id)})
-        if Bill.CONFIRMING == mo_bill.status:
-            mo_bill.change_status(Bill.WAITTING_GET)
+            if Bill.CONFIRMING == mo_bill.status:
+                mo_bill.change_status(Bill.WAITTING_GET)
 
-            if mo_bill.ext.get('immediate'):
-                dt_get_time = dt.datetime.now()
+                if mo_bill.ext.get('immediate'):
+                    dt_get_time = dt.datetime.now()
+                else:
+                    dt_get_time = mo_bill.get_time_0
+                OrderQueue.objects.create(bill=mo_bill, type=OrderQueue.AddFetchOrder, \
+                                          status=OrderQueue.TODO, time=dt_get_time)
+                dt_return_time = mo_bill.return_time_0
+                OrderQueue.objects.create(bill=mo_bill, type=OrderQueue.AddReturnningFetchOrder, \
+                                          status=OrderQueue.TODO, time=dt_return_time)
+                mo_bill.save()
+                messages.success(request, u'确认订单成功！')
             else:
-                dt_get_time = mo_bill.get_time_0
-            OrderQueue.objects.create(bill=mo_bill, type=OrderQueue.AddFetchOrder, \
-                                      status=OrderQueue.TODO, time=dt_get_time)
-            dt_return_time = mo_bill.return_time_0
-            OrderQueue.objects.create(bill=mo_bill, type=OrderQueue.AddReturnningFetchOrder, \
-                                      status=OrderQueue.TODO, time=dt_return_time)
-            mo_bill.save()
-            messages.success(request, u'确认订单成功！')
-        else:
-            messages.warning(request, u'订单状态不需要确认 当前状态为 “%s”' %(Bill.get_status(mo_bill.status)))
+                messages.warning(request, u'订单状态不需要确认 当前状态为 “%s”' %(Bill.get_status(mo_bill.status)))
+        except (Bill.DoesNotExist) as e:
+            messages.error(request, u'订单号【%s】不存在！' %(id))
         return HttpResponseRedirect('..')
 
     def parse_bill(request, id):
@@ -102,38 +102,51 @@ class BillAdmin(admin.ModelAdmin):
                 "cid": u'衣物编号',
             }
             a_clothes = parse_clothes(mo_bill.clothes)
+            for it_cloth in a_clothes:
+                messages.info(request, u'衣物【%s】 数量【%s】 单价【%.2f】 总价【%.2f】 cid【%d】' \
+                    %(it_cloth.get('name'), it_cloth.get('number'), it_cloth.get('price'), \
+                     it_cloth.get('total'), it_cloth.get('cid') ) \
+                    )
+            if 0 == len(a_clothes):
+                messages.warning(request, u'暂无衣物信息')
+            messages.info(request, u'总价【%.2f】' %(mo_bill.total))
+            i_mcid = mo_bill.ext.get('use_coupon') or 0
+            if i_mcid > 0:
+                try:
+                    mo_mc = MyCoupon.objects.get(mcid=i_mcid)
+                    messages.info(request, u'代金券【%s】' %(mo_mc))
+                    messages.info(request, u'原价【%.2f】' %(mo_bill.ext['old_total']))
+                    messages.info(request, u'价格减免【%.2f】' %(mo_bill.ext.get('price_dst') or 0))
+                    messages.info(request, u'折扣减免【%.2f元】' %(mo_bill.ext.get('percent_dst') or 0))
+                except (MyCoupon.DoesNotExist) as e:
+                    messages.error(request, u'代金券错误【%d】' %(i_mcid))
+            else:
+                messages.info(request, u'未使用代金券')
+            messages.info(request, u'邮费【%.2f】' %(mo_bill.ext.get('shipping_fee') or 0))
+            s_payment = mo_bill.ext.get('payment')
+            d_pay = {
+                'cash' :    u'现金',
+                'pos' :     u'POS机',
+            }
+            if s_payment in d_pay:
+                messages.info(request, u'支付方式【%s】' %(d_pay[s_payment]))
+            else:
+                messages.warning(request, u'支付方式未知')
         except (Bill.DoesNotExist) as e:
-            messages.error(request, u'订单号[%d]不存在！' %(id))
-        for it_cloth in a_clothes:
-            messages.info(request, u'衣物【%s】 数量【%s】 单价【%.2f】 总价【%.2f】 cid【%d】' \
-                %(it_cloth.get('name'), it_cloth.get('number'), it_cloth.get('price'), \
-                 it_cloth.get('total'), it_cloth.get('cid') ) \
-                )
-        if 0 == len(a_clothes):
-            messages.warning(request, u'暂无衣物信息')
-        messages.info(request, u'总价【%.2f】' %(mo_bill.total))
-        i_mcid = mo_bill.ext.get('use_coupon') or 0
-        if i_mcid > 0:
-            try:
-                mo_mc = MyCoupon.objects.get(mcid=i_mcid)
-                messages.info(request, u'代金券【%s】' %(mo_mc))
-                messages.info(request, u'原价【%.2f】' %(mo_bill.ext['old_total']))
-                messages.info(request, u'价格减免【%.2f】' %(mo_bill.ext.get('price_dst') or 0))
-                messages.info(request, u'折扣减免【%.2f元】' %(mo_bill.ext.get('percent_dst') or 0))
-            except (MyCoupon.DoesNotExist) as e:
-                messages.error(request, u'代金券错误【%d】' %(i_mcid))
-        else:
-            messages.info(request, u'未使用代金券')
-        messages.info(request, u'邮费【%.2f】' %(mo_bill.ext.get('shipping_fee') or 0))
-        s_payment = mo_bill.ext.get('payment')
-        d_pay = {
-            'cash' :    u'现金',
-            'pos' :     u'POS机',
-        }
-        if s_payment in d_pay:
-            messages.info(request, u'支付方式【%s】' %(d_pay[s_payment]))
-        else:
-            messages.warning(request, u'支付方式未知')
+            messages.error(request, u'订单号【%s】不存在！' %(id))
+        return HttpResponseRedirect('..')
+
+    def cancel_bill(request, id):
+        try:
+            mo_bill = Bill.objects.get(bid=id)
+            mo_bill.cancel(admin=True)
+            s_errmsg = mo_bill.ext.get('error')
+            if None != s_errmsg and '' != s_errmsg:
+                messages.error(request, s_errmsg)
+            else:
+                messages.success(request, u'强制取消订单【%s】成功' %(id))
+        except (Bill.DoesNotExist) as e:
+            messages.error(request, u'订单号【%s】不存在！' %(id))
         return HttpResponseRedirect('..')
 
     buttons = [
@@ -147,6 +160,12 @@ class BillAdmin(admin.ModelAdmin):
              'url': '_parse_bill',
              'textname': u'解析订单',
              'func': parse_bill,
+        },
+        {
+             'url': '_cancen_bill',
+             'textname': u'强制取消订单',
+             'func': cancel_bill,
+             'confirm': u'你想取消这个订单吗'
         },
     ]
     def change_view(self, request, object_id, form_url='', extra_context={}):

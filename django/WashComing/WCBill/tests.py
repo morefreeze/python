@@ -4,7 +4,7 @@ from WCLib.serializers import *
 from WCBill.models import Bill, Coupon, Feedback, Cart, MyCoupon
 from WCBill.serializers import BillSerializer, FeedbackSerializer
 from WCCloth.models import Cloth
-from WCLogistics.models import Address
+from WCLogistics.models import Address, OrderQueue
 from WCUser.models import User
 import datetime as dt
 
@@ -231,6 +231,72 @@ class BillTest(BillBaseTest):
              'aid':self.aid, 'clothes':self.clothes, 'payment':'pos', 'mcid': mo_myco0.mcid,
             })
         self.assertJSONEqual(res.content, {'errmsg':"some error happened, please contact admin"})
+
+    def test_cancel(self):
+        dt_get_time_0 = self.get_time_0
+        dt_get_time_1 = self.get_time_1
+        dt_return_time_0 = self.return_time_0
+        dt_return_time_1 = self.return_time_1
+        mo_user = User.objects.get(name=self.username)
+        mo_bill = Bill.objects.create(get_time_0=dt_get_time_0, get_time_1=dt_get_time_1, \
+            return_time_0=dt_return_time_0, return_time_1=dt_return_time_1, own=mo_user)
+        mo_bill.cancel()
+        self.assertEqual(mo_bill.status, Bill.USER_CANCEL)
+
+        mo_bill = Bill.objects.create(get_time_0=dt_get_time_0, get_time_1=dt_get_time_1, \
+            return_time_0=dt_return_time_0, return_time_1=dt_return_time_1, own=mo_user)
+        mo_bill.cancel(admin=True)
+        self.assertEqual(mo_bill.status, Bill.ADMIN_CANCEL)
+
+# return score
+        mo_bill = Bill.objects.create(get_time_0=dt_get_time_0, get_time_1=dt_get_time_1, \
+            return_time_0=dt_return_time_0, return_time_1=dt_return_time_1, own=mo_user, \
+            score=100)
+        i_ext_score = mo_user.score + 100
+        mo_bill.cancel()
+        self.assertEqual(mo_bill.status, Bill.USER_CANCEL)
+        self.assertEqual(mo_user.score, i_ext_score)
+
+# cancel will set orderqueue which still not to start NO_DO_BUT_DONE
+        dt_now = dt.datetime.now()
+        mo_bill = Bill.objects.create(get_time_0=dt_get_time_0, get_time_1=dt_get_time_1, \
+            return_time_0=dt_return_time_0, return_time_1=dt_return_time_1, own=mo_user)
+        mo_oq0 = OrderQueue.objects.create(bill=mo_bill, type=OrderQueue.AddFetchOrder, time=dt_now)
+        mo_oq1 = OrderQueue.objects.create(bill=mo_bill, type=OrderQueue.AddReturnningFetchOrder,time=dt_now)
+        mo_bill.cancel()
+        mo_oq0 = OrderQueue.objects.get(pk=mo_oq0.pk)
+        mo_oq1 = OrderQueue.objects.get(pk=mo_oq1.pk)
+        self.assertEqual(mo_oq0.status, OrderQueue.NO_DO_BUT_DONE)
+        self.assertEqual(mo_oq1.status, OrderQueue.NO_DO_BUT_DONE)
+
+# cancel will NOT set orderqueue which is doing
+        dt_now = dt.datetime.now()
+        mo_bill = Bill.objects.create(get_time_0=dt_get_time_0, get_time_1=dt_get_time_1, \
+            return_time_0=dt_return_time_0, return_time_1=dt_return_time_1, own=mo_user)
+        mo_oq0 = OrderQueue.objects.create(bill=mo_bill, type=OrderQueue.AddFetchOrder, time=dt_now, status=OrderQueue.DOING)
+        mo_oq1 = OrderQueue.objects.create(bill=mo_bill, type=OrderQueue.AddReturnningFetchOrder,time=dt_now)
+        mo_bill.cancel()
+        mo_oq0 = OrderQueue.objects.get(pk=mo_oq0.pk)
+        mo_oq1 = OrderQueue.objects.get(pk=mo_oq1.pk)
+        self.assertEqual(mo_oq0.status, OrderQueue.DOING)
+        self.assertEqual(mo_oq1.status, OrderQueue.NO_DO_BUT_DONE)
+
+# return coupon
+        dt_now_1hr = dt_now + dt.timedelta(hours=1)
+        mo_cp = MyCoupon.objects.create(own=mo_user, start_time=dt_now, expire_time=dt_now_1hr, used=True)
+        mo_bill = Bill.objects.create(get_time_0=dt_get_time_0, get_time_1=dt_get_time_1, \
+            return_time_0=dt_return_time_0, return_time_1=dt_return_time_1, own=mo_user, \
+            ext={'use_mycoupon':mo_cp.pk})
+        mo_bill.cancel()
+        mo_cp = MyCoupon.objects.get(pk=mo_cp.pk)
+        self.assertEqual(mo_cp.used, False)
+
+# return do not exist coupon
+        mo_bill = Bill.objects.create(get_time_0=dt_get_time_0, get_time_1=dt_get_time_1, \
+            return_time_0=dt_return_time_0, return_time_1=dt_return_time_1, own=mo_user, \
+            ext={'use_mycoupon':999})
+        mo_bill.cancel()
+        self.assertEqual(mo_bill.ext['error'], ['MyCoupon matching query does not exist.'])
 
 class FeedbackTest(BillBaseTest):
 
