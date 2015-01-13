@@ -67,7 +67,7 @@ class RFD(models.Model):
     config = ConfigParser.ConfigParser()
 
     def __unicode__(self):
-        return "%d get[%s,%s] return[%s, %s]" %(self.lid, self.get_way_no, self.get_order_no, self.return_way_no, self.return_order_no)
+        return "%d get[%s, %s] return[%s, %s]" %(self.lid, self.get_way_no, self.get_order_no, self.return_way_no, self.return_order_no)
 
     @classmethod
     # return rfd response convert dict
@@ -75,6 +75,7 @@ class RFD(models.Model):
     # to_shop is False then returnning clothes
     def ImportOrders(cls, mo_bill, to_shop=False):
         mo_shop = mo_bill.shop
+        print mo_shop
         if None == mo_shop:
             return {'ResultCode':'ImportFailure', 'ResultMessage':'no shop info'}
         s_method_name = sys._getframe().f_code.co_name
@@ -104,9 +105,10 @@ class RFD(models.Model):
                 "user_area": mo_shop.area,
                 "user_address": mo_shop.address,
                 "user_phone": mo_shop.phone,
-                "bill_total": mo_bill.total,
-                "bill_paid": mo_bill.paid,
-                "bill_receive": max(0, mo_bill.total - mo_bill.paid),
+# get cloth order DOES NOT paid
+                "bill_total": 0,
+                "bill_paid": 0,
+                "bill_receive": 0,
                 "shop_name": mo_bill.real_name,
                 "shop_province": mo_bill.province,
                 "shop_city": mo_bill.city,
@@ -129,10 +131,9 @@ class RFD(models.Model):
                 "shop_area": mo_shop.area,
                 "shop_address": mo_shop.address,
                 "shop_phone": mo_shop.phone,
-# get cloth order DOES NOT paid
-                "bill_total": 0,
-                "bill_paid": 0,
-                "bill_receive": 0,
+                "bill_total": mo_bill.total,
+                "bill_paid": mo_bill.paid,
+                "bill_receive": max(0, mo_bill.total - mo_bill.paid),
                 "user_name": mo_bill.real_name,
                 "user_province": mo_bill.province,
                 "user_city": mo_bill.city,
@@ -194,7 +195,7 @@ class RFD(models.Model):
     def AddFetchOrder(cls, mo_bill, to_shop=True):
         mo_shop = mo_bill.shop
         if not to_shop and None == mo_shop:
-            d_res = {'IsSucceed':false, 'Message':'no shop info', 'Exception':''}
+            d_res = {'IsSucceed':False, 'Message':'no shop info', 'Exception':''}
             return d_res
         SM_TEMPLATE = '''<?xml version="1.0" encoding="UTF-8"?>
             <SOAP-ENV:Envelope

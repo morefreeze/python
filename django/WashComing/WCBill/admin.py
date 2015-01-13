@@ -18,7 +18,7 @@ def parse_clothes(pa_clothes):
     return a_clothes
 
 class CouponAdmin(admin.ModelAdmin):
-    readonly_fields = ['create_time', 'code']
+    readonly_fields = ['create_time', 'code', ]
 
 class CartAdmin(admin.ModelAdmin):
     readonly_fields = ['update_time', ]

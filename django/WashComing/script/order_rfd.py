@@ -13,7 +13,7 @@ import logging
 def handleAddFetchOrder(mo_queue, to_shop=True):
     try:
         mo_bill = mo_queue.bill
-        d_res = RFD.AddFetchOrder(mo_bill)
+        d_res = RFD.AddFetchOrder(mo_bill, to_shop)
         print d_res
         if not d_res['IsSucceed']:
             mo_queue.message = json.dumps(d_res)
