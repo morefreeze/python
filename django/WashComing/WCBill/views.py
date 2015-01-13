@@ -190,25 +190,7 @@ def cancel(request):
         return JSONResponse({'errmsg':'bill not exist'})
     if mo_bill.status >= Bill.GETTING:
         return JSONResponse({'errmsg':'bill status should not cancel'})
-    s_errmsg = mo_bill.ext.get('error')
-    if None == s_errmsg or '' == s_errmsg and mo_bill.score > 0:
-        mo_user.score += mo_bill.score
-    mo_bill.change_status(Bill.USER_CANCEL)
-    mo_bill.save()
-# remove order push
-    a_orderqueue = OrderQueue.objects.filter(bill=mo_bill, status__lte=OrderQueue.TODO)
-    for it_orderqueue in a_orderqueue:
-        it_orderqueue.status = OrderQueue.NO_DO_BUT_DONE
-        it_orderqueue.save()
-# return coupon
-    if mo_bill.ext.get('use_mycoupon'):
-        try:
-            mo_mycoupon = MyCoupon.objects.get(mcid=mo_bill.ext.get('use_mycoupon'))
-            if mo_mycoupon.used:
-                mo_mycoupon.used = False
-        except (MyCoupon.DoesNotExist) as e:
-            mo_bill.add_error(e.__str__())
-            mo_bill.save()
+    mo_bill.cancel()
     return JSONResponse({'errno':0})
 
 @require_http_methods(['POST', 'GET'])

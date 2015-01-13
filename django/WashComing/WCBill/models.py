@@ -5,7 +5,7 @@ from django.db import models
 from django.db.models import Q
 from jsonfield import JSONField
 from WCUser.models import User, Shop
-from WCLogistics.models import RFD, Address
+from WCLogistics.models import RFD, Address, OrderQueue
 from WCCloth.models import Cloth
 from WCCloth.serializers import ClothSerializer
 import json
@@ -83,6 +83,7 @@ class Bill(Mass_Clothes):
     NEED_FEEDBACK = 50
     DONE = 60
     USER_CANCEL = -10
+    ADMIN_CANCEL = -15
     ERROR = -20
     StatusChoices = (
         (READY,         u'准备'),
@@ -94,6 +95,7 @@ class Bill(Mass_Clothes):
         (NEED_FEEDBACK, u'待评价'),
         (DONE,          u'订单完成'),
         (USER_CANCEL,   u'用户取消'),
+        (ADMIN_CANCEL,  u'管理员取消'),
         (ERROR,         u'发生错误'),
     )
 
@@ -266,6 +268,34 @@ class Bill(Mass_Clothes):
                 continue
         return False
 
+    def cancel(self, admin=False):
+        mo_user = self.own
+        s_errmsg = self.ext.get('error')
+# return user score
+        if None == s_errmsg or '' == s_errmsg and self.score > 0:
+            mo_user.score += self.score
+        if admin:
+            self.change_status(Bill.ADMIN_CANCEL)
+        else:
+            self.change_status(Bill.USER_CANCEL)
+
+        self.save()
+# remove order push
+        a_orderqueue = OrderQueue.objects.filter(bill=self, status__lte=OrderQueue.TODO)
+        for it_orderqueue in a_orderqueue:
+            it_orderqueue.status = OrderQueue.NO_DO_BUT_DONE
+            it_orderqueue.save()
+# return coupon
+        if self.ext.get('use_mycoupon'):
+            try:
+                mo_mycoupon = MyCoupon.objects.get(mcid=self.ext.get('use_mycoupon'))
+                if mo_mycoupon.used:
+                    mo_mycoupon.used = False
+                    mo_mycoupon.save()
+            except (MyCoupon.DoesNotExist) as e:
+                self.add_error(e.__str__())
+                self.save()
+
     @classmethod
     def get_bill(cls, own_id, bid):
         try:
@@ -342,7 +372,7 @@ class Coupon(models.Model):
 
     def gen_code(self):
         import random
-        chars = 'ABCEFGHJKPQRSTWXYZ123456789'
+        chars = 'ABCEFGHJKPQRSTWXY13456789'
         return ''.join(random.sample(chars, 12))
 
     def save(self, *args, **kwargs):

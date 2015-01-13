@@ -549,12 +549,12 @@ class OrderQueue(models.Model):
     NO_DO_BUT_DONE = 90 # bill may be cancel
     DONE = 100
     Status_Choice = (
-        (-1, 'error'),
-        (0, 'todo'),
-        (10, 'doing'),
+        (ERROR, 'error'),
+        (TODO, 'todo'),
+        (DOING, 'doing'),
 # add some other here
-        (90, 'no_do_but_done'),
-        (100, 'done'),
+        (NO_DO_BUT_DONE, 'no_do_but_done'),
+        (DONE, 'done'),
     )
     Nothing = 0
     AddFetchOrder = 1
