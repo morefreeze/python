@@ -37,9 +37,7 @@ class MyCouponSerializer(serializers.ModelSerializer):
                  'percent_discount', 'used', 'category', 'status')
 
     def transform_status(self, obj, value):
-        if None != value:
-            return value
-        return 0
+        return obj.get_status()
 
     def transform_category(self, obj, value):
         if None == value:
