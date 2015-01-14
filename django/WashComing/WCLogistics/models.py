@@ -269,7 +269,7 @@ class RFD(models.Model):
                 "SendProvinceName": mo_shop.province,
                 "SendCityName": mo_shop.city,
                 "SendAreaName": mo_shop.area,
-                "SendAddress": u"【洗来了id:%d 共%d件】" %(mo_bill.bid, i_clothes_number) + mo_shop.address,
+                "SendAddress": u"【洗来了id:%d 共%d件 收%.2f元】" %(mo_bill.bid, i_clothes_number, f_total) + mo_shop.address,
                 "NeedAmount": f_total,
                 "ProtectPrice": 0,
                 "Remark": s_remark,

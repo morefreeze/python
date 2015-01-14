@@ -401,6 +401,7 @@ class MyCoupon(models.Model):
         help_text=u'取值[0,100]，0表示不打折，20表示8折，以此类推')
     price_dst = models.FloatField(default=0, verbose_name=u'价格减免')
     ext = JSONField(default={}, verbose_name=u'扩展字段')
+    status = 0
 
     def __unicode__(self):
         if None == self.cid_thd:
@@ -442,6 +443,16 @@ class MyCoupon(models.Model):
                     it_mycoupon.status = i_type
                     a_ret_mycoupons.append(it_mycoupon)
         return a_ret_mycoupons
+
+    def get_status(self):
+        dt_now = dt.datetime.now()
+        if self.start_time <= dt_now and dt_now < self.expire_time:
+            return MyCoupon.CAN_USE
+        elif self.start_time >= dt_now and self.expire_time > dt_now:
+            return MyCoupon.NOUSED
+        elif self.used or self.expire_time <= dt_now:
+            return MyCoupon.USED_OR_EXPIRE
+        return 0
 
 # return False or bill.total
     def is_vali(self, mo_bill, b_report_error=True):

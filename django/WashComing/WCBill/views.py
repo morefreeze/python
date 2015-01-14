@@ -371,7 +371,12 @@ def add_mycoupon(request):
         logging.error('coupon code does not exist %s' %(s_code))
         return JSONResponse({'errmsg':'coupon code error'})
     i_mcid = mo_coupon.add_user(mo_user)
-    return JSONResponse({'mcid':i_mcid, 'errno':0})
+    try:
+        mo_mycoupon = MyCoupon.objects.get(mcid=i_mcid, own=mo_user)
+    except (MyCoupon.DoesNotExist) as e:
+        return JSONResponse({'errmsg':'coupon not exist'})
+    se_mycoupon = MyCouponSerializer(mo_mycoupon)
+    return JSONResponse(se_mycoupon.data)
 
 """ method template (12 lines)
 @require_http_methods(['POST', 'GET'])
