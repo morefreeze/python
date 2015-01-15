@@ -3,6 +3,7 @@ from WCLib.models import *
 from django.forms import ValidationError
 from django.db import models
 from django.db.models import Q
+from django.contrib.auth.models import AbstractUser
 import django.contrib.auth.hashers as hasher
 from django.template import loader, Context
 import base64, hashlib, uuid
@@ -256,3 +257,32 @@ class Feedback(models.Model):
     def __unicode__(self):
         return "%s [%s]" %(self.content, self.own)
 
+"""
+class ShopUser(AbstractUser):
+    own_shop = models.IntegerField()
+
+    def get_full_name(self):
+        return self.own_shop
+
+    def get_short_name(self):
+        return self.own_shop
+
+    def __unicode__(self):
+        return self.own_shop
+
+    def has_perm(self, perm, obj=None):
+        "Does the user have a specific permission?"
+        # Simplest possible answer: Yes, always
+        return True
+
+    def has_module_perms(self, app_label):
+        "Does the user have permissions to view the app `app_label`?"
+        # Simplest possible answer: Yes, always
+        return True
+
+    @property
+    def is_staff(self):
+        "Is the user a member of staff?"
+        # Simplest possible answer: All admins are staff
+        return self.is_admin
+    """

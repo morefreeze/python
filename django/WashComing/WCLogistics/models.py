@@ -39,7 +39,7 @@ class RFD(models.Model):
 
     lid = models.AutoField(primary_key=True, verbose_name=u'如风达信息编号')
     status = models.IntegerField(default=0, verbose_name=u'信息状态')
-    get_order_no = models.CharField(max_length=31,unique=True,default='',blank=True, \
+    get_order_no = models.CharField(max_length=31,default='',blank=True, \
         verbose_name=u'取衣受理单号', help_text=u'')
     get_way_no = models.CharField(max_length=31,default='',blank=True, \
         verbose_name=u'取衣运单号', help_text=u'')
@@ -67,7 +67,7 @@ class RFD(models.Model):
     config = ConfigParser.ConfigParser()
 
     def __unicode__(self):
-        return "%d get[%s, %s] return[%s, %s]" %(self.lid, self.get_way_no, self.get_order_no, self.return_way_no, self.return_order_no)
+        return "%d bill[%s, %s] get[%s, %s] return[%s, %s]" %(self.lid, self.bill_of.bid, self.bill_of.real_name, self.get_way_no, self.get_order_no, self.return_way_no, self.return_order_no)
 
     @classmethod
     # return rfd response convert dict
@@ -105,7 +105,7 @@ class RFD(models.Model):
                 "user_area": mo_shop.area,
                 "user_address": mo_shop.address,
                 "user_phone": mo_shop.phone,
-# get cloth order DOES NOT paid
+# get cloth order DOES NOT pay
                 "bill_total": 0,
                 "bill_paid": 0,
                 "bill_receive": 0,
@@ -221,13 +221,18 @@ class RFD(models.Model):
             s_default_zipcode = cls.config.get('common', 'default_zipcode')
 
         js_clothes = mo_bill.format_cloth()
-        s_dt_start = mo_bill.get_time_0.strftime(DATETIME_FORMAT_SHORT)
-        s_dt_end = mo_bill.get_time_1.strftime(DATETIME_FORMAT_SHORT)
+        if to_shop:
+            s_dt_start = mo_bill.get_time_0.strftime(DATETIME_FORMAT_SHORT)
+            s_dt_end = mo_bill.get_time_1.strftime(DATETIME_FORMAT_SHORT)
+        else:
+            s_dt_start = mo_bill.return_time_0.strftime(DATETIME_FORMAT_SHORT)
+            s_dt_end = mo_bill.return_time_1.strftime(DATETIME_FORMAT_SHORT)
         f_total = float(mo_bill.total - mo_bill.paid)
         if to_shop:
             s_remark = u"%s至%s取" %(s_dt_start, s_dt_end)
         else:
-            s_remark = u"%s至%s送到客户 应收%.2f元 POS机" %(s_dt_start, s_dt_end, f_total)
+            s_remark = u"应收%.2f元 POS机\n" %(f_total)
+            s_remark += u"%s" %(mo_bill.address)
         if len(js_clothes) == 0:
             d_res = {'IsSucceed':false, 'Message':'format clothes error', 'Exception':e.__str__()}
             return d_res
@@ -242,7 +247,9 @@ class RFD(models.Model):
             i_clothes_number += int(it_cloth['number'])
 # rfd remark len is 100
         if len(s_remark.encode('utf-8')) + len(s_clothes.encode('utf-8')) > 100:
-            s_clothes = u" 订单品类过多，请联系客服获取详细信息 "
+            s_clothes = u" 订单品类过多，请联系客服010-63132300获取详细信息"
+        if len(s_remark.encode('utf-8')) > 100:
+            s_remark = u"备注信息过长，收款及客户地址请联系客服010-63132300获取详细信息"
         s_remark += s_clothes
         if to_shop: # (getting order) sender is custom
             d_fetch_order = {
@@ -255,6 +262,7 @@ class RFD(models.Model):
                 "SendCityName": mo_bill.city,
                 "SendAreaName": mo_bill.area,
                 "SendAddress": u"【洗来了id:%d 共%d件】" %(mo_bill.bid, i_clothes_number) + mo_bill.address,
+# get order may not get paid
                 "NeedAmount": f_total,
                 "ProtectPrice": 0,
                 "Remark": s_remark,
@@ -269,7 +277,7 @@ class RFD(models.Model):
                 "SendProvinceName": mo_shop.province,
                 "SendCityName": mo_shop.city,
                 "SendAreaName": mo_shop.area,
-                "SendAddress": u"【洗来了id:%d 共%d件 收%.2f元】" %(mo_bill.bid, i_clothes_number, f_total) + mo_shop.address,
+                "SendAddress": u"【洗来了id:%d 共%d件】" %(mo_bill.bid, i_clothes_number) + mo_shop.address,
                 "NeedAmount": f_total,
                 "ProtectPrice": 0,
                 "Remark": s_remark,

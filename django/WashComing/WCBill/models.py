@@ -455,14 +455,15 @@ class MyCoupon(models.Model):
         return 0
 
 # return False or bill.total
-    def is_vali(self, mo_bill, b_report_error=True):
+    def is_vali_or_total(self, mo_bill, b_report_error=True):
         if None == mo_bill:
             return False
         if mo_bill.own != self.own:
             return False
         if self.used:
             return False
-        if hasattr(self, 'status') and self.status != MyCoupon.CAN_USE:
+        self.status = self.get_status()
+        if self.status != MyCoupon.CAN_USE:
             return False
         dt_now = dt.datetime.now()
         if dt_now < self.start_time or dt_now >= self.expire_time:

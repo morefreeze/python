@@ -33,15 +33,18 @@ class CartAdmin(admin.ModelAdmin):
                 "cid": u'衣物编号',
             }
             a_clothes = parse_clothes(mo_cart.clothes)
+            for it_cloth in a_clothes:
+                messages.info(request, u'衣物【%s】 数量【%s】 单价【%.2f】 总价【%.2f】 cid【%d】' \
+                    %(it_cloth.get('name'), it_cloth.get('number'), it_cloth.get('price'), \
+                     it_cloth.get('total'), it_cloth.get('cid') ) \
+                    )
+            if 0 == len(a_clothes):
+                messages.warning(request, u'暂无衣物信息')
         except (Cart.DoesNotExist) as e:
-            messages.error(request, u'订单号[%d]不存在！' %(id))
-        for it_cloth in a_clothes:
-            messages.info(request, u'衣物【%s】 数量【%s】 单价【%.2f】 总价【%.2f】 cid【%d】' \
-                %(it_cloth.get('name'), it_cloth.get('number'), it_cloth.get('price'), \
-                 it_cloth.get('total'), it_cloth.get('cid') ) \
-                )
-        if 0 == len(a_clothes):
-            messages.warning(request, u'暂无衣物信息')
+            messages.error(request, u'订单号【%d】不存在！' %(id))
+        return HttpResponseRedirect('..')
+
+    def test(request, id):
         return HttpResponseRedirect('..')
 
     buttons = [
@@ -50,6 +53,10 @@ class CartAdmin(admin.ModelAdmin):
              'textname': u'解析购物车',
              'func': parse_cart,
         },
+        {   'url': '_test',
+            'textname': u'test',
+            'func': test,
+        }
     ]
 
     def change_view(self, request, object_id, form_url='', extra_context={}):
@@ -184,6 +191,27 @@ class BillAdmin(admin.ModelAdmin):
 
 class FeedbackAdmin(admin.ModelAdmin):
     readonly_fields = ['create_time', ]
+
+    def test(request, id):
+        return HttpResponseRedirect('..')
+
+    buttons = [
+        {   'url': '_test',
+            'textname': u'test',
+            'func': test,
+        }
+    ]
+
+    def change_view(self, request, object_id, form_url='', extra_context={}):
+        extra_context['buttons'] = self.buttons
+        return super(FeedbackAdmin, self).change_view(request, object_id, form_url, extra_context=extra_context)
+
+    def get_urls(self):
+        from django.conf.urls import patterns, url, include
+        urls = super(FeedbackAdmin, self).get_urls()
+        my_urls = list( (url(r'^(.+)/%(url)s/$' % b, self.admin_site.admin_view(b['func'])) for b in self.buttons) )
+        return my_urls + urls
+
 
 admin.site.register(Coupon,CouponAdmin)
 admin.site.register(Cart,CartAdmin)

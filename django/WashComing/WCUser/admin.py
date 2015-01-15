@@ -4,6 +4,7 @@ from WCUser.models import User, Shop, Feedback
 # Register your models here.
 class UserAdmin(admin.ModelAdmin):
     readonly_fields = ['token', 'third_uids', 'third_token', 'create_time', ]
+    search_fields = ['name', 'phone', 'email', 'address__real_name']
 
 class ShopAdmin(admin.ModelAdmin):
     pass
