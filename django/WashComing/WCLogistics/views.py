@@ -194,17 +194,17 @@ def post_status(request):
         return HttpResponse("no Request")
     d_body = d_xml['Request'][1]['Body']
     a_st_info = []
-# to sort operate time
+# to sort operate id
     d_sort_time = {}
     for it_status_info in d_body:
         d_status_info = RFD.get_status_info(it_status_info['StatusInfo'])
         a_st_info.append(d_status_info)
         d_sort_time[ d_status_info['OperateId'] ] = d_status_info['OperateTime']
-    l_sort_time = sorted(d_sort_time.items(), key=lambda e:e[1])
+    l_sort_time = sorted(d_sort_time.items(), key=lambda e:e[0])
     a_res = []
     for s_OperateId, s_OperateTime in l_sort_time:
         for it_st_info in a_st_info:
-            if it_st_info['OperateId'] == s_OperateId:
+            if it_st_info['OperateId'] == s_OperateId and s_OperateTime == it_st_info['OperateTime']:
                 d_ret = RFD.update(it_st_info)
                 if d_ret['Ret'] != 0:
                     logging.error("post status error: %s" %(d_ret['Message']))

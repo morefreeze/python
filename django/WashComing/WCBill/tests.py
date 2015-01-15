@@ -417,8 +417,9 @@ class MyCouponTest(TestCase):
         cls._bill = Bill.objects.create(clothes=[{"cid":mo_cloth_a.cid,"number":8}], own=cls._user, \
                 get_time_0=dt_start, get_time_1=dt_start, return_time_0=dt_expire,return_time_1=dt_expire)
 
-    def test_is_vali(self):
-        res = self._mycoupon.is_vali(self._bill)
+    def test_is_vali_or_total(self):
+# 80 - 10
+        res = self._mycoupon.is_vali_or_total(self._bill)
         self.assertEqual(res, 70)
 
     def test_calc_mycoupon(self):

@@ -328,7 +328,7 @@ def calc_mycoupon(request):
     mo_bill.format_cloth()
     for it_mycoupon in a_mycoupons:
         t_bill = Bill(clothes=mo_bill.clothes, own=mo_user)
-        if it_mycoupon.is_vali(t_bill, b_report_error=False):
+        if it_mycoupon.is_vali_or_total(t_bill, b_report_error=False):
             se_mycoupon = MyCouponSerializer(it_mycoupon)
             #se_mycoupon.data['status'] = it_mycoupon.status
             d_response['data'].append(se_mycoupon.data)
@@ -376,6 +376,7 @@ def add_mycoupon(request):
     except (MyCoupon.DoesNotExist) as e:
         return JSONResponse({'errmsg':'coupon not exist'})
     se_mycoupon = MyCouponSerializer(mo_mycoupon)
+    se_mycoupon.data['errno'] = 0
     return JSONResponse(se_mycoupon.data)
 
 """ method template (12 lines)
