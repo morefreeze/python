@@ -38,7 +38,7 @@ class User(models.Model):
     exp = models.IntegerField(default=0, verbose_name=u'经验值', help_text=u'')
     invited = models.ForeignKey('self',null=True,default=None,blank=True, \
         verbose_name=u'被邀请用户', help_text=u'被邀请用户将会得到额外积分在该用户积分结算时')
-    is_active = models.BooleanField(default=True, verbose_name=u'激活标志', help_text=u'')
+    is_active = models.BooleanField(default=False, verbose_name=u'邮箱激活标志', help_text=u'')
     deleted = models.BooleanField(default=False, verbose_name=u'删除标志', help_text=u'')
     ext = JSONField(default={},blank=True, verbose_name=u'扩展字段', help_text=u'')
 
@@ -103,9 +103,20 @@ class User(models.Model):
     def query_user(cls, name, deleted=None):
         try:
             if None == deleted:
-                mo_user = cls.objects.get(name=name)
-            else:
                 mo_user = cls.objects.get(name=name, deleted=False)
+            else:
+                mo_user = cls.objects.get(name=name, deleted=deleted)
+        except (cls.DoesNotExist) as e:
+            return None
+        return mo_user
+
+    @classmethod
+    def query_email(cls, email, deleted=None):
+        try:
+            if None == deleted:
+                mo_user = cls.objects.get(email=email)
+            else:
+                mo_user = cls.objects.get(email=email, deleted=False)
         except (cls.DoesNotExist) as e:
             return None
         return mo_user
@@ -119,7 +130,6 @@ class User(models.Model):
 
     def send_active(self, d_request):
         d_active = dict()
-        d_active['username'] = self.name
         d_active['time'] = dt.datetime.now().strftime('%Y%m%d %H:%M:%S')
         d_active['uuid'] = "%s" %(uuid.uuid4())
         s_token = hashlib.md5(
@@ -128,7 +138,7 @@ class User(models.Model):
         s_url = "http://" + d_request.get_host() + "/user/active?username=%s&active_token=%s" %(self.name, s_token)
         t_active = loader.get_template('active/send_active.html')
         c_active = Context({
-            'email': self.name,
+            'username': self.name,
             'active_url': s_url,
         })
         self.ext['active_token'] = s_token

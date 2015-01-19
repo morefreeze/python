@@ -58,7 +58,7 @@ class UserTest(TestCase):
         s_uid = json.loads(res.content)["uid"]
         res = self.client.post(u'/user/info', {'username':'13345678907', 'token':s_token})
         self.assertEqual(res.status_code, 200)
-        self.assertJSONEqual(res.content, {'phone':'13345678907','exp':0,'level':u'青铜','score':0,'token':s_token,'avatar':'','uid':s_uid,'username':'13345678907','is_active':True, 'email':'', 'third_bind': [], 'errno':0})
+        self.assertJSONEqual(res.content, {'phone':'13345678907','exp':0,'level':u'青铜','score':0,'token':s_token,'avatar':'','uid':s_uid,'username':'13345678907','is_active':False, 'email':'', 'third_bind': [], 'errno':0})
 
     def test_info_failed(self):
         res = self.client.post(u'/user/register', {'phone':'13345678908', 'password':'abcdef', })
@@ -153,7 +153,7 @@ class UserTest(TestCase):
         s_third_token = json.loads(res.content)["third_token"]
         res = self.client.post(u'/user/info', {'username':s_username, 'token':s_third_token})
         self.assertEqual(res.status_code, 200)
-        self.assertJSONEqual(res.content, {'phone':'','exp':0,'level':u'青铜','score':0,'token':s_third_token,'avatar':'','uid':s_uid,'username':'abcdefg','is_active':True, 'email':'', 'errno':0})
+        self.assertJSONEqual(res.content, {'phone':'','exp':0,'level':u'青铜','score':0,'token':s_third_token,'avatar':'','uid':s_uid,'username':'abcdefg','is_active':False, 'email':'', 'errno':0})
 
     def test_third_bind(self):
         res = self.client.post(u'/user/register', {'phone':'13345678916', 'password':'abcdef', })

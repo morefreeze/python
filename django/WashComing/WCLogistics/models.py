@@ -54,7 +54,7 @@ class RFD(models.Model):
     return_way_no = models.CharField(max_length=31,default='',blank=True, \
         verbose_name=u'送衣运单号', help_text=u'')
     return_form_no = models.CharField(max_length=31,default='',blank=True, \
-        verbose_name=u'送衣我方单号', help_text=u'这里和我方物流号一致')
+        verbose_name=u'送衣我方单号', help_text=u'这里和运单号一致，如果需要手动更新，则修改这个号')
     return_message = models.CharField(max_length=255,default='',blank=True, \
         verbose_name=u'送衣最近一次信息', help_text=u'')
     return_operate_time = models.DateTimeField(default=dt.datetime(2014,1,1),blank=True, \
@@ -67,7 +67,9 @@ class RFD(models.Model):
     config = ConfigParser.ConfigParser()
 
     def __unicode__(self):
-        return "%d bill[%s, %s] get[%s, %s] return[%s, %s]" %(self.lid, self.bill_of.bid, self.bill_of.real_name, self.get_way_no, self.get_order_no, self.return_way_no, self.return_order_no)
+        if hasattr(self, 'bill_of'):
+            return "%d bill[%s, %s] get[%s, %s] return[%s, %s]" %(self.lid, self.bill_of.bid, self.bill_of.real_name, self.get_way_no, self.get_order_no, self.return_way_no, self.return_order_no)
+        return "%d" %(self.lid)
 
     @classmethod
     # return rfd response convert dict
@@ -248,9 +250,10 @@ class RFD(models.Model):
 # rfd remark len is 100
         if len(s_remark.encode('utf-8')) + len(s_clothes.encode('utf-8')) > 100:
             s_clothes = u" 订单品类过多，请联系客服010-63132300获取详细信息"
+        if to_shop:
+            s_remark += s_clothes
         if len(s_remark.encode('utf-8')) > 100:
             s_remark = u"备注信息过长，收款及客户地址请联系客服010-63132300获取详细信息"
-        s_remark += s_clothes
         if to_shop: # (getting order) sender is custom
             d_fetch_order = {
                 "SendBy": mo_bill.real_name,
