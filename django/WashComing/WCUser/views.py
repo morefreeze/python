@@ -139,6 +139,7 @@ def change_password(request):
     d_response['token'] = mo_user.token
     return JSONResponse(d_response)
 
+# I forget why this func here
 @require_http_methods(['POST', 'GET'])
 def resend_active(request):
     fo_user = UserResendActiveForm(dict(request.GET.items() + request.POST.items()))
@@ -152,7 +153,13 @@ def resend_active(request):
     if mo_user.is_active:
         return JSONResponse({'errmsg':'user has been actived'})
     s_html = mo_user.send_active(request)
-    d_response = {'errno':0, 'html':s_html}
+    try:
+        send_mail(subject=u'洗来了邮箱激活', message='', from_email='', recipient_list=[s_email], \
+                  fail_silently=False, html_message=s_html)
+    except Exception as e:
+        logging.error(e.__str__())
+        return JSONResponse({'errmsg':'send mail failed, please contact admin'})
+    d_response = {'errno':0}
     return JSONResponse(d_response)
 
 @require_http_methods(['POST', 'GET'])
@@ -164,22 +171,22 @@ def active(request):
     s_name = d_data.get('username')
     mo_user = User.query_user(s_name)
     if None == mo_user:
-        return JSONResponse({'errmsg':'active failed'})
+        return HttpResponse(u'激活失败，没有该用户')
     if mo_user.is_active:
-        return JSONResponse({'errmsg':'user has been actived'})
+        return HttpResponse(u'用户已经激活')
     js_ext = mo_user.ext
     s_active_token = js_ext.get('active_token')
     if None == s_active_token or '' == s_active_token or d_data.get('active_token') != s_active_token:
-        return JSONResponse({'errmsg':'active failed'})
+        return HttpResponse(u'激活失败，也许是个无效的链接')
     tm_expire = dt.datetime.strptime(js_ext.get('active_expire'), "%Y%m%d %H:%M:%S")
     tm_now = dt.datetime.now()
     if None == tm_expire or tm_now > tm_expire:
-        return JSONResponse({'errmsg':'token expire, reactive!'})
+        return HttpResponse(u'链接已经过期')
     mo_user.is_active = True
     del mo_user.ext['active_token']
     del mo_user.ext['active_expire']
     mo_user.save()
-    return JSONResponse({'errno':0})
+    return render_to_response('active/active_complete.html')
 
 def reset_password(request):
     return render_to_response('reset/reset_password.html', {'form':UserResetPasswordForm})
@@ -191,23 +198,26 @@ def resend_reset(request):
         return JSONResponse({'errmsg':fo_user.errors})
     d_data = fo_user.cleaned_data
     s_email = d_data.get('email')
-    mo_user = User.query_user(s_email)
-    if None == mo_user:
-        return JSONResponse({'errmsg':'reset failed'})
+    mo_user = User.query_email(s_email)
     s_html = mo_user.send_reset(request)
+    if None == mo_user:
+        return HttpResponse(u'用户不存在，请检查邮箱地址')
+    if not mo_user.is_active:
+        return HttpResponse(u'用户未确认绑定邮箱，请先确认绑定邮箱再重置')
     try:
-        send_mail(subject='', message='', from_email='', recipient_list=[s_email], \
+        send_mail(subject=u'洗来了密码重置', message='', from_email='', recipient_list=[s_email], \
                   fail_silently=False, html_message=s_html)
     except Exception as e:
-        return HttpResponse('send mail failed, please contact admin')
-    return HttpResponse('Mail has been sent successfully')
+        logging.error(e.__str__())
+        return HttpResponse(u'邮件发送失败，请联系客服协助')
+    return HttpResponse(u'重置邮件已经发出')
     #d_response = {'errno':0, 'html':s_html}
     #return JSONResponse(d_response)
 
 @require_http_methods(['POST', 'GET'])
 def reset_password_confirm(request):
-    if request.method != 'GET':
-        return render(request, 'reset/reset_password_confirm.html', {'validlink':0})
+    #if request.method != 'GET':
+        #return render(request, 'reset/reset_password_confirm.html', {'validlink':0})
         #return JSONResponse({'errmsg':'method error'})
     fo_user = UserResetPasswordConfirmForm(dict(request.GET.items() + request.POST.items()))
     if not fo_user.is_valid():
@@ -233,6 +243,7 @@ def reset_password_confirm(request):
     s_password2 = d_data.get('password2')
     if s_password != s_password2:
         return JSONResponse({'errmsg':'password does not match'})
+# to set new password
     if None == s_password or '' == s_password:
         return render(request, 'reset/reset_password_confirm.html', {'validlink':1, 'form':fo_user})
     del mo_user.ext['reset_token']
@@ -283,15 +294,22 @@ def bind_email(request):
     d_data = fo_user.cleaned_data
     s_name = d_data.get('username')
     s_token = d_data.get('token')
-    mo_user = User.get_user(s_name, s_token)
+    mo_user = User.get_user(s_name, s_token, is_active=False)
     if None == mo_user:
         return JSONResponse({'errmsg':'username or password error'})
-    if '' != mo_user.email:
-        return JSONResponse({'errmsg':'user has binded email'})
+    if len(User.objects.filter(email=d_data.get('email'))) > 0:
+        return JSONResponse({'errmsg':'email has been binded other user'})
     mo_user.email = d_data.get('email')
+    s_html = mo_user.send_active(request)
+    try:
+        send_mail(subject=u'洗来了邮箱激活', message='', from_email='', recipient_list=[mo_user.email], \
+                  fail_silently=False, html_message=s_html)
+    except Exception as e:
+        logging.error(e.__str__())
+        return JSONResponse({'errmsg':'send mail failed, please contact admin'})
+    d_response = {'errno':0}
     mo_user.save()
-    se_user = UserSerializer(mo_user)
-    return JSONResponse({'errno': 0})
+    return JSONResponse(d_response)
 
 @require_http_methods(['POST', 'GET'])
 def third_bind(request):
@@ -302,6 +320,7 @@ def third_bind(request):
     s_name = d_data.get('username')
     s_token = d_data.get('token')
     mo_user = User.get_user(s_name, s_token)
+    logging.debug(mo_user)
     if None == mo_user:
         return JSONResponse({'errmsg':'username or password error'})
     s_third_uid = "%s$%s|" %(d_data.get('third_tag'), d_data.get('third_uid'))
