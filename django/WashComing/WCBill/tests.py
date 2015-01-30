@@ -7,6 +7,7 @@ from WCCloth.models import Cloth
 from WCLogistics.models import Address, OrderQueue
 from WCUser.models import User
 import datetime as dt
+import json
 
 # Create your tests here.
 class BillBaseTest(TestCase):
@@ -397,6 +398,44 @@ class CartTest(BillBaseTest):
         res = self.client.get(u'/cart/list', {'username':self.username, 'token':self.token,})
         self.assertJSONEqual(res.content, {'data':json.loads(self.clothes), 'clothes':json.loads(self.clothes), 'errno':0})
 
+    def test_remove_bill_clothes(self):
+        mo_user = User.objects.get(name=self.username)
+        d_clothes = json.loads(self.clothes)
+# submit all cart clothes to bill, so clean up
+        mo_cart = Cart.objects.create(own=mo_user, clothes=d_clothes)
+        self.assertGreater(mo_cart.pk, 0)
+
+        s_get_time_0 = self.get_time_0.strftime(FULL_DATETIME_FORMAT)
+        s_get_time_1 = self.get_time_1.strftime(FULL_DATETIME_FORMAT)
+        s_return_time_0 = self.return_time_0.strftime(FULL_DATETIME_FORMAT)
+        s_return_time_1 = self.return_time_1.strftime(FULL_DATETIME_FORMAT)
+
+        res = self.client.get(
+            u'/bill/submit',
+            {'username':self.username, 'token':self.token,
+             'get_time_0':s_get_time_0, 'get_time_1':s_get_time_1,
+             'return_time_0':s_return_time_0, 'return_time_1':s_return_time_1,
+             'aid':self.aid, 'clothes':self.clothes, 'payment':'pos',
+            })
+        self.bid = json.loads(res.content)['bid']
+        mo_cart = Cart.objects.get(pk=mo_cart.pk)
+        self.assertEqual(mo_cart.clothes, [])
+
+# submit c1 to bill, it will del all c1 clothes
+        mo_cart.clothes = d_clothes
+        mo_cart.save()
+        res = self.client.get(
+            u'/bill/submit',
+            {'username':self.username, 'token':self.token,
+             'get_time_0':s_get_time_0, 'get_time_1':s_get_time_1,
+             'return_time_0':s_return_time_0, 'return_time_1':s_return_time_1,
+             'aid':self.aid, 'clothes':'[{"cid":%s, "number":1}]' %(self.c1.cid),
+             'payment':'pos',
+            })
+        self.bid = json.loads(res.content)['bid']
+        d_new_clothes = [x for x in d_clothes if x['cid'] != self.c1.cid]
+        mo_cart = Cart.objects.get(pk=mo_cart.pk)
+        self.assertEqual(mo_cart.clothes, d_new_clothes)
 
 class MyCouponTest(TestCase):
     _user = None

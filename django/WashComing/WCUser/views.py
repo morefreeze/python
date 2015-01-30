@@ -37,6 +37,8 @@ def register(request):
         if None == mo_inv_user:
             return JSONResponse({'errmsg':"invited user[%s] not found" %(s_invited_name)})
         mo_user.invited = mo_inv_user
+# user active for iOS bug
+    mo_user.is_active = True
     try:
         mo_user.save()
         se_user = UserSerializer(mo_user)
@@ -172,8 +174,8 @@ def active(request):
     mo_user = User.query_user(s_name)
     if None == mo_user:
         return HttpResponse(u'激活失败，没有该用户')
-    if mo_user.is_active:
-        return HttpResponse(u'用户已经激活')
+    #if mo_user.is_active:
+    #    return HttpResponse(u'用户已经激活')
     js_ext = mo_user.ext
     s_active_token = js_ext.get('active_token')
     if None == s_active_token or '' == s_active_token or d_data.get('active_token') != s_active_token:

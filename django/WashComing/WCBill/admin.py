@@ -2,7 +2,9 @@
 from django.contrib import admin
 from django.contrib import messages
 from WCLib.views import *
-from WCBill.models import Bill, Coupon, MyCoupon, Cart, Feedback
+from WCLib.models import *
+from WCBill.models import Bill, Coupon, MyCoupon, Cart, Feedback, \
+        Pingpp, Pingpp_Charge, Pingpp_Refund
 from WCLogistics.models import OrderQueue
 import datetime as dt
 
@@ -41,10 +43,7 @@ class CartAdmin(admin.ModelAdmin):
             if 0 == len(a_clothes):
                 messages.warning(request, u'暂无衣物信息')
         except (Cart.DoesNotExist) as e:
-            messages.error(request, u'订单号【%d】不存在！' %(id))
-        return HttpResponseRedirect('..')
-
-    def test(request, id):
+            messages.error(request, u'订单号【%s】不存在！' %(id))
         return HttpResponseRedirect('..')
 
     buttons = [
@@ -53,10 +52,6 @@ class CartAdmin(admin.ModelAdmin):
              'textname': u'解析购物车',
              'func': parse_cart,
         },
-        {   'url': '_test',
-            'textname': u'test',
-            'func': test,
-        }
     ]
 
     def change_view(self, request, object_id, form_url='', extra_context={}):
@@ -134,6 +129,8 @@ class BillAdmin(admin.ModelAdmin):
             d_pay = {
                 'cash' :    u'现金',
                 'pos' :     u'POS机',
+                'alipay' :  u'支付宝',
+                'wx' :      u'微信支付',
             }
             if s_payment in d_pay:
                 messages.info(request, u'支付方式【%s】' %(d_pay[s_payment]))
@@ -146,12 +143,10 @@ class BillAdmin(admin.ModelAdmin):
     def cancel_bill(request, id):
         try:
             mo_bill = Bill.objects.get(bid=id)
-            mo_bill.cancel(admin=True)
-            s_errmsg = mo_bill.ext.get('error')
-            if None != s_errmsg and '' != s_errmsg:
-                messages.error(request, s_errmsg)
+            if mo_bill.cancel(admin=True):
+                messages.success(request, u'订单【%s】取消成功' %(id))
             else:
-                messages.success(request, u'强制取消订单【%s】成功' %(id))
+                messages.error(request, u'订单【%s】取消失败！' %(id))
         except (Bill.DoesNotExist) as e:
             messages.error(request, u'订单号【%s】不存在！' %(id))
         return HttpResponseRedirect('..')
@@ -169,7 +164,7 @@ class BillAdmin(admin.ModelAdmin):
              'func': parse_bill,
         },
         {
-             'url': '_cancen_bill',
+             'url': '_cancel_bill',
              'textname': u'强制取消订单',
              'func': cancel_bill,
              'confirm': u'你想取消这个订单吗'
@@ -192,14 +187,7 @@ class BillAdmin(admin.ModelAdmin):
 class FeedbackAdmin(admin.ModelAdmin):
     readonly_fields = ['create_time', ]
 
-    def test(request, id):
-        return HttpResponseRedirect('..')
-
     buttons = [
-        {   'url': '_test',
-            'textname': u'test',
-            'func': test,
-        }
     ]
 
     def change_view(self, request, object_id, form_url='', extra_context={}):

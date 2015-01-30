@@ -6,7 +6,7 @@ class BillSubmitForm(forms.Form):
         ('pos',         u'Pos机'),
         ('cash',        u'现金'),
         ('alipay',      u'支付宝'),
-        ('weixin',      u'微信'),
+        ('wx',      u'微信'),
     )
     username = forms.CharField(required = True,
                            min_length=2,max_length=255)

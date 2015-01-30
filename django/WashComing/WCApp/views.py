@@ -23,7 +23,7 @@ def get_newest_android(request):
 def download(request):
     s_ios = ['iphone', 'ios']
     if any(s for s in s_ios if s in request.META['HTTP_USER_AGENT'].lower()):
-        return HttpResponse('IOS is coming!')
+        return HttpResponseRedirect('https://appsto.re/cn/PHiF4.i')
     if 'Android' in request.META['HTTP_USER_AGENT']:
         return HttpResponseRedirect('/media/android/xilaile.apk')
     return render_to_response('app/download.html')
