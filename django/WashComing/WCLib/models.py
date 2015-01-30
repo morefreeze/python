@@ -30,6 +30,14 @@ def get_android_latest_apk():
     s_ext = '.apk'
     return os.path.join(settings.MEDIA_ROOT, 'android/xilaile')+s_ext
 
+def get_client_ip(request):
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0]
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    return ip
+
 #Create your models here.
 # score higher first
 USER_LEVEL = [
@@ -39,6 +47,8 @@ USER_LEVEL = [
     {'lower': 0, 'name':u'青铜',},
 ]
 NO_LEVEL = u'暂无等级'
+
+ONLINE_PAYMENT = ['alipay', 'weixin']
 # follow rfd doc
 
 PRO_BJ = u'北京'

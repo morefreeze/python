@@ -9,7 +9,7 @@ class BillSerializer(serializers.ModelSerializer):
                   'return_time_0', 'return_time_1', \
                   'own', 'lg', 'address', 'real_name', 'phone', \
                   'status', 'deleted', 'score', \
-                  'clothes', 'total', 'comment', 'ext')
+                  'clothes', 'total', 'paid', 'comment', 'ext')
 
     def transform_address(self, obj, value):
         return obj.get_full_address()

@@ -3,17 +3,20 @@ from django.shortcuts import render
 from django.core.paginator import Paginator
 from django.views.decorators.http import require_http_methods
 from WCLib.views import *
+from WCLib.models import *
 from WCBill.serializers import BillSerializer, FeedbackSerializer, MyCouponSerializer
-from WCBill.models import Bill, Feedback, Cart
+from WCBill.models import Bill, Feedback, Cart, Pingpp
 from WCBill.forms import BillSubmitForm, BillListForm, BillInfoForm, BillCancelForm, \
         BillFeedbackForm, BillGetFeedbackForm
 from WCBill.forms import CartSubmitForm, CartListForm
 from WCBill.forms import MyCouponListForm, MyCouponCalcForm, MyCouponInfoForm, MyCouponAddForm
 from WCUser.models import User
-from WCBill.models import Bill, Coupon, MyCoupon
+from WCBill.models import Bill, Coupon, MyCoupon, Pingpp_Charge, Pingpp_Refund
 from WCLogistics.models import Address, OrderQueue
 import json
 import datetime as dt
+import pingpp
+import sys
 
 # Create your views here.
 @require_http_methods(['POST', 'GET'])
@@ -86,6 +89,11 @@ def submit(request):
         mo_bill.change_status(Bill.ERROR)
         mo_bill.save()
         return JSONResponse({'errmsg': 'some error happened, please contact admin'})
+# user's insurance, just record
+    try:
+        mo_bill.ext['insurance'] = float(d_data.get('insurance') or 0)
+    except (Exception) as e:
+        mo_bill.ext['insurance'] = 0.0
 # minue user score
     mo_user.score -= i_score
     mo_user.save()
@@ -111,8 +119,23 @@ def submit(request):
         dt_import_time = mo_bill.return_time_0
         OrderQueue.objects.create(bill=mo_bill, type=OrderQueue.AddReturnningFetchOrder,
                                   status=OrderQueue.TODO, time=dt_import_time)
-    return JSONResponse({'errno':0, 'bid':mo_bill.bid,
-                         'total':mo_bill.total})
+    d_response = {
+        'errno':0,
+        'bid':mo_bill.bid,
+        'total':mo_bill.total,
+    }
+# request ping++ create charge
+    if d_data.get('payment') in ONLINE_PAYMENT:
+        s_client_ip = get_client_ip(request)
+        mo_chr = Pingpp.create_charge(mo_bill, s_client_ip)
+        d_response['charge'] = mo_chr
+        if hasattr(mo_chr, 'id'):
+            mo_bill.ext['charge_id'] = mo_chr.id
+            mo_bill.save()
+            mo_ping_chr = Pingpp_Charge.clone(mo_chr)
+            if None == mo_ping_chr:
+                logging.error('save Pingpp_Charge failed')
+    return JSONResponse(d_response)
 
 @require_http_methods(['POST', 'GET'])
 def list(request):
@@ -172,6 +195,16 @@ def info(request):
         mo_bill.calc_total()
         mo_bill.save()
     se_bill = BillSerializer(mo_bill)
+    mo_chr = None
+    if None != mo_bill.ext.get('charge_id') and eq_zero(mo_bill.paid):
+        mo_chr = Pingpp.create_charge(mo_bill)
+        if hasattr(mo_chr, 'id'):
+            mo_bill.ext['charge_id'] = mo_chr.id
+            mo_bill.save()
+            mo_ping_chr = Pingpp_Charge.clone(mo_chr)
+            if None == mo_ping_chr:
+                logging.error('save Pingpp_Charge failed')
+    se_bill.data['charge'] = mo_chr
     return JSONResponse(se_bill.data)
 
 @require_http_methods(['POST', 'GET'])
@@ -378,6 +411,50 @@ def add_mycoupon(request):
     se_mycoupon = MyCouponSerializer(mo_mycoupon)
     se_mycoupon.data['errno'] = 0
     return JSONResponse(se_mycoupon.data)
+
+@require_http_methods(['POST', 'GET'])
+def ping_notify(request):
+    try:
+        js_notify = json.loads(request.body)
+    except (Exception) as e:
+        logging.error(e.__str__())
+        return HttpResponse('fail')
+    if 'object' not in js_notify:
+        logging.error('object not in ping++ json')
+        logging.error(js_notify)
+        return HttpResponse('fail')
+    if 'charge' == js_notify['object']:
+        mo_ping_chr = Pingpp_Charge.clone(js_notify)
+        if None == mo_ping_chr:
+            return HttpResponse('fail')
+        if mo_ping_chr.paid:
+            try:
+                mo_bill = Bill.objects.get(bid=mo_ping_chr.order_no)
+                mo_bill.paid = mo_ping_chr.amount * 0.01
+                mo_bill.save()
+            except (Exception) as e:
+                logging.error('no bill order_no[%s]' %(mo_ping_chr.order_no))
+        logging.info('charge received chr_id[%s]' %(mo_ping_chr.id))
+        return HttpResponse('success')
+    elif 'refund' == js_notify['object']:
+        mo_ping_re = Pingpp_Refund.clone(js_notify)
+        if None == mo_ping_re:
+            return HttpResponse('fail')
+        if mo_ping_re.succeed:
+            mo_ping_chr = mo_ping_re.charge
+            try:
+                mo_bill = Bill.objects.get(bid=mo_ping_chr.order_no)
+                logging.debug(mo_bill)
+                if mo_bill.paid < mo_ping_re.amount * 0.01:
+                    logging.warning('bill paid less than refund paid[%.2f] amount[%d]' \
+                        %(mo_bill.paid, mo_ping_re.amount))
+                mo_bill.paid = max(0, mo_bill.paid - mo_ping_re.amount * 0.01)
+                mo_bill.save()
+            except (Exception) as e:
+                logging.error('bill no exist [%s]' %(e))
+        logging.info('refund received re_id[%s]' %(mo_ping_re.id))
+        return HttpResponse('success')
+    return HttpResponse('fail')
 
 """ method template (12 lines)
 @require_http_methods(['POST', 'GET'])

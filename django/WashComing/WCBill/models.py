@@ -8,7 +8,9 @@ from WCUser.models import User, Shop
 from WCLogistics.models import RFD, Address, OrderQueue
 from WCCloth.models import Cloth
 from WCCloth.serializers import ClothSerializer
+import ConfigParser
 import json
+import pingpp
 
 # Create your models here.
 class Mass_Clothes(models.Model):
@@ -123,6 +125,8 @@ class Bill(Mass_Clothes):
     total = models.FloatField(default=0.0, verbose_name=u'总价')
     paid = models.FloatField(default=0.0, verbose_name=u'已付款')
     comment = models.CharField(max_length=1023, default='', blank=True, verbose_name=u'留言')
+    admin_comment = models.CharField(max_length=1023, default='', blank=True, verbose_name=u'管理员留言')
+    shop_comment = models.CharField(max_length=1023, default='', blank=True, verbose_name=u'店铺留言')
 
     @classmethod
     def get_status(cls, i_status):
@@ -132,9 +136,17 @@ class Bill(Mass_Clothes):
         return u'未知'
 
     def __unicode__(self):
-        return u"%d(￥%.2f [%s] [%s] [%s] [%s %s] [%s] 留言[%s])" %(self.bid, self.total, \
-                Bill.get_status(self.status), self.create_time, self.real_name, \
-                self.area, self.address, self.phone, self.comment)
+        s_ret = ''
+        s_ret += u"%d " %(self.bid)
+        if self.paid > 0:
+            s_ret += u"￥%.2f(已支付%.2f) " %(self.total, self.paid)
+        elif self.ext.get('payment') in ONLINE_PAYMENT:
+            s_ret += u"￥%.2f(未支付) " %(self.total)
+        else:
+            s_ret += u"%.2f(现金) " %(self.total)
+        s_ret += u"[%s] [%s] [%s] [%s %s] [%s] 留言[%s] 管理员[%s] 店铺[%s])" %(Bill.get_status(self.status), self.create_time, self.real_name, \
+                self.area, self.address, self.phone, self.comment, self.admin_comment, self.shop_comment)
+        return s_ret
 
     def change_status(self, i_status):
         if i_status < Bill.READY or (i_status >= Bill.READY and self.status < i_status):
@@ -295,6 +307,12 @@ class Bill(Mass_Clothes):
             except (MyCoupon.DoesNotExist) as e:
                 self.add_error(e.__str__())
                 self.save()
+        if self.ext.get('payment') in ONLINE_PAYMENT and self.paid > 0:
+            mo_re = Pingpp.create_refund(self)
+            if None != mo_re:
+                mo_ping_re = Pingpp_Refund.clone(mo_re)
+        logging.info('bill cancel successfully')
+        return True
 
     @classmethod
     def get_bill(cls, own_id, bid):
@@ -523,14 +541,168 @@ class Cart(Mass_Clothes):
         for it_cloth in mo_bill.clothes:
             if 'cid' in it_cloth:
                 d_del_cloth[ it_cloth['cid'] ] = 1
-        mo_cart.ext = d_del_cloth
         a_new_clothes = []
-        mo_cart.ext['e'] = []
+        mo_cart.ext['last'] = []
         for it_cloth in mo_cart.clothes:
-            mo_cart.ext['e'].append(it_cloth)
             if 'cid' in it_cloth and it_cloth['cid'] not in d_del_cloth:
                 a_new_clothes.append(it_cloth)
+            else:
+                mo_cart.ext['last'].append(it_cloth)
         mo_cart.clothes = a_new_clothes
         mo_cart.save()
         return mo_cart.caid
+
+class Pingpp():
+# in parent directory
+    conf_dir = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
+    config = ConfigParser.ConfigParser()
+    app_id = ''
+
+    @classmethod
+    def load_key(cls):
+        with open(os.path.join(cls.conf_dir, 'pingpp.conf'), 'r') as rfdconf:
+            cls.config.readfp(rfdconf)
+            s_api_key = cls.config.get('common', 'api_key')
+            s_app_id = cls.config.get('common', 'app_id')
+        pingpp.api_key = s_api_key
+        cls.app_id = s_app_id
+
+# return ping charge object instead of Pingpp
+    @classmethod
+    def create_charge(cls, mo_bill, s_client_ip=None):
+        cls.load_key()
+
+        s_client_ip = s_client_ip or '127.0.0.1'
+        try:
+            mo_chr = pingpp.Charge.create(
+                order_no=mo_bill.bid,
+# price, unit is CNY fen
+                amount=int(mo_bill.total * 100 + 0.5),
+                app=dict(id=cls.app_id),
+                channel='alipay',
+                currency='cny',
+                client_ip=s_client_ip,
+                subject=mo_bill.real_name,
+                body=mo_bill.get_full_address(),
+            )
+        except (Exception) as e:
+            logging.error('create charge failed %s' %(e))
+            return None
+        return mo_chr
+
+    @classmethod
+    def get_charge(cls, s_charge_id):
+        cls.load_key()
+
+        try:
+            mo_chr = pingpp.Charge.retrieve(s_charge_id)
+        except (Exception) as e:
+            logging.error('get charge failed [%s]' %(e))
+            mo_chr = None
+        return mo_chr
+
+    @classmethod
+    def create_refund(cls, mo_bill):
+        cls.load_key()
+
+        try:
+            mo_chr = pingpp.Charge.retrieve(Pingpp_Charge.objects.get(order_no=mo_bill.bid).id)
+        except (Exception) as e:
+            logging.error('no Pingpp_Charge order_no[%d]' %(mo_bill.bid))
+            return None
+        try:
+            mo_re = mo_chr.refunds.create(description='%s' %(mo_bill.bid))
+        except (Exception) as e:
+            logging.error('create refund failed %s' %(e))
+            return None
+        logging.info('create refund successfully id[%s]' %(mo_re.id))
+        return mo_re
+
+class Pingpp_Abstract(models.Model):
+    class Meta:
+        abstract = True
+
+    ext = JSONField(default={})
+
+    @classmethod
+    def convert_obj_dict(cls, mo_obj):
+        """
+        clone Pingpp_Obj from object(Charge, Refund) or dict(notify pass json),
+        put exist fields in Pingpp_obj
+        and save origin obj json in `ext` field
+        """
+        logging.debug(mo_obj)
+        if None == mo_obj:
+            return None
+        d_ping_obj = {}
+        if  type(mo_obj) in [pingpp.resource.Charge, pingpp.resource.Refund]:
+            d_ping_obj['ext'] = mo_obj
+            s_object = mo_obj.object
+            for field in cls._meta.fields:
+                s_fname = field.name
+                if hasattr(mo_obj, s_fname):
+                    d_ping_obj[s_fname] = getattr(mo_obj, s_fname)
+        elif dict == type(mo_obj):
+            d_ping_obj['ext'] = mo_obj
+            s_object = mo_obj['object']
+            for field in cls._meta.fields:
+                s_fname = field.name
+                if s_fname in mo_obj:
+                    d_ping_obj[s_fname] = mo_obj[s_fname]
+        else:
+            logging.error('clone Pingpp_Obj type[%s] error' %(type(mo_obj)))
+            return None
+        return d_ping_obj
+
+    @classmethod
+    def clone(cls, mo_obj):
+        d_ping_obj = cls.convert_obj_dict(mo_obj)
+        logging.debug(d_ping_obj)
+        try:
+            mo_ping_obj, created = cls.objects.update_or_create(defaults=d_ping_obj, id=d_ping_obj['id'])
+        except (Exception) as e:
+# some attr missing
+            logging.error('clone Pingpp_Obj error %s' %(e))
+            mo_ping_obj = None
+        return mo_ping_obj
+
+class Pingpp_Charge(Pingpp_Abstract):
+    id = models.CharField(max_length=48, primary_key=True)
+    created = models.IntegerField()
+    paid = models.BooleanField(default=False)
+    refunded = models.BooleanField(default=False)
+    channel = models.CharField(max_length=16)
+    order_no = models.CharField(max_length=64)
+    client_ip = models.IPAddressField()
+# bill total price, unit is CNY fen
+    amount = models.IntegerField(default=0)
+    subject = models.CharField(max_length=32)
+    body = models.CharField(max_length=128, null=True, blank=True)
+    time_paid = models.IntegerField(null=True, blank=True)
+    time_expire = models.IntegerField(null=True, blank=True)
+    transaction_no = models.CharField(max_length=128, null=True, blank=True)
+    failure_code = models.CharField(max_length=32, null=True, blank=True)
+    failure_msg = models.CharField(max_length=1024, null=True, blank=True)
+
+class Pingpp_Refund(Pingpp_Abstract):
+    id = models.CharField(max_length=48, primary_key=True)
+    created = models.IntegerField(null=True, blank=True)
+    order_no = models.CharField(max_length=64)
+# bill total price, unit is CNY fen
+    amount = models.IntegerField(default=0)
+    succeed = models.BooleanField(default=False)
+    time_succeed = models.IntegerField(null=True, blank=True)
+    description = models.CharField(max_length=255)
+    failure_code = models.CharField(max_length=32, null=True, blank=True)
+    failure_msg = models.CharField(max_length=1024, null=True, blank=True)
+    charge = models.ForeignKey('Pingpp_Charge')
+
+    @classmethod
+    def convert_obj_dict(cls, mo_obj):
+        d_ping_obj = super(Pingpp_Refund, cls).convert_obj_dict(mo_obj)
+# replace refund.charge to charge_id which is foreignkey
+        if 'charge' in d_ping_obj:
+            d_ping_obj['charge_id'] = d_ping_obj['charge']
+            del d_ping_obj['charge']
+        return d_ping_obj
 

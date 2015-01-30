@@ -61,9 +61,9 @@ class UserResetPasswordConfirmForm(forms.Form):
                            min_length=2,max_length=255, widget=forms.HiddenInput())
     reset_token = forms.CharField(required = True,
                              max_length=32, widget=forms.HiddenInput())
-    password1 = forms.CharField(required = False,
+    password1 = forms.CharField(required = False, widget=forms.PasswordInput,
                              max_length=255)
-    password2 = forms.CharField(required = False,
+    password2 = forms.CharField(required = False, widget=forms.PasswordInput,
                              max_length=255)
 
 class UserFeedbackForm(forms.Form):

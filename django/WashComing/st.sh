@@ -4,10 +4,14 @@ if [ -f dj.pid ];then
         mv dj.log dj.log.bak
         nohup python manage.py runserver 127.0.0.1:8002 > dj.log 2>&1 &
         echo $! > dj.pid
+        sleep 1
+        tail dj.log
     fi
 else
     mv dj.log dj.log.bak
     nohup python manage.py runserver 127.0.0.1:8002 > dj.log 2>&1 &
     echo $! > dj.pid
+    sleep 1
+    tail dj.log
 fi
 ps -p $(cat dj.pid)

@@ -48,7 +48,7 @@ class RFD(models.Model):
     get_message = models.CharField(max_length=255,default='',blank=True, \
         verbose_name=u'取衣最近一次信息', help_text=u'')
     get_operate_time = models.DateTimeField(default=dt.datetime(2014,1,1),blank=True, \
-        verbose_name=u'最衣最近一次更新时间', help_text=u'')
+        verbose_name=u'取衣最近一次更新时间', help_text=u'')
     return_order_no = models.CharField(max_length=31,default='',blank=True, \
         verbose_name=u'送衣受理单号', help_text=u'')
     return_way_no = models.CharField(max_length=31,default='',blank=True, \
