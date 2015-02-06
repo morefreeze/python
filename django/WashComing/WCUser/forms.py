@@ -29,6 +29,8 @@ class UserUpdateForm(forms.Form):
                              max_length=255)
     phone = forms.CharField(required = False,
                              min_length=11,max_length=12)
+    password = forms.CharField(required = False,
+                             max_length=255)
 
 class UserChangePasswordForm(forms.Form):
     username = forms.CharField(required = True,

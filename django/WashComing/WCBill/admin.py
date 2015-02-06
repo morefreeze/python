@@ -74,6 +74,9 @@ class BillAdmin(admin.ModelAdmin):
         try:
             mo_bill = Bill.objects.get(bid=id)
             if Bill.CONFIRMING == mo_bill.status:
+                if mo_bill.ext.get('payment') in ONLINE_PAYMENT and mo_bill.paid < mo_bill.total:
+                    messages.error(request, u'这是在线支付订单，需要用户付款后才能确认')
+                    return HttpResponseRedirect('..')
                 mo_bill.change_status(Bill.WAITTING_GET)
 
                 if mo_bill.ext.get('immediate'):
@@ -131,6 +134,7 @@ class BillAdmin(admin.ModelAdmin):
                 'pos' :     u'POS机',
                 'alipay' :  u'支付宝',
                 'wx' :      u'微信支付',
+                'bfb' :     u'百度钱包',
             }
             if s_payment in d_pay:
                 messages.info(request, u'支付方式【%s】' %(d_pay[s_payment]))

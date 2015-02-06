@@ -48,7 +48,7 @@ USER_LEVEL = [
 ]
 NO_LEVEL = u'暂无等级'
 
-ONLINE_PAYMENT = ['alipay', 'weixin']
+ONLINE_PAYMENT = ['alipay', 'wx', 'bfb', ]
 # follow rfd doc
 
 PRO_BJ = u'北京'

@@ -114,14 +114,21 @@ def update(request):
     b_modify = False
     if None == mo_user:
         return JSONResponse({'errmsg':'username or password error'})
+    d_response = {'errno':0}
+    d_response['username'] = mo_user.name
+    d_response['token'] = mo_user.token
     s_phone = d_data.get('phone')
     if None != s_phone and '' != s_phone:
         mo_user.phone = s_phone
         b_modify = True
+    s_password = d_data.get('password')
+    if None != s_password and '' != s_password:
+        mo_user.token = User.gen_token(s_password)
+        d_response['token'] = mo_user.token
+        b_modify = True
     # if nothing to modify then do not update, or last_time will be updated
     if b_modify:
         mo_user.save()
-    d_response = {'errno':0}
     return JSONResponse(d_response)
 
 @require_http_methods(['POST', 'GET'])

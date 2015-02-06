@@ -403,7 +403,11 @@ def add_mycoupon(request):
     except (Coupon.DoesNotExist) as e:
         logging.error('coupon code does not exist %s' %(s_code))
         return JSONResponse({'errmsg':'coupon code error'})
-    i_mcid = mo_coupon.add_user(mo_user)
+    if mo_coupon.is_valid():
+        i_mcid = mo_coupon.add_user(mo_user)
+    else:
+        logging.error('coupon [%s] is not valid' %(mo_coupon.coid))
+        return JSONResponse({'errmsg':'coupon [%s] is not valid' %(mo_coupon.coid)})
     try:
         mo_mycoupon = MyCoupon.objects.get(mcid=i_mcid, own=mo_user)
     except (MyCoupon.DoesNotExist) as e:
