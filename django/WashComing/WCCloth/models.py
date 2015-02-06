@@ -51,16 +51,6 @@ class Cloth(models.Model):
         super(self.__class__, self).save(*args, **kwargs)
 
     @classmethod
-    def create(cls, d_request):
-        b_is_leaf = d_request.get('is_leaf')
-        i_fa_cid = d_request.get('fa_cid')
-        s_name = d_request.get('name')
-        s_detail = d_request.get('detail')
-        f_price = d_request.get('price')
-        return cls(cid=None, fa_cid=i_fa_cid, name=s_name, detail=s_detail,
-                  price=f_price)
-
-    @classmethod
     def get_category(cls):
         """
         return first category
@@ -70,6 +60,17 @@ class Cloth(models.Model):
         except (cls.DoesNotExist) as e:
             return None
         return a_category
+
+    @classmethod
+    def get_clothes(cls, i_gid):
+        """
+        return all clothes along with category
+    """
+        try:
+            a_clothes = cls.objects.filter(fa_cid_id=i_gid).order_by('-weight', 'cid')
+        except (cls.DoesNotExist) as e:
+            return None
+        return a_clothes
 
     @classmethod
     def get_cloth(cls, i_cid, is_leaf=None):

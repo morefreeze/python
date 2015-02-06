@@ -77,6 +77,7 @@ class Mass_Clothes(models.Model):
 SCORE_RMB_RATE = 0.01
 class Bill(Mass_Clothes):
     READY = 0
+    NOT_PAID = 5
     CONFIRMING = 10
     WAITTING_GET = 20
     GETTING = 25
@@ -89,6 +90,7 @@ class Bill(Mass_Clothes):
     ERROR = -20
     StatusChoices = (
         (READY,         u'准备'),
+        (NOT_PAID,      u'未支付'),
         (CONFIRMING,    u'订单确认中'),
         (WAITTING_GET,  u'物流确认中'),
         (GETTING,       u'取衣中'),
@@ -354,15 +356,25 @@ class Coupon(models.Model):
 # price discount minus price directly
     price_dst_low = models.IntegerField(default=0, verbose_name=u'价格减免下限')
     price_dst_upp = models.IntegerField(default=0, verbose_name=u'价格减免上限')
-# max use limit each user, 0 for no limit
+# max use limit, 0 for no limit
     max_limit = models.IntegerField(default=0, verbose_name=u'最大拥有量', \
-        help_text=u'每个用户最大持有该代金券数量，0表示无限量，目前都未开发限量情况')
+        help_text=u'最大该代金券数量，0表示无限量')
     use_code = models.BooleanField(default=False, verbose_name=u'是否可用代码兑换')
     code = models.CharField(max_length=12, default='', verbose_name=u'兑换代码', \
         help_text=u'自动生成')
 
     def __unicode__(self):
         return "%d(%s)" %(self.coid, self.name)
+
+    def is_valid(self):
+        """ check coupon out of max_limit """
+        if self.max_limit > 0:
+            a_mycoupons = MyCoupon.objects.filter(coupon=self)
+            if len(a_mycoupons) >= self.max_limit:
+                logging.warning('coupon [%s] out of max_limit[%d/%d]' \
+                    %(self.coid, len(a_mycoupons), self.max_limit))
+                return False
+        return True
 
 # return mcid or 0
     def add_user(self, mo_user):
@@ -388,14 +400,15 @@ class Coupon(models.Model):
             price_dst=i_price_dst, coupon=self)
         return mo_mycoupon.mcid
 
-    def gen_code(self):
+    @classmethod
+    def gen_code(cls):
         import random
         chars = 'ABCEFGHJKPQRSTWXY13456789'
         return ''.join(random.sample(chars, 12))
 
     def save(self, *args, **kwargs):
         if self.use_code and (None == self.code or '' == self.code):
-            self.code = self.gen_code()
+            self.code = Coupon.gen_code()
         super(self.__class__, self).save(*args, **kwargs)
 
 class MyCoupon(models.Model):
@@ -579,7 +592,7 @@ class Pingpp():
 # price, unit is CNY fen
                 amount=int(mo_bill.total * 100 + 0.5),
                 app=dict(id=cls.app_id),
-                channel='alipay',
+                channel=mo_bill.ext.get('payment'),
                 currency='cny',
                 client_ip=s_client_ip,
                 subject=mo_bill.real_name,

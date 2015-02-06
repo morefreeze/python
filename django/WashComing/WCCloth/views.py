@@ -25,7 +25,7 @@ def category(request):
             se_category.data['gid'] = se_category.data['cid']
             del se_category.data['cid']
             i_gid = se_category.data['gid']
-            a_clothes = Cloth.objects.filter(fa_cid=i_gid)
+            a_clothes = Cloth.get_clothes(i_gid)
             se_category.data['children'] = []
             if None != a_clothes:
                 for it_cloth in a_clothes:
@@ -95,5 +95,4 @@ def info(request):
     fo_cloth = ClothXXXXXForm(dict(request.GET.items() + request.POST.items()))
     if not fo_cloth.is_valid():
         return JSONResponse({'errmsg':fo_cloth.errors})
-    mo_cloth = Cloth.create(fo_cloth.cleaned_data)
 """
