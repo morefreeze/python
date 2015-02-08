@@ -68,14 +68,13 @@ class MyCouponAdmin(admin.ModelAdmin):
     pass
 
 class BillAdmin(admin.ModelAdmin):
-    readonly_fields = ['create_time', ]
 
-    def confirm_order(request, id):
+    def confirm_order(self, request, id):
         try:
             mo_bill = Bill.objects.get(bid=id)
             if Bill.CONFIRMING == mo_bill.status:
                 if mo_bill.ext.get('payment') in ONLINE_PAYMENT and mo_bill.paid < mo_bill.total:
-                    messages.error(request, u'这是在线支付订单，需要用户付款后才能确认')
+                    messages.error(request, u'这是在线支付订单【%s】，需要用户付款后才能确认' %(id))
                     return HttpResponseRedirect('..')
                 mo_bill.change_status(Bill.WAITTING_GET)
 
@@ -89,14 +88,14 @@ class BillAdmin(admin.ModelAdmin):
                 OrderQueue.objects.create(bill=mo_bill, type=OrderQueue.AddReturnningFetchOrder, \
                                           status=OrderQueue.TODO, time=dt_return_time)
                 mo_bill.save()
-                messages.success(request, u'确认订单成功！')
+                messages.success(request, u'确认订单【%s】成功！' %(id))
             else:
-                messages.warning(request, u'订单状态不需要确认 当前状态为 “%s”' %(Bill.get_status(mo_bill.status)))
+                messages.warning(request, u'订单【%s】状态不需要确认 当前状态为 “%s”' %(id, Bill.get_status(mo_bill.status)))
         except (Bill.DoesNotExist) as e:
             messages.error(request, u'订单号【%s】不存在！' %(id))
         return HttpResponseRedirect('..')
 
-    def parse_bill(request, id):
+    def parse_bill(self, request, id):
         try:
             mo_bill = Bill.objects.get(bid=id)
             t_map = {
@@ -144,7 +143,7 @@ class BillAdmin(admin.ModelAdmin):
             messages.error(request, u'订单号【%s】不存在！' %(id))
         return HttpResponseRedirect('..')
 
-    def cancel_bill(request, id):
+    def cancel_bill(self, request, id):
         try:
             mo_bill = Bill.objects.get(bid=id)
             if mo_bill.cancel(admin=True):
@@ -155,25 +154,36 @@ class BillAdmin(admin.ModelAdmin):
             messages.error(request, u'订单号【%s】不存在！' %(id))
         return HttpResponseRedirect('..')
 
-    buttons = [
-        {
-             'url': '_confirm',
-             'textname': u'确认订单',
-             'func': confirm_order,
-             'confirm': u'你想确认这个订单吗'
-        },
-        {
-             'url': '_parse_bill',
-             'textname': u'解析订单',
-             'func': parse_bill,
-        },
-        {
-             'url': '_cancel_bill',
-             'textname': u'强制取消订单',
-             'func': cancel_bill,
-             'confirm': u'你想取消这个订单吗'
-        },
-    ]
+    def batch_confirm(self, request, queryset):
+        for obj in queryset:
+            self.confirm_order(request, obj.pk)
+    batch_confirm.short_description = u'批量确认订单（可以全选）'
+
+    def __init__(self, *args, **kwargs):
+        self.buttons = [
+            {
+                 'url': '_confirm',
+                 'textname': u'确认订单',
+                 'func': self.confirm_order,
+                 'confirm': u'你想确认这个订单吗'
+            },
+            {
+                 'url': '_parse_bill',
+                 'textname': u'解析订单',
+                 'func': self.parse_bill,
+            },
+            {
+                 'url': '_cancel_bill',
+                 'textname': u'强制取消订单',
+                 'func': self.cancel_bill,
+                 'confirm': u'你想取消这个订单吗'
+            },
+        ]
+        super(BillAdmin, self).__init__(*args, **kwargs)
+
+    readonly_fields = ['create_time', ]
+    actions = [batch_confirm, ]
+
     def change_view(self, request, object_id, form_url='', extra_context={}):
         mo_bill = Bill.objects.get(bid=object_id)
         if False and mo_bill.status != Bill.CONFIRMING:
