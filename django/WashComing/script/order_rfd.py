@@ -19,6 +19,7 @@ def handleAddFetchOrder(mo_queue, to_shop=True):
             mo_queue.message = json.dumps(d_res)
             return 1
         s_order_no = d_res['Message']
+        mo_queue.message = d_res
         if '' == s_order_no:
             mo_queue.message = 'add fetch success, but order is empty'
             return 2
@@ -97,7 +98,7 @@ if __name__ == '__main__':
     if len(sys.argv) > 1:
         mo_queue = OrderQueue.objects.get(qid=sys.argv[1])
     else:
-        mo_queue = OrderQueue.objects.all().filter(type__gt=0,status__lte=0,time__lt=trigger_time).order_by('time','qid')
+        mo_queue = OrderQueue.objects.all().filter(type__gt=0,status__lte=0,time__lt=trigger_time).order_by('time', 'type', 'qid')
         if 0 == len(mo_queue):
             exit(0)
         mo_queue = mo_queue[0]
@@ -116,7 +117,6 @@ if __name__ == '__main__':
         mo_queue.status = -i_ret_code
     else:
         mo_queue.status = OrderQueue.DONE
-        mo_queue.message = ''
     mo_queue.save()
     if OrderQueue.DONE != mo_queue.status:
         exit(i_ret_code)
