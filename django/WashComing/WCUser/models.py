@@ -229,8 +229,10 @@ class User(models.Model):
 
 class Shop(models.Model):
     sid = models.AutoField(primary_key=True, verbose_name=u'店铺id', help_text=u'')
-    name = models.CharField(unique=True,max_length=255,default='', \
+    name = models.CharField(max_length=255,default='', \
         verbose_name=u'店铺名', help_text=u'采用缩写使用和物流对照')
+    rfd_name = models.CharField(max_length=63, default='', \
+        verbose_name=u'如风达站点名', help_text=u'如：北京北清路站')
     real_name = models.CharField(max_length=255,default='', verbose_name=u'店长姓名', help_text=u'')
     province = models.CharField(max_length=15,default='',choices=Province_Choice, \
         verbose_name=u'省', help_text=u'')
@@ -247,7 +249,11 @@ class Shop(models.Model):
     ext = JSONField(default={}, verbose_name=u'扩展字段', help_text=u'')
 
     def __unicode__(self):
-        return "%s(%d)" %(self.name, self.sid)
+        if self.byself:
+            s_byself = u'站点自取'
+        else:
+            s_byself = self.address
+        return u"%d【%s】【%s】【%s】【%s】" %(self.sid, self.name, self.rfd_name, self.phone, s_byself)
 
     def get_full_address(self):
         if 0 == len(self.province + self.city + self.area):

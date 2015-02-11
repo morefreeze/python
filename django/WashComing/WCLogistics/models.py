@@ -199,28 +199,17 @@ class RFD(models.Model):
         if not to_shop and None == mo_shop:
             d_res = {'IsSucceed':False, 'Message':'no shop info', 'Exception':''}
             return d_res
-        SM_TEMPLATE = '''<?xml version="1.0" encoding="UTF-8"?>
-            <SOAP-ENV:Envelope
-            xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
-            xmlns:ns1="http://tempuri.org/">
-            <SOAP-ENV:Body>
-            <ns1:%(method_name)s>
-            <ns1:strFetchOrder>%(s_fetch_order)s</ns1:strFetchOrder>
-            <ns1:strLcid>%(s_lcid)s</ns1:strLcid>
-            </ns1:%(method_name)s>
-            </SOAP-ENV:Body>
-            </SOAP-ENV:Envelope>
-            '''
         s_method_name = sys._getframe().f_code.co_name
         with open(os.path.join(cls.conf_dir, 'rfd.conf'), 'r') as rfdconf:
             cls.config.readfp(rfdconf)
-            s_lcid = cls.config.get(s_method_name, 'lcid')
-            s_xmlns = cls.config.get(s_method_name, 'xmlns')
             s_pk_file = os.path.join(cls.conf_dir, cls.config.get('common', 'private_key'))
             s_url = cls.config.get('common', 'url')
             s_port = cls.config.get('common', 'port')
             s_company = cls.config.get('common', 'company')
             s_default_zipcode = cls.config.get('common', 'default_zipcode')
+            s_lcid = cls.config.get(s_method_name, 'lcid')
+            s_xmlns = cls.config.get(s_method_name, 'xmlns')
+            s_template_file = cls.config.get(s_method_name, 'template_file')
 
         js_clothes = mo_bill.format_cloth()
         if to_shop:
@@ -286,21 +275,24 @@ class RFD(models.Model):
                 "Remark": s_remark,
             }
         s_fetch_order = cls.sign_data(d_fetch_order, s_pk_file)
+        d_param = {
+            'strLcid':  s_lcid,
+            'strFetchOrder':    s_fetch_order,
+        }
 
-        soap_msg = SM_TEMPLATE %{'method_name':s_method_name,
-                                 's_fetch_order':s_fetch_order,
-                                 's_lcid':s_lcid
-                                }
+        t_soap = loader.get_template(s_template_file)
+        c_soap = Context(d_param)
+        s_soap_msg = t_soap.render(c_soap)
 
-        logging.debug(soap_msg)
+        logging.debug(s_soap_msg)
         webservice = httplib.HTTP(s_url, s_port)
         webservice.putrequest("POST", "/DeliveryService.svc?wsdl")
         webservice.putheader("Content-type", "text/xml; charset=\"UTF-8\"")
-        webservice.putheader("Content-length", "%d" % len(soap_msg))
+        webservice.putheader("Content-length", "%d" % len(s_soap_msg))
         s_soap_action = "\"http://tempuri.org/IDeliveryService/%s\"" %(s_method_name)
         webservice.putheader("SOAPAction", s_soap_action)
         webservice.endheaders()
-        webservice.send(soap_msg)
+        webservice.send(s_soap_msg)
 
         statuscode, statusmessage, header = webservice.getreply()
         s_xmlres = webservice.getfile().read()
@@ -315,6 +307,60 @@ class RFD(models.Model):
             return d_res
 # {u'Message': u'SL141202000001', u'Exception': None, u'IsSucceed': True}
         d_res = json.loads(no_res.text)
+        return d_res
+
+    @classmethod
+    def GetFetchOrderStation(cls, a_oid):
+        a_oid = [x for x in a_oid if x and x[:2] == 'SL']
+        if None == a_oid or len(a_oid) == 0:
+            return []
+        s_method_name = sys._getframe().f_code.co_name
+        with open(os.path.join(cls.conf_dir, 'rfd.conf'), 'r') as rfdconf:
+            cls.config.readfp(rfdconf)
+            s_pk_file = os.path.join(cls.conf_dir, cls.config.get('common', 'private_key'))
+            s_url = cls.config.get('common', 'url')
+            s_port = cls.config.get('common', 'port')
+            s_company = cls.config.get('common', 'company')
+            s_lcid = cls.config.get(s_method_name, 'lcid')
+            s_xmlns = cls.config.get(s_method_name, 'xmlns')
+            s_template_file = cls.config.get(s_method_name, 'template_file')
+
+        s_oid = ','.join(a_oid)
+        s_fetch_order = cls.sign_data(s_oid, s_pk_file)
+        d_param = {
+            'strLcid' : s_lcid,
+            'fetchOrderNos': s_fetch_order,
+        }
+        t_soap = loader.get_template(s_template_file)
+        c_soap = Context(d_param)
+        s_soap_msg = t_soap.render(c_soap)
+        logging.debug(s_soap_msg)
+
+        d_res = []
+# retry 5 times
+        for i in range(5):
+            logging.debug(i)
+            try:
+                webservice = httplib.HTTP(s_url, s_port)
+                webservice.putrequest("POST", "/DeliveryService.svc?wsdl")
+                webservice.putheader("Content-type", "text/xml; charset=\"UTF-8\"")
+                webservice.putheader("Content-length", "%d" % len(s_soap_msg))
+                webservice.putheader("SOAPAction", "\"http://tempuri.org/IDeliveryService/%s\"" %(s_method_name))
+                webservice.endheaders()
+                webservice.send(s_soap_msg)
+
+                statuscode, statusmessage, header = webservice.getreply()
+                s_xmlres = webservice.getfile().read()
+                logging.debug(s_xmlres)
+                xml_res = ET.fromstring(s_xmlres)
+                s_res = xml_res.find('.//{http://tempuri.org/}%sResult' %(s_method_name)).text
+                d_res = json.loads(s_res)
+                logging.debug(d_res)
+# if request multi order, and some order not found, len(d_res) always less than len(a_oid)
+                if len(a_oid) == len(d_res):
+                    break
+            except (Exception) as e:
+                logging.error('%s' %(e))
         return d_res
 
     @classmethod

@@ -142,7 +142,7 @@ class Bill(Mass_Clothes):
         s_ret += u"%d " %(self.bid)
         if self.paid > 0:
             s_ret += u"￥%.2f(已支付%.2f) " %(self.total, self.paid)
-        elif self.ext.get('payment') in ONLINE_PAYMENT:
+        elif self.ext and self.ext.get('payment') in ONLINE_PAYMENT:
             s_ret += u"￥%.2f(未支付) " %(self.total)
         else:
             s_ret += u"%.2f(现金) " %(self.total)
@@ -313,7 +313,7 @@ class Bill(Mass_Clothes):
             mo_re = Pingpp.create_refund(self)
             if None != mo_re:
                 mo_ping_re = Pingpp_Refund.clone(mo_re)
-        logging.info('bill cancel successfully')
+        logging.info('bill[%s] cancel successfully' %(self.bid))
         return True
 
     @classmethod

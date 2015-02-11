@@ -5,7 +5,7 @@ from WCLib.views import *
 from WCLib.models import *
 from WCBill.models import Bill, Coupon, MyCoupon, Cart, Feedback, \
         Pingpp, Pingpp_Charge, Pingpp_Refund
-from WCLogistics.models import OrderQueue
+from WCLogistics.models import OrderQueue, RFD
 import datetime as dt
 
 # Register your models here.
@@ -154,6 +154,32 @@ class BillAdmin(admin.ModelAdmin):
             messages.error(request, u'订单号【%s】不存在！' %(id))
         return HttpResponseRedirect('..')
 
+    def get_fetch_order_station(self, request, id):
+        try:
+            mo_bill = Bill.objects.get(bid=id)
+            mo_lg = mo_bill.lg
+            if None != mo_lg:
+                a_get_order = RFD.GetFetchOrderStation([mo_lg.get_order_no, mo_lg.return_order_no])
+                t_map = {
+                    'CellPhone':    u'电话',
+                    'FetchMan':     u'配送员',
+                    'DistributionName': u'分配站点',
+                    'FetchOrderNo':     u'受理单号',
+                    'FetchStatus':      u'分配状态',
+                    'AssignTime':       u'分配时间',
+                }
+                for it_get_order in a_get_order:
+                    for k,v in t_map.iteritems():
+                        if k in it_get_order:
+                            messages.info(request, '%s: %s' %(v, it_get_order[k]))
+                    messages.warning(request, '-'*50)
+                if len(a_get_order) == 0:
+                    messages.warning(request, u'无物流消息或尚未更新，请稍后重试')
+        except (Bill.DoesNotExist) as e:
+            messages.error(request, u'订单号【%s】不存在！' %(id))
+        return HttpResponseRedirect('..')
+# button func end
+
     def batch_confirm(self, request, queryset):
         for obj in queryset:
             self.confirm_order(request, obj.pk)
@@ -178,11 +204,13 @@ class BillAdmin(admin.ModelAdmin):
                  'func': self.cancel_bill,
                  'confirm': u'你想取消这个订单吗'
             },
+            {
+                 'url': '_get_order_station',
+                 'textname': u'查询物流分配情况',
+                 'func': self.get_fetch_order_station,
+            },
         ]
         super(BillAdmin, self).__init__(*args, **kwargs)
-
-    readonly_fields = ['create_time', ]
-    actions = [batch_confirm, ]
 
     def change_view(self, request, object_id, form_url='', extra_context={}):
         mo_bill = Bill.objects.get(bid=object_id)
@@ -197,6 +225,11 @@ class BillAdmin(admin.ModelAdmin):
         urls = super(BillAdmin, self).get_urls()
         my_urls = list( (url(r'^(.+)/%(url)s/$' % b, self.admin_site.admin_view(b['func'])) for b in self.buttons) )
         return my_urls + urls
+
+    readonly_fields = ['create_time', ]
+    actions = [batch_confirm, ]
+    list_filter = ('status', )
+    search_fields = ['real_name', 'address', 'phone', 'bid', ]
 
 class FeedbackAdmin(admin.ModelAdmin):
     readonly_fields = ['create_time', ]
