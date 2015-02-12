@@ -197,8 +197,12 @@ class RFD(models.Model):
     def AddFetchOrder(cls, mo_bill, to_shop=True):
         mo_shop = mo_bill.shop
         if not to_shop and None == mo_shop:
-            d_res = {'IsSucceed':False, 'Message':'no shop info', 'Exception':''}
-            return d_res
+            mo_shop = cls.tryFindShop(mo_bill)
+            if None == mo_shop:
+                d_res = {'IsSucceed':False, 'Message':'no shop info', 'Exception':''}
+                return d_res
+            mo_bill.shop = mo_shop
+            mo_bill.save()
         s_method_name = sys._getframe().f_code.co_name
         with open(os.path.join(cls.conf_dir, 'rfd.conf'), 'r') as rfdconf:
             cls.config.readfp(rfdconf)
@@ -285,28 +289,29 @@ class RFD(models.Model):
         s_soap_msg = t_soap.render(c_soap)
 
         logging.debug(s_soap_msg)
-        webservice = httplib.HTTP(s_url, s_port)
-        webservice.putrequest("POST", "/DeliveryService.svc?wsdl")
-        webservice.putheader("Content-type", "text/xml; charset=\"UTF-8\"")
-        webservice.putheader("Content-length", "%d" % len(s_soap_msg))
-        s_soap_action = "\"http://tempuri.org/IDeliveryService/%s\"" %(s_method_name)
-        webservice.putheader("SOAPAction", s_soap_action)
-        webservice.endheaders()
-        webservice.send(s_soap_msg)
+        for i in range(5):
+            try:
+                webservice = httplib.HTTP(s_url, s_port)
+                webservice.putrequest("POST", "/DeliveryService.svc?wsdl")
+                webservice.putheader("Content-type", "text/xml; charset=\"UTF-8\"")
+                webservice.putheader("Content-length", "%d" % len(s_soap_msg))
+                s_soap_action = "\"http://tempuri.org/IDeliveryService/%s\"" %(s_method_name)
+                webservice.putheader("SOAPAction", s_soap_action)
+                webservice.endheaders()
+                webservice.send(s_soap_msg)
 
-        statuscode, statusmessage, header = webservice.getreply()
-        s_xmlres = webservice.getfile().read()
-        logging.debug(s_xmlres)
-        xml_res = ET.fromstring(s_xmlres)
-        try:
-            no_res = xml_res.find('.//{%s}AddFetchOrderResult' %(s_xmlns))
-            if None == no_res:
-                d_res = {'IsSucceed':false}
-        except e:
-            d_res = {'IsSucceed':false, 'Message':'get xml result error', 'Exception':e.__str__()}
-            return d_res
+                statuscode, statusmessage, header = webservice.getreply()
+                s_xmlres = webservice.getfile().read()
+                logging.debug(s_xmlres)
+                xml_res = ET.fromstring(s_xmlres)
+                no_res = xml_res.find('.//{%s}AddFetchOrderResult' %(s_xmlns))
+                if None == no_res:
+                    d_res = {'IsSucceed':false}
+                d_res = json.loads(no_res.text)
+                break
+            except (Exception) as e:
+                d_res = {'IsSucceed':false, 'Message':'get xml result error', 'Exception':e.__str__()}
 # {u'Message': u'SL141202000001', u'Exception': None, u'IsSucceed': True}
-        d_res = json.loads(no_res.text)
         return d_res
 
     @classmethod
@@ -339,7 +344,6 @@ class RFD(models.Model):
         d_res = []
 # retry 5 times
         for i in range(5):
-            logging.debug(i)
             try:
                 webservice = httplib.HTTP(s_url, s_port)
                 webservice.putrequest("POST", "/DeliveryService.svc?wsdl")
@@ -362,6 +366,25 @@ class RFD(models.Model):
             except (Exception) as e:
                 logging.error('%s' %(e))
         return d_res
+
+    @classmethod
+    def tryFindShop(cls, mo_bill):
+        mo_lg = mo_bill.lg
+        if None == mo_lg or None == mo_lg.get_order_no or '' == mo_lg.get_order_no:
+            return None
+        a_order_ret = cls.GetFetchOrderStation([mo_lg.get_order_no])
+        if 0 == len(a_order_ret) or '' == a_order_ret[0].get('DistributionName'):
+            return None
+        from WCUser.models import Shop
+        a_shop = Shop.objects.filter(rfd_name=a_order_ret[0].get('DistributionName'))
+        if 0 == len(a_shop):
+            return None
+        if len(a_shop) > 1:
+            logging.debug(a_shop)
+            logging.warning('find more than one shop [%s]' %(a_shop[0].rfd_name))
+        mo_shop = a_shop[0]
+        logging.debug('find shop [%s]' %(mo_shop.rfd_name))
+        return mo_shop
 
     @classmethod
     # return render xml text in json

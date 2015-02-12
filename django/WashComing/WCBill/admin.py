@@ -172,6 +172,10 @@ class BillAdmin(admin.ModelAdmin):
                     for k,v in t_map.iteritems():
                         if k in it_get_order:
                             messages.info(request, '%s: %s' %(v, it_get_order[k]))
+                    if it_get_order.get('FetchOrderNo') == mo_lg.get_order_no:
+                        messages.info(request, '%s: %s' %(u'取送类型', u'取衣单'))
+                    if it_get_order.get('FetchOrderNo') == mo_lg.return_order_no:
+                        messages.info(request, '%s: %s' %(u'取送类型', u'送衣单'))
                     messages.warning(request, '-'*50)
                 if len(a_get_order) == 0:
                     messages.warning(request, u'无物流消息或尚未更新，请稍后重试')
