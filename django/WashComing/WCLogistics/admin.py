@@ -57,5 +57,17 @@ class RFDAdmin(admin.ModelAdmin):
         my_urls = list( (url(r'^(.+)/%(url)s/$' % b, self.admin_site.admin_view(b['func'])) for b in self.buttons) )
         return my_urls + urls
 
+    def bill_view(self, obj):
+        from django.core import urlresolvers
+        url = urlresolvers.reverse("admin:WCBill_bill_changelist")
+        text = u"查看订单"
+        if obj.bill_of:
+            return u"<a href='%s%d'>%s</a>" %(url, obj.bill_of.pk, text)
+        else:
+            return u"暂无订单信息"
+    bill_view.allow_tags = True
+
+    list_display = ['__unicode__', 'bill_view', ]
+
 admin.site.register(Address, AddressAdmin)
 admin.site.register(RFD, RFDAdmin)

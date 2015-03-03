@@ -79,7 +79,10 @@ def submit(request):
         mo_bill.ext['immediate'] = True
 # every bill custom helper SHOULD confirm
     if True or mo_bill.is_inquiry():
-        mo_bill.change_status(Bill.CONFIRMING)
+        if d_data.get('payment') in ONLINE_PAYMENT:
+            mo_bill.change_status(Bill.NOT_PAID)
+        else:
+            mo_bill.change_status(Bill.CONFIRMING)
     else:
         mo_bill.change_status(Bill.WAITTING_GET)
     a_errmsg = mo_bill.ext.get('error')
@@ -435,6 +438,7 @@ def ping_notify(request):
             try:
                 mo_bill = Bill.objects.get(bid=mo_ping_chr.order_no)
                 mo_bill.paid = mo_ping_chr.amount * 0.01
+                mo_bill.change_status(Bill.CONFIRMING)
                 mo_bill.save()
             except (Exception) as e:
                 logging.error('no bill order_no[%s]' %(mo_ping_chr.order_no))

@@ -170,7 +170,8 @@ class Bill(Mass_Clothes):
             if pi_status < i_status:
                 continue
 # in sql it save as string instead of int
-            if str(i_status) not in self.ext['lg_time']:
+# current status must update
+            if str(i_status) not in self.ext['lg_time'] or i_status == pi_status:
                 self.ext['lg_time'][str(i_status)] = dt.datetime.now()
 
     def get_full_address(self):
