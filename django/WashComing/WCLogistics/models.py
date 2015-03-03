@@ -229,7 +229,7 @@ class RFD(models.Model):
             s_remark = u"应收%.2f元 POS机\n" %(f_total)
             s_remark += u"%s" %(mo_bill.address)
         if len(js_clothes) == 0:
-            d_res = {'IsSucceed':false, 'Message':'format clothes error', 'Exception':e.__str__()}
+            d_res = {'IsSucceed':False, 'Message':'format clothes error', 'Exception':e.__str__()}
             return d_res
         s_clothes = ''
         i_clothes_number = 0
@@ -306,11 +306,11 @@ class RFD(models.Model):
                 xml_res = ET.fromstring(s_xmlres)
                 no_res = xml_res.find('.//{%s}AddFetchOrderResult' %(s_xmlns))
                 if None == no_res:
-                    d_res = {'IsSucceed':false}
+                    d_res = {'IsSucceed':False}
                 d_res = json.loads(no_res.text)
                 break
             except (Exception) as e:
-                d_res = {'IsSucceed':false, 'Message':'get xml result error', 'Exception':e.__str__()}
+                d_res = {'IsSucceed':False, 'Message':'get xml result error', 'Exception':e.__str__()}
 # {u'Message': u'SL141202000001', u'Exception': None, u'IsSucceed': True}
         return d_res
 

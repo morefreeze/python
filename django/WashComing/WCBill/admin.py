@@ -82,6 +82,8 @@ class BillAdmin(admin.ModelAdmin):
                     dt_get_time = dt.datetime.now()
                 else:
                     dt_get_time = mo_bill.get_time_0
+                # mark origin order done
+                OrderQueue.objects.filter(bill=mo_bill, status=OrderQueue.TODO).update(status=OrderQueue.NO_DO_BUT_DONE)
                 OrderQueue.objects.create(bill=mo_bill, type=OrderQueue.AddFetchOrder, \
                                           status=OrderQueue.TODO, time=dt_get_time)
                 dt_return_time = mo_bill.return_time_0
@@ -230,10 +232,21 @@ class BillAdmin(admin.ModelAdmin):
         my_urls = list( (url(r'^(.+)/%(url)s/$' % b, self.admin_site.admin_view(b['func'])) for b in self.buttons) )
         return my_urls + urls
 
+    def lg_rfd(self, obj):
+        from django.core import urlresolvers
+        url = urlresolvers.reverse("admin:WCLogistics_rfd_changelist")
+        text = u"查看物流"
+        if obj.lg:
+            return u"<a href='%s%d'>%s</a>" %(url, obj.lg.pk, text)
+        else:
+            return u"暂无物流信息"
+    lg_rfd.allow_tags = True
+
     readonly_fields = ['create_time', ]
     actions = [batch_confirm, ]
     list_filter = ('status', )
     search_fields = ['real_name', 'address', 'phone', 'bid', ]
+    list_display = ['__unicode__', 'lg_rfd', ]
 
 class FeedbackAdmin(admin.ModelAdmin):
     readonly_fields = ['create_time', ]

@@ -98,11 +98,11 @@ if __name__ == '__main__':
     if len(sys.argv) > 1:
         mo_queue = OrderQueue.objects.get(qid=sys.argv[1])
     else:
-        mo_queue = OrderQueue.objects.all().filter(type__gt=0,status__lte=0,time__lt=trigger_time).order_by('time', 'type', 'qid')
+        mo_queue = OrderQueue.objects.all().filter(type__gt=0,status__lte=0,time__lt=trigger_time).order_by('update_time', 'type', 'time')
         if 0 == len(mo_queue):
             exit(0)
         mo_queue = mo_queue[0]
-    print mo_queue.qid
+    print mo_queue.qid, mo_queue.bill.bid
     mo_queue.status = OrderQueue.DOING
     mo_queue.message = ''
     mo_queue.save()
