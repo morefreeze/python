@@ -238,7 +238,7 @@ class RFD(models.Model):
 # inquiry don't send to rfd
             if 'inquiry' in mo_cloth.ext and mo_cloth.ext['inquiry']:
                 continue
-            s_clothes += " %s %d" %(mo_cloth.get_name(), it_cloth['number'])
+            s_clothes += " %s %s" %(mo_cloth.get_name(), it_cloth['number'])
             i_clothes_number += int(it_cloth['number'])
 # rfd remark len is 100
         if len(s_remark.encode('utf-8')) + len(s_clothes.encode('utf-8')) > 100:

@@ -53,8 +53,8 @@ class Mass_Clothes(models.Model):
                 js_cloth = {}
                 se_cloth = ClothSerializer(mo_cloth)
                 js_cloth['cid'] = se_cloth.data['cid']
-                js_cloth['number'] = it_cloth['number']
-                js_cloth['price'] = se_cloth.data['price']
+                js_cloth['number'] = int(it_cloth['number'])
+                js_cloth['price'] = float(se_cloth.data['price'])
                 mo_fa_cloth = mo_cloth.fa_cid
                 if None == mo_fa_cloth or None == mo_fa_cloth.fa_cid:
 # second category
@@ -103,7 +103,7 @@ class Bill(Mass_Clothes):
         (ERROR,         u'发生错误'),
     )
 
-    LOWEST_SHIPPING_FEE = 49.0
+    LOWEST_SHIPPING_FEE = 39.0
     SHIPPING_FEE = 10.0
 
     bid = models.AutoField(primary_key=True)
@@ -196,8 +196,8 @@ class Bill(Mass_Clothes):
             for it_cloth in js_cloth:
                 try:
                     i_cid = it_cloth['cid']
-                    i_num = it_cloth['number']
-                    f_price = it_cloth['price']
+                    i_num = int(it_cloth['number'])
+                    f_price = float(it_cloth['price'])
                 except (AttributeError, Cloth.DoesNotExist) as e:
                     self.add_error("%s(it_cloth:%s,maybe category)" \
                         %(e.__str__(), it_cloth.__str__()))
@@ -208,13 +208,20 @@ class Bill(Mass_Clothes):
                 else:
                     f_total += i_num * f_price
             self.ext['old_total'] = f_total
+# shipping fee
+            if f_total <= self.LOWEST_SHIPPING_FEE:
+                f_total += Bill.SHIPPING_FEE
+                self.ext['shipping_fee'] = Bill.SHIPPING_FEE
+            else:
+                self.ext['shipping_fee'] = 0.0
+# shipping fee end
 # coupon calc
             i_mcid = self.ext.get('use_coupon') or 0
             if i_mcid > 0:
 # use for calc mycoupon
                 f_cid_total = 0.0
                 try:
-                    mo_mycoupon = MyCoupon.objects.get(mcid=i_mcid)
+                    mo_mycoupon = MyCoupon.objects.get(mcid=i_mcid, used=False)
                     mo_cloth_thd = mo_mycoupon.cid_thd
 # all bill clothes is belong cid_thd
                     if None != mo_cloth_thd:
@@ -240,6 +247,7 @@ class Bill(Mass_Clothes):
                     f_total -= f_old_cid_total - f_cid_total
                 except (ValueError, MyCoupon.DoesNotExist) as e:
                     self.add_error(e.__str__())
+                    del self.ext['use_coupon']
 # coupon calc end
 
 # score calc
@@ -250,13 +258,6 @@ class Bill(Mass_Clothes):
                     f_total -= self.score * SCORE_RMB_RATE
 # score calc end
 
-# shipping fee
-            if f_total < self.LOWEST_SHIPPING_FEE:
-                f_total += Bill.SHIPPING_FEE
-                self.ext['shipping_fee'] = Bill.SHIPPING_FEE
-            else:
-                self.ext['shipping_fee'] = 0.0
-# shipping fee end
             break # while True
         self.total = f_total
         self.ext['calc_total'] = True
@@ -335,12 +336,12 @@ class Coupon(models.Model):
     name = models.CharField(max_length=255, verbose_name=u'代金券名称')
     create_time = models.DateTimeField(auto_now_add=True)
     start_time = models.DateTimeField(verbose_name=u'开始时间')
-    expire_time = models.DateTimeField(verbose_name=u'截止时间')
+    expire_time = models.DateTimeField(verbose_name=u'截止时间，如果有持续时间，则尽量设大截止时间')
 # keep_time start at getting coupon,
 # max(now, start_time) ~ min(now + keep_time, expire_time)
 # this is timedelta type, start with start_time(see code)
     keep_time = models.DateTimeField(verbose_name=u'持续时间', \
-        help_text=u'如果有则从开始时间算起，否则和开始时间完全相同，对，我说的是包括时分秒')
+        help_text=u'如果有则从开始时间算起，和截止时间比较取最近时间，否则和开始时间完全相同，对，我说的是包括时分秒')
 # exp threshold user's exp must greater than this
     exp_thd = models.IntegerField(default=0, verbose_name=u'经验值阈值', \
         help_text=u'至少有这么多经验值的用户才能使用，分发会验证')
@@ -357,7 +358,7 @@ class Coupon(models.Model):
 # price discount minus price directly
     price_dst_low = models.IntegerField(default=0, verbose_name=u'价格减免下限')
     price_dst_upp = models.IntegerField(default=0, verbose_name=u'价格减免上限')
-# max use limit, 0 for no limit
+# global max use limit, 0 for no limit
     max_limit = models.IntegerField(default=0, verbose_name=u'最大拥有量', \
         help_text=u'最大该代金券数量，0表示无限量')
     use_code = models.BooleanField(default=False, verbose_name=u'是否可用代码兑换')
@@ -383,7 +384,8 @@ class Coupon(models.Model):
             return 0
         dt_now = dt.datetime.now()
         dt_delta = self.keep_time - self.start_time
-        logging.debug(dt_delta)
+        if not self.is_valid():
+            return 0
 # keep_time valid
         if dt_delta.total_seconds() > 0:
             dt_start_time = max(dt_now, self.start_time)

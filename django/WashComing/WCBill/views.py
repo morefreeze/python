@@ -104,7 +104,7 @@ def submit(request):
     if i_use_coupon > 0:
 # mark coupon used
         try:
-            mo_mycoupon = MyCoupon.objects.get(mcid=i_use_coupon)
+            mo_mycoupon = MyCoupon.objects.get(mcid=i_use_coupon, used=False)
             mo_mycoupon.used = True
             mo_mycoupon.save()
         except (MyCoupon.DoesNotExist) as e:
