@@ -10,11 +10,12 @@ import datetime as dt
 import sys
 import logging
 
+logger = logging.getLogger('order_rfd')
 def handleAddFetchOrder(mo_queue, to_shop=True):
     try:
         mo_bill = mo_queue.bill
         d_res = RFD.AddFetchOrder(mo_bill, to_shop)
-        print d_res
+        logger.debug(d_res)
         if not d_res['IsSucceed']:
             mo_queue.message = json.dumps(d_res)
             return 1
@@ -60,7 +61,7 @@ def handleImportOrders(mo_queue, to_shop=False):
     try:
         mo_bill = mo_queue.bill
         d_res = RFD.ImportOrders(mo_bill, to_shop)
-        print d_res
+        logger.debug(d_res)
         if 'ResultCode' not in d_res or not d_res['ResultCode'].startswith('IsSuccess'):
             mo_queue.message = d_res.get('ResultMessage')
             return 1
@@ -102,7 +103,7 @@ if __name__ == '__main__':
         if 0 == len(mo_queue):
             exit(0)
         mo_queue = mo_queue[0]
-    print mo_queue.qid, mo_queue.bill.bid
+    logger.debug('%s %s' %(mo_queue.qid, mo_queue.bill.bid))
     mo_queue.status = OrderQueue.DOING
     mo_queue.message = ''
     mo_queue.save()
@@ -118,6 +119,7 @@ if __name__ == '__main__':
     else:
         mo_queue.status = OrderQueue.DONE
     mo_queue.save()
+    logger.info('process %s %s done with exit_code %s' %(mo_queue.qid, mo_queue.bill_bid, mo_queue.status))
     if OrderQueue.DONE != mo_queue.status:
         exit(i_ret_code)
     exit(0)
