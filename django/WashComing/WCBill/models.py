@@ -209,7 +209,7 @@ class Bill(Mass_Clothes):
                     f_total += i_num * f_price
             self.ext['old_total'] = f_total
 # shipping fee
-            if f_total <= self.LOWEST_SHIPPING_FEE:
+            if f_total < self.LOWEST_SHIPPING_FEE:
                 f_total += Bill.SHIPPING_FEE
                 self.ext['shipping_fee'] = Bill.SHIPPING_FEE
             else:
