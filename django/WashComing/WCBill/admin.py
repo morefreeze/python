@@ -65,7 +65,7 @@ class CartAdmin(admin.ModelAdmin):
         return my_urls + urls
 
 class MyCouponAdmin(admin.ModelAdmin):
-    pass
+    search_fields = ['coupon__code', 'coupon__name', 'own__name',]
 
 class BillAdmin(admin.ModelAdmin):
 
@@ -245,7 +245,7 @@ class BillAdmin(admin.ModelAdmin):
     readonly_fields = ['create_time', ]
     actions = [batch_confirm, ]
     list_filter = ('status', )
-    search_fields = ['real_name', 'address', 'phone', 'bid', ]
+    search_fields = ['real_name', 'address', 'phone', 'bid', 'comment']
     list_display = ['__unicode__', 'lg_rfd', ]
 
 class FeedbackAdmin(admin.ModelAdmin):

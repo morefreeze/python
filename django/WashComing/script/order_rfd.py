@@ -52,7 +52,7 @@ def handleAddFetchOrder(mo_queue, to_shop=True):
         mo_bill.save()
         mo_rfd.save()
     except Exception as e:
-        logging.error(traceback.format_exc())
+        logger.error(traceback.format_exc())
         mo_queue.message = traceback.format_exc()
         return 99
     return 0
@@ -119,7 +119,7 @@ if __name__ == '__main__':
     else:
         mo_queue.status = OrderQueue.DONE
     mo_queue.save()
-    logger.info('process %s %s done with exit_code %s' %(mo_queue.qid, mo_queue.bill_bid, mo_queue.status))
+    logger.info('process %s %s done with exit_code %s' %(mo_queue.qid, mo_queue.bill_id, mo_queue.status))
     if OrderQueue.DONE != mo_queue.status:
         exit(i_ret_code)
     exit(0)

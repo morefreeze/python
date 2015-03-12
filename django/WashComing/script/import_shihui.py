@@ -7,6 +7,7 @@ import hashlib
 import urllib, urllib2
 import json
 import logging
+import re
 
 pwd = os.path.dirname(os.path.abspath(__file__))
 fa_pwd = os.path.abspath(os.path.join(pwd, '..'))
@@ -16,6 +17,7 @@ django.setup()
 
 from WCUser.models import User
 from WCBill.models import *
+from WCLib.models import *
 
 reload(sys)
 sys.setdefaultencoding('utf-8')
@@ -34,12 +36,19 @@ dt_now = dt.datetime.now()
 dt_tomorrow = dt_now + dt.timedelta(days=0, hours=1)
 dt_return = dt_tomorrow + dt.timedelta(days=4)
 dt_return1 = dt_return + dt.timedelta(hours=4)
-d_cloth_map = {
+d_210632_map = {
     u'羽绒服': 33,
     u'羊毛大衣': 31,
     u'棉服': 30,
     u'风衣': 29,
     u'冲锋衣': 11,
+}
+d_all_map = {
+}
+d_cloth_map = {
+    '210632': d_210632_map,
+    '217943': d_all_map,
+    '217947': d_all_map,
 }
 
 i_cur_page = 1
@@ -53,10 +62,10 @@ try:
 # method param
             'fields': 'tid,price,buyer_id,buyer_nick,buyer_message,receiver_district,receiver_address,receiver_name,receiver_mobile,total_fee,status,update_time,buyer_nick,orders,coupon_details',
             'status': 'WAIT_SELLER_SEND_GOODS',
-            'start_update': '%s' %('2015-03-04 00:50:00'),
-            'end_update': '%s' %('2015-03-05 23:50:00'),
-            #'start_update': '%s' %(dt_last.strftime("%Y-%m-%d %H:%M:%S")),
-            #'end_update': '%s' %(dt_now.strftime("%Y-%m-%d %H:%M:%S")),
+            #'start_update': '%s' %('2015-03-04 00:50:00'),
+            #'end_update': '%s' %('2015-03-05 23:50:00'),
+            'start_update': '%s' %(dt_last.strftime("%Y-%m-%d %H:%M:%S")),
+            'end_update': '%s' %(dt_now.strftime("%Y-%m-%d %H:%M:%S")),
             'page_no': i_cur_page,
             'page_size': 50,
         }
@@ -73,6 +82,13 @@ try:
 # judge same
             if len(Bill.objects.filter(comment__contains=it_bill['tid'])) > 0:
                 continue
+            it_bill['buyer_nick'] = re.sub(ur'[^\u4e00-\u9fa5\w]', '', it_bill['buyer_nick'])
+            for it_area in Area_Choice:
+                if it_area[0] in it_bill['receiver_address']:
+                    it_bill['receiver_district'] = it_area[0]
+            if u'北京市' == it_bill['receiver_district']:
+                logger.error('area not exist %s' %(it_bill['tid']))
+                it_bill['receiver_district'] = u'西城区'
             d_address_add = {
                 'username': s_username,
                 'token':    s_token,
@@ -95,10 +111,25 @@ try:
                     logger.error('more than 1 cloth %s' %(it_bill['tid']))
                     continue
 
+                s_coupon = ''
+                s_coupon_id = ''
+                for it_coupon in it_bill['coupon_details']:
+                    if 'PROMOCODE' == it_coupon['coupon_type']:
+                        s_coupon = it_coupon['coupon_content']
+                        s_coupon_id = it_coupon['coupon_id']
+
+                if '' == s_coupon_id:
+                    s_coupon_id = '210632'
+                    logger.debug('this bill may use shihui code not coupon %s' %(it_bill['tid']))
+
+                if s_coupon_id not in d_cloth_map:
+                    logger.error('%s not in mycoupon %s' %(s_coupon_id, it_bill['tid']))
+                    continue
+
                 a_clothes = []
                 for it_order in it_bill['orders']:
-                    if it_order['title'] in d_cloth_map:
-                        a_clothes.append({"number":it_order['num'], "cid":d_cloth_map[it_order['title']]})
+                    if it_order['title'] in d_cloth_map[s_coupon_id]:
+                        a_clothes.append({"number":it_order['num'], "cid":d_cloth_map[s_coupon_id][it_order['title']]})
                     else:
                         logger.error('%s not in list %s' %(it_order['title'], it_bill['tid']))
                         a_clothes = []
@@ -109,15 +140,6 @@ try:
                 else:
                     s_clothes = json.dumps(a_clothes)
 
-                s_coupon = ''
-                for it_coupon in it_bill['coupon_details']:
-                    if 'PROMOCODE' == it_coupon['coupon_type']:
-                        s_coupon = it_coupon['coupon_content']
-                if '' != s_coupon:
-                    a_mycoupons = MyCoupon.objects.filter(coupon__code=s_coupon, coupon__use_code=True)
-                    if len(a_mycoupons) > 0:
-                        mo_mycoupon = a_mycoupons[0]
-                        d_bill_submit['mcid'] = mo_mycoupon.mcid
                 d_bill_submit = {
                     'username': s_username,
                     'token':    s_token,
@@ -131,6 +153,11 @@ try:
                     'comment':  u'%s 有赞用户【%s】【%s】%s' %(it_bill['buyer_message'], it_bill['buyer_nick'], it_bill['tid'], s_coupon),
                     'immediate': True,
                 }
+                if '' != s_coupon:
+                    a_mycoupons = MyCoupon.objects.filter(coupon__code=s_coupon, coupon__use_code=True)
+                    if len(a_mycoupons) > 0:
+                        mo_mycoupon = a_mycoupons[0]
+                        d_bill_submit['mcid'] = mo_mycoupon.mcid
                 logger.debug(d_bill_submit)
                 rq_bill_ret = urllib2.urlopen(s_bill_submit_url, urllib.urlencode(d_bill_submit))
                 js_bill_ret = json.loads(rq_bill_ret.read())

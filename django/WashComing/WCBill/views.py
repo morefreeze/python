@@ -17,6 +17,7 @@ import json
 import datetime as dt
 import pingpp
 import sys
+import re
 
 # Create your views here.
 @require_http_methods(['POST', 'GET'])
@@ -122,6 +123,15 @@ def submit(request):
         dt_import_time = mo_bill.return_time_0
         OrderQueue.objects.create(bill=mo_bill, type=OrderQueue.AddReturnningFetchOrder,
                                   status=OrderQueue.TODO, time=dt_import_time)
+
+    # f**king youzan bill, if comment contains 121247787944536857 then total is 0.0
+    # delete this if youzan active is over
+    re_sh_code = re.search('12\d{14}', mo_bill.comment)
+    if None != re_sh_code and '' != re_sh_code.group(0):
+        mo_bill.total = 0.0
+        mo_bill.save()
+    # f**bing youzan bill end
+
     d_response = {
         'errno':0,
         'bid':mo_bill.bid,

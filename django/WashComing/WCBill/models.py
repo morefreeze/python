@@ -145,8 +145,9 @@ class Bill(Mass_Clothes):
         elif self.ext and self.ext.get('payment') in ONLINE_PAYMENT:
             s_ret += u"￥%.2f(未支付) " %(self.total)
         else:
-            s_ret += u"%.2f(现金) " %(self.total)
-        s_ret += u"[%s] [%s] [%s] [%s %s] [%s] 留言[%s] 管理员[%s] 店铺[%s])" %(Bill.get_status(self.status), self.create_time, self.real_name, \
+            s_ret += u"￥%.2f(现金) " %(self.total)
+
+        s_ret += u"[%s] [%s~%s] [%s] [%s %s] [%s] 留言[%s] 管理员[%s] 店铺[%s])" %(Bill.get_status(self.status), self.get_time_0.strftime('%m-%d %H'), self.return_time_0.strftime('%m-%d %H'), self.real_name, \
                 self.area, self.address, self.phone, self.comment, self.admin_comment, self.shop_comment)
         return s_ret
 
@@ -366,7 +367,7 @@ class Coupon(models.Model):
         help_text=u'自动生成')
 
     def __unicode__(self):
-        return "%d(%s)" %(self.coid, self.name)
+        return "%d(%s) code[%s]" %(self.coid, self.name, self.code)
 
     def is_valid(self):
         """ check coupon out of max_limit """
@@ -439,11 +440,11 @@ class MyCoupon(models.Model):
 
     def __unicode__(self):
         if None == self.cid_thd:
-            return u"%d([%s] [满%.0f,%s] -%.0f -%d%%)" %(self.mcid, self.own.name, self.price_thd, \
-                        u'全场', self.price_dst, self.percent_dst)
-
-        return "%d([%s][%.0f,%s] -%.0f -%d%%)" % (self.mcid, self.own.name, self.price_thd, \
-                        self.cid_thd.name, self.price_dst, self.percent_dst)
+            s_cid_name = u'全场'
+        else:
+            s_cid_name = self.cid_thd.name
+        return "%d([%s][%.0f,%s] -%.0f -%d%%) %s" % (self.mcid, self.own.name, self.price_thd, \
+                        s_cid_name, self.price_dst, self.percent_dst, self.coupon)
 
     @classmethod
     def query_mycoupons(cls, mo_user, i_type):
