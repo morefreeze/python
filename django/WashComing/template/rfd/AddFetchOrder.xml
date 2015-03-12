@@ -1,0 +1,11 @@
+{% autoescape off %}<?xml version="1.0" encoding="UTF-8"?>
+<SOAP-ENV:Envelope
+    xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
+    xmlns:ns1="http://tempuri.org/">
+    <SOAP-ENV:Body>
+        <ns1:AddFetchOrder>
+            <ns1:strFetchOrder>{{ strFetchOrder }}</ns1:strFetchOrder>
+            <ns1:strLcid>{{ strLcid }}</ns1:strLcid>
+        </ns1:AddFetchOrder>
+    </SOAP-ENV:Body>
+</SOAP-ENV:Envelope>{% endautoescape %}

@@ -68,6 +68,7 @@ class RFDAdmin(admin.ModelAdmin):
     bill_view.allow_tags = True
 
     list_display = ['__unicode__', 'bill_view', ]
+    search_fields = ['get_order_no', 'get_way_no', 'get_form_no', 'return_order_no', 'return_way_no', 'return_form_no',]
 
 admin.site.register(Address, AddressAdmin)
 admin.site.register(RFD, RFDAdmin)

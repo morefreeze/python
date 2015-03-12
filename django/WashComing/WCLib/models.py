@@ -98,5 +98,7 @@ Area_Choice = (
     (ARE_BJ_HUAIROU,        ARE_BJ_HUAIROU),
     (ARE_BJ_SHUNYI,         ARE_BJ_SHUNYI),
     (ARE_BJ_XUANWU,         ARE_BJ_XUANWU),
+# for shihui user, if add address error, uncomment this
+    #(CTY_BEIJING,           CTY_BEIJING),
 )
 
