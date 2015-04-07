@@ -5,6 +5,7 @@ from django.db import models
 from django.db.models import Q
 from django.contrib.auth.models import AbstractUser
 import django.contrib.auth.hashers as hasher
+from django.contrib.auth.models import User as dUser
 from django.template import loader, Context
 import base64, hashlib, uuid
 import datetime as dt
@@ -246,6 +247,7 @@ class Shop(models.Model):
     byself = models.BooleanField(default=False, verbose_name=u'自取标志', \
         help_text=u'是否去物流站点自取')
     deleted = models.BooleanField(default=False, verbose_name=u'删除标志', help_text=u'')
+    own = models.ForeignKey(dUser, null=True, blank=True, help_text=u'')
     ext = JSONField(default={}, verbose_name=u'扩展字段', help_text=u'')
 
     def __unicode__(self):

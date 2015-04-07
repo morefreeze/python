@@ -7,7 +7,7 @@ class AddressAddForm(forms.Form):
     token = forms.CharField(required = True,
                              max_length=255)
     real_name = forms.CharField(required = True,
-                             min_length=2,max_length=255)
+                             min_length=1,max_length=255)
     province = forms.ChoiceField(required = True,choices=Province_Choice)
     city = forms.ChoiceField(required = True,choices=City_Choice)
     area = forms.ChoiceField(required = True,choices=Area_Choice)
@@ -24,7 +24,7 @@ class AddressUpdateForm(forms.Form):
                              max_length=255)
     aid = forms.IntegerField(required = True)
     real_name = forms.CharField(required = False,
-                             min_length=2,max_length=255)
+                             min_length=1,max_length=255)
     province = forms.CharField(required = False,
                              min_length=2,max_length=16)
     city = forms.CharField(required = False,

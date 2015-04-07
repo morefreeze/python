@@ -18,6 +18,7 @@ django.setup()
 from WCUser.models import User
 from WCBill.models import *
 from WCLib.models import *
+from WCCloth.models import *
 
 reload(sys)
 sys.setdefaultencoding('utf-8')
@@ -32,23 +33,44 @@ s_username = u'18612295553'
 s_token = 'pbkdf2_sha256$12000$zcYr9nnLd1qi$mOtDAal6pHEBrav28DW+iK4NwyghlMrprOdnAzdT+aY='
 with open('last_update_shihui', 'r') as f:
     dt_last = dt.datetime.strptime(f.read().strip(), '%Y-%m-%d %H:%M:%S')
+# prevent some user from missing
+    dt_last -= dt.timedelta(hours=16)
 dt_now = dt.datetime.now()
 dt_tomorrow = dt_now + dt.timedelta(days=0, hours=1)
 dt_return = dt_tomorrow + dt.timedelta(days=4)
 dt_return1 = dt_return + dt.timedelta(hours=4)
-d_210632_map = {
-    u'羽绒服': 33,
-    u'羊毛大衣': 31,
-    u'棉服': 30,
-    u'风衣': 29,
-    u'冲锋衣': 11,
-}
-d_all_map = {
-}
+def make_all_cloth_map():
+    d_ret = {}
+    a_clothes = Cloth.objects.filter(is_leaf=True)
+    for it_cloth in a_clothes:
+        try:
+            mo_fa_cid = it_cloth.fa_cid
+            if None == mo_fa_cid.fa_cid:
+                mo_fa_cid = None
+        except (Exception) as e:
+# some cloth father is not exist e.g. cid=81
+            continue
+        s_name = ''
+        i_cid = int(it_cloth.cid)
+        if None != mo_fa_cid:
+            s_name = "%s（%s）" %(mo_fa_cid.name, it_cloth.name)
+        else:
+            s_name = "%s" %(it_cloth.name)
+        d_ret[s_name] = i_cid
+    return d_ret
+
+d_all_map = make_all_cloth_map()
+
 d_cloth_map = {
-    '210632': d_210632_map,
+    '216351': d_all_map,
     '217943': d_all_map,
     '217947': d_all_map,
+    '235144': d_all_map,
+    '235143': d_all_map,
+    '235141': d_all_map,
+    '235140': d_all_map,
+    '234515': d_all_map,
+    'all':      d_all_map,
 }
 
 i_cur_page = 1
@@ -60,10 +82,10 @@ try:
             'timestamp': '%s' %(dt_now.strftime("%Y-%m-%d %H:%M:%S")),
             'v': '1.0',
 # method param
-            'fields': 'tid,price,buyer_id,buyer_nick,buyer_message,receiver_district,receiver_address,receiver_name,receiver_mobile,total_fee,status,update_time,buyer_nick,orders,coupon_details',
+            'fields': 'tid,price,buyer_id,buyer_nick,buyer_message,receiver_district,receiver_address,receiver_name,receiver_mobile,total_fee,payment,status,update_time,buyer_nick,orders,coupon_details',
             'status': 'WAIT_SELLER_SEND_GOODS',
-            #'start_update': '%s' %('2015-03-04 00:50:00'),
-            #'end_update': '%s' %('2015-03-05 23:50:00'),
+            #'start_update': '%s' %('2015-03-05 12:50:00'),
+            #'end_update': '%s' %('2015-03-05 18:50:00'),
             'start_update': '%s' %(dt_last.strftime("%Y-%m-%d %H:%M:%S")),
             'end_update': '%s' %(dt_now.strftime("%Y-%m-%d %H:%M:%S")),
             'page_no': i_cur_page,
@@ -83,10 +105,14 @@ try:
             if len(Bill.objects.filter(comment__contains=it_bill['tid'])) > 0:
                 continue
             it_bill['buyer_nick'] = re.sub(ur'[^\u4e00-\u9fa5\w]', '', it_bill['buyer_nick'])
+            b_find_area = False
             for it_area in Area_Choice:
                 if it_area[0] in it_bill['receiver_address']:
                     it_bill['receiver_district'] = it_area[0]
-            if u'北京市' == it_bill['receiver_district']:
+                    b_find_area = True
+                if it_area[0] == it_bill['receiver_district']:
+                    b_find_area = True
+            if not b_find_area or u'北京市' == it_bill['receiver_district']:
                 logger.error('area not exist %s' %(it_bill['tid']))
                 it_bill['receiver_district'] = u'西城区'
             d_address_add = {
@@ -119,7 +145,7 @@ try:
                         s_coupon_id = it_coupon['coupon_id']
 
                 if '' == s_coupon_id:
-                    s_coupon_id = '210632'
+                    s_coupon_id = 'all'
                     logger.debug('this bill may use shihui code not coupon %s' %(it_bill['tid']))
 
                 if s_coupon_id not in d_cloth_map:
@@ -174,6 +200,9 @@ try:
                 js_adr_ret = json.loads(rq_adr_ret.read())
                 if 'errno' not in js_adr_ret or int(js_adr_ret['errno']) != 0:
                     raise Exception('address del error %s' %(it_bill['tid']))
+                if 'bid' in js_adr_ret:
+                    mo_bill = Bill.objects.get(bid=js_adr_ret['bid'])
+                    mo_bill.payment = it_bill['payment']
             logger.info('%s success' %(it_bill['tid']))
 
         if len(js_ret['response']['trades']) < 50:

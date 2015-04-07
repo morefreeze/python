@@ -83,7 +83,7 @@ class BillAdmin(admin.ModelAdmin):
                 else:
                     dt_get_time = mo_bill.get_time_0
                 # mark origin order done
-                OrderQueue.objects.filter(bill=mo_bill, status=OrderQueue.TODO).update(status=OrderQueue.NO_DO_BUT_DONE)
+                OrderQueue.objects.filter(bill=mo_bill, status__lt=OrderQueue.NO_DO_BUT_DONE).update(status=OrderQueue.NO_DO_BUT_DONE)
                 OrderQueue.objects.create(bill=mo_bill, type=OrderQueue.AddFetchOrder, \
                                           status=OrderQueue.TODO, time=dt_get_time)
                 dt_return_time = mo_bill.return_time_0
@@ -245,7 +245,7 @@ class BillAdmin(admin.ModelAdmin):
     readonly_fields = ['create_time', ]
     actions = [batch_confirm, ]
     list_filter = ('status', )
-    search_fields = ['real_name', 'address', 'phone', 'bid', 'comment']
+    search_fields = ['real_name', 'address', 'phone', 'bid', 'comment', 'lg__get_order_no', 'lg__return_order_no', ]
     list_display = ['__unicode__', 'lg_rfd', ]
 
 class FeedbackAdmin(admin.ModelAdmin):

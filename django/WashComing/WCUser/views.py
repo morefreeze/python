@@ -397,14 +397,14 @@ def third_login(request):
     return JSONResponse({'errno':0, 'uid':se_user.data['uid'], 'username':s_third_uid, 'third_token':se_user.data['third_token']})
 
 """
+@require_http_methods(['POST', 'GET'])
 def admin_upload_avatar(request):
-    if request.method != 'POST':
-        form = UserUploadAvatarForm()
-        mos = User.objects.exclude(avatar__exact='')
-        return render_to_response('list.html',
-                                  {'documents':mos,'form':form},
-                                 context_instance=RequestContext(request))
-        #return JSONResponse({'errmsg':'method error'})
+    form = UserUploadAvatarForm()
+    mos = User.objects.exclude(avatar__exact='')
+    return render_to_response('list.html',
+                              {'documents':mos,'form':form},
+                             context_instance=RequestContext(request))
+    #return JSONResponse({'errmsg':'method error'})
     fo_user = UserUploadAvatarForm(request.POST, request.FILES)
     if not fo_user.is_valid():
         return JSONResponse({'errmsg':fo_user.errors})

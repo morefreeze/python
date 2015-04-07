@@ -227,7 +227,7 @@ class RFD(models.Model):
             s_remark = u"%s至%s取" %(s_dt_start, s_dt_end)
         else:
             s_remark = u"应收%.2f元 POS机\n" %(f_total)
-            s_remark += u"%s" %(mo_bill.address)
+            s_remark += u"%s %s %s" %(mo_bill.address, mo_bill.phone, mo_bill.real_name)
         if len(js_clothes) == 0:
             d_res = {'IsSucceed':False, 'Message':'format clothes error', 'Exception':e.__str__()}
             return d_res
@@ -358,8 +358,8 @@ class RFD(models.Model):
                 logging.debug(s_xmlres)
                 xml_res = ET.fromstring(s_xmlres)
                 s_res = xml_res.find('.//{http://tempuri.org/}%sResult' %(s_method_name)).text
+                logging.debug(s_res)
                 d_res = json.loads(s_res)
-                logging.debug(d_res)
 # if request multi order, and some order not found, len(d_res) always less than len(a_oid)
                 if len(a_oid) == len(d_res):
                     break
@@ -408,7 +408,8 @@ class RFD(models.Model):
             if 0 == it_st.get('Ret'):
                 is_success = 1
             else:
-                is_success = 0
+# not found fetch order still success, prevent from push message overstock
+                is_success = 1
             d_st = {
                 "op_id": it_st.get('OperateId'),
                 "is_success": is_success,
@@ -553,7 +554,7 @@ class RFD(models.Model):
                     mo_bill.change_status(mo_bill.__class__.GETTING)
                 if cls.SUCCESS == i_status:
                     mo_rfd.status = cls.GOT
-                    mo_bill.change_status(mo_bill.__class__.WASHING)
+                    mo_bill.change_status(mo_bill.__class__.GETTING)
             elif i_type in [3,4]:
                 if dt_operate_time < mo_rfd.return_operate_time:
                     d_ret['Ret'] = 0

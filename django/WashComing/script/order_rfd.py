@@ -103,7 +103,6 @@ if __name__ == '__main__':
         if 0 == len(mo_queue):
             exit(0)
         mo_queue = mo_queue[0]
-    logger.debug('%s %s' %(mo_queue.qid, mo_queue.bill.bid))
     mo_queue.status = OrderQueue.DOING
     mo_queue.message = ''
     mo_queue.save()

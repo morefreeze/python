@@ -3,19 +3,45 @@ from WCLib.serializers import *
 from WCBill.models import Bill, Feedback, MyCoupon
 
 class BillSerializer(serializers.ModelSerializer):
+    shop_name = serializers.CharField(source='shop')
+    get_order = serializers.CharField(source='lg')
+    return_order = serializers.CharField(source='lg')
+    feedback = serializers.CharField(source='lg')
     class Meta:
         model = Bill
         fields = ('bid', 'create_time', 'get_time_0', 'get_time_1', \
                   'return_time_0', 'return_time_1', \
-                  'own', 'lg', 'address', 'real_name', 'phone', \
-                  'status', 'deleted', 'score', \
-                  'clothes', 'total', 'paid', 'comment', 'ext')
+                  'own', 'lg', 'get_order', 'return_order', 'address', 'real_name', 'phone', \
+                  'status', 'deleted', 'score', 'shop', 'shop_name', 'shop_comment', \
+                  'clothes', 'total', 'paid', 'comment', 'feedback', 'ext')
 
     def transform_address(self, obj, value):
         return obj.get_full_address()
 
     def transform_status(self, obj, value):
         return value
+
+    def transform_shop_name(self, obj, value):
+        if None == obj.shop:
+            return u'（暂无）'
+        return obj.shop.name
+
+    def transform_get_order(self, obj, value):
+        if None == obj.lg:
+            return ''
+        return obj.lg.get_order_no
+
+    def transform_return_order(self, obj, value):
+        if None == obj.lg:
+            return ''
+        return obj.lg.return_order_no
+
+    def transform_feedback(self, obj, value):
+        try:
+            mo_fb = Feedback.objects.get(bill=obj)
+        except (Exception) as e:
+            return ''
+        return mo_fb.content
 
 class FeedbackSerializer(serializers.ModelSerializer):
     class Meta:
