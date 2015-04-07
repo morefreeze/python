@@ -108,9 +108,9 @@ class Bill(Mass_Clothes):
 
     bid = models.AutoField(primary_key=True)
     create_time = models.DateTimeField(auto_now_add=True)
-    get_time_0 = models.DateTimeField(verbose_name=u'取衣开始时间')
+    get_time_0 = models.DateTimeField(verbose_name=u'取衣开始时间（修改会影响物流下单时间）')
     get_time_1 = models.DateTimeField(verbose_name=u'取衣结束时间')
-    return_time_0 = models.DateTimeField(verbose_name=u'送衣开始时间')
+    return_time_0 = models.DateTimeField(verbose_name=u'送衣开始时间（修改会影响物流下单时间）')
     return_time_1 = models.DateTimeField(verbose_name=u'送衣结束时间')
     own = models.ForeignKey(User,verbose_name=u'下单用户') # own_id in db
     lg = models.OneToOneField(RFD,blank=True,null=True, related_name='bill_of', verbose_name=u'物流') # lg_id in db
@@ -331,6 +331,15 @@ class Bill(Mass_Clothes):
     def get_bills(cls, own_id, pn=1, deleted=0, rn=10):
         l_bill = cls.objects.filter(own_id=own_id)[(pn-1)*rn:pn*rn]
         return l_bill
+
+    def save(self, *args, **kwargs):
+        if None != self.pk:
+            mo_bill = Bill.objects.get(pk=self.pk)
+            if self.get_time_0 != mo_bill.get_time_0:
+                OrderQueue.objects.filter(bill=self, type=OrderQueue.AddFetchOrder).update(time=self.get_time_0)
+            if self.return_time_0 != mo_bill.return_time_0:
+                OrderQueue.objects.filter(bill=self, type=OrderQueue.AddReturnningFetchOrder).update(time=self.return_time_0)
+        super(Bill, self).save(*args, **kwargs)
 
 class Coupon(models.Model):
     coid = models.AutoField(primary_key=True)

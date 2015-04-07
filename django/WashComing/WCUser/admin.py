@@ -7,7 +7,7 @@ class UserAdmin(admin.ModelAdmin):
     search_fields = ['name', 'phone', 'email', 'address__real_name']
 
 class ShopAdmin(admin.ModelAdmin):
-    pass
+    list_display = ['__unicode__', 'own', ]
 
 class FeedbackAdmin(admin.ModelAdmin):
     readonly_fields = ['create_time', ]

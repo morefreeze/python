@@ -1,6 +1,6 @@
 # coding=utf-8
 from WCLib.serializers import *
-from WCUser.models import User
+from WCUser.models import User, Shop
 
 class UserSerializer(serializers.ModelSerializer):
     third_bind = serializers.CharField(source='third_uids')
@@ -24,4 +24,9 @@ class UserSerializer(serializers.ModelSerializer):
             if '$' in it_third:
                 a_ret.append(it_third[:it_third.find('$')])
         return a_ret
+
+class ShopSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Shop
+        fields = ('sid', 'name', 'rfd_name', 'real_name', 'phone', 'address', )
 

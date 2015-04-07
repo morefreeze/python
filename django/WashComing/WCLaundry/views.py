@@ -33,7 +33,7 @@ def laundry_bill_query(request):
     i_bid = int(d_data.get('bid'))
     mo_user = request.user
     try:
-        mo_bill = Bill.objects.get(bid=i_bid, status__gte=Bill.WAITTING_GET, status__lte=Bill.WASHING)
+        mo_bill = Bill.objects.get(bid=i_bid, status__gte=Bill.WAITTING_GET, status__lt=Bill.DONE)
     except (Bill.DoesNotExist) as e:
         return JSONResponse({'errmsg':u'订单不存在或不需要确认状态'})
     se_bill = BillSerializer(mo_bill)
@@ -70,7 +70,6 @@ def laundry_confirm_get(request):
         return JSONResponse({'errmsg':fo_laundry.errors})
     d_data = fo_laundry.cleaned_data
     s_bid = d_data.get('bid')
-    s_sid = d_data.get('sid')
     s_comment = d_data.get('shop_comment') or ''
     try:
         mo_bill = Bill.objects.get(bid=s_bid, deleted=False)
@@ -80,22 +79,51 @@ def laundry_confirm_get(request):
     if mo_bill.status not in (Bill.WAITTING_GET, Bill.GETTING, Bill.WASHING):
         logging.error('bill status is error bid[%s] status[%s]' %(s_bid, mo_bill.status))
         return JSONResponse({'errmsg': u'确认失败！该订单号当前不需要确认'})
-    try:
-        mo_shop = Shop.objects.get(sid=s_sid, deleted=False)
-    except (Shop.DoesNotExist) as e:
-        logging.error('shop id not exist or deleted %s' %(s_sid))
-        return JSONResponse({'errmsg': u'确认失败！店铺号不存在或已删除'})
-    if mo_shop.own != mo_duser:
-        logging.error('shop not belong to user sid[%s] duser[%s]' %(s_sid, mo_duser))
-        return JSONResponse({'errmsg': u'确认失败！该店铺不在当前账号下，请尝试重新登陆'})
-    if None != mo_bill.shop and mo_bill.shop != mo_shop:
-        logging.error('bill has a shop bid[%s] old_sid[%s] new_sid[%s]' %(s_bid, mo_bill.shop_id, s_sid))
-        return JSONResponse({'errmsg': u'确认失败！该订单已经被其它店铺确认'})
-    mo_bill.shop = mo_shop
     mo_bill.change_status(Bill.WASHING)
     mo_bill.shop_comment = s_comment
     mo_bill.save()
     logging.info('shop confirm get clothes success bid[%s]' %(s_bid))
+    d_response['errno'] = 0
+    return JSONResponse(d_response)
+
+# each page RN item
+RN = 20
+@require_http_methods(['POST'])
+@login_required
+def laundry_get_total_pages(request):
+    mo_duser = request.user
+    if None == mo_duser:
+        import sys
+        logging.error('%s need django user login' %(sys._getframe().f_code.co_name))
+        return JSONResponse({'errmsg':'this method need login'})
+    d_response = {}
+    fo_laundry = LaundryGetBillsForm(dict(request.POST.items()))
+    if not fo_laundry.is_valid():
+        return JSONResponse({'errmsg':fo_laundry.errors})
+    d_data = fo_laundry.cleaned_data
+    s_method = d_data.get('method')
+# user has view_all_shop_bill can see any shop
+    if mo_duser.has_perm('WCLaundry.view_all_shop_bill'):
+        if 'to_arrive' == s_method:
+            a_bills = Bill.objects.filter(status__gt=Bill.CONFIRMING, status__lt=Bill.WASHING)
+        elif 'to_send' == s_method:
+            a_bills = Bill.objects.filter(status=Bill.WASHING)
+        elif 'sent' == s_method:
+            a_bills = Bill.objects.filter(status__gt=Bill.WASHING, status__lt=Bill.DONE)
+        else:
+            logging.error('method error %s' %(s_method))
+            return JSONResponse({'errmsg': 'method error'})
+    else:
+        if 'to_arrive' == s_method:
+            a_bills = Bill.objects.filter(shop__own=mo_duser, status__gt=Bill.CONFIRMING, status__lt=Bill.WASHING)
+        elif 'to_send' == s_method:
+            a_bills = Bill.objects.filter(shop__own=mo_duser, status=Bill.WASHING)
+        elif 'sent' == s_method:
+            a_bills = Bill.objects.filter(shop__own=mo_duser, status__gt=Bill.WASHING, status__lt=Bill.DONE)
+        else:
+            logging.error('method error %s' %(s_method))
+            return JSONResponse({'errmsg': 'method error'})
+    d_response['total'] = int((len(a_bills)-1) / RN) + 1
     d_response['errno'] = 0
     return JSONResponse(d_response)
 
@@ -117,17 +145,29 @@ def laundry_get_bills(request):
     i_page -= 1
     if i_page < 0:
         i_page = 0
-# each page 50 item
-    RN = 10
     i_offset = i_page * RN
     i_limit = (i_page+1) * RN
-    if 'to_send' == s_method:
-        a_bills = Bill.objects.filter(shop__own=mo_duser, status=Bill.WASHING)[i_offset:i_limit]
-    elif 'sent' == s_method:
-        a_bills = Bill.objects.filter(shop__own=mo_duser, status__gt=Bill.WASHING)[i_offset:i_limit]
+# user has view_all_shop_bill can see any shop
+    if mo_duser.has_perm('WCLaundry.view_all_shop_bill'):
+        if 'to_arrive' == s_method:
+            a_bills = Bill.objects.filter(status__gt=Bill.CONFIRMING, status__lt=Bill.WASHING).order_by('-bid')[i_offset:i_limit]
+        elif 'to_send' == s_method:
+            a_bills = Bill.objects.filter(status=Bill.WASHING).order_by('-bid')[i_offset:i_limit]
+        elif 'sent' == s_method:
+            a_bills = Bill.objects.filter(status__gt=Bill.WASHING, status__lt=Bill.DONE).order_by('-bid')[i_offset:i_limit]
+        else:
+            logging.error('method error %s' %(s_method))
+            return JSONResponse({'errmsg': 'method error'})
     else:
-        logging.error('method error %s' %(s_method))
-        return JSONResponse({'errmsg': 'method error'})
+        if 'to_arrive' == s_method:
+            a_bills = Bill.objects.filter(shop__own=mo_duser, status__gt=Bill.CONFIRMING, status__lt=Bill.WASHING).order_by('-bid')[i_offset:i_limit]
+        elif 'to_send' == s_method:
+            a_bills = Bill.objects.filter(shop__own=mo_duser, status=Bill.WASHING).order_by('-bid')[i_offset:i_limit]
+        elif 'sent' == s_method:
+            a_bills = Bill.objects.filter(shop__own=mo_duser, status__gt=Bill.WASHING, status__lt=Bill.DONE).order_by('-bid')[i_offset:i_limit]
+        else:
+            logging.error('method error %s' %(s_method))
+            return JSONResponse({'errmsg': 'method error'})
     d_response['data'] = []
     for it_bill in a_bills:
         se_bill = BillSerializer(it_bill)

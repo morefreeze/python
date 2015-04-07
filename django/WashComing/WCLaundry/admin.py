@@ -6,13 +6,13 @@ class QueryBillAdmin(admin.ModelAdmin):
     class Media:
         js = (
             '../media/js/jquery.min.js',
-            'https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js',
+            '//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js',
             '../media/js/bootbox.min.js',
         )
         css = {
             'all':(
-                'https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css',
-                'https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap-theme.min.css',
+                '//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css',
+                '//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap-theme.min.css',
             )
         }
     def has_add_permission(self, request):
@@ -23,17 +23,19 @@ class SendBillAdmin(admin.ModelAdmin):
     class Media:
         js = (
             '../media/js/jquery.min.js',
-            'https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js',
+            '//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js',
             '../media/js/bootstrap-table.min.js',
             '../media/js/bootstrap-table-zh-CN.min.js',
             '../media/js/bootstrap-editable.min.js',
             '../media/js/bootbox.min.js',
             '../media/js/bootstrap-table-editable.js',
+            '../media/js/bootstrap-paginator.js',
         )
         css = {
             'all':(
-                'https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css',
-                'https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap-theme.min.css',
+                '//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css',
+                '//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap-theme.min.css',
+                '//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.1/css/bootstrap-combined.min.css',
                 '../media/css/bootstrap-table.min.css',
                 '../media/css/bootstrap-editable.css',
             )

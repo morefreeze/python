@@ -3,8 +3,9 @@ if [ $# -lt 1 ];then
     exit 1
 fi
 mkdir -p $1
-for i in forms.py models.py serializers.py urls.py views.py; do
+for i in __init__.py admin.py forms.py models.py serializers.py urls.py views.py; do
     cp WCUser/$i $1/
-    sed 's/User/Cloth/g' -i $1/$i
+    sed "s/\bUser\b/$1/g" -i $1/$i
 done
-sed 's/fo_user/fo_cloth/g' -i $1/views.py
+sed "s/\bfo_user\b/fo_$1/g" -i $1/views.py
+sed "s/\bmo_user\b/mo_$1/g" -i $1/views.py

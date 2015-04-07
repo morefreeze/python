@@ -6,8 +6,10 @@ class LaundryBillQueryForm(forms.Form):
 
 class LaundryConfirmGetForm(forms.Form):
     bid = forms.IntegerField(required = True)
-    sid = forms.IntegerField(required = True)
     shop_comment = forms.CharField(required = False, max_length=255)
+
+class LaundryGetTotalPagesForm(forms.Form):
+    method = forms.CharField(required = True, max_length=32)
 
 class LaundryGetBillsForm(forms.Form):
     method = forms.CharField(required = True, max_length=32)

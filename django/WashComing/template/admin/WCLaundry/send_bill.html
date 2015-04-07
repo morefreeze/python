@@ -24,9 +24,30 @@
 {% endif %}
 
 {% block content %}
+<div class="page-header">
+    <h3>这里是说明</h3>
+    <li>
+    尽量使用Chrome<a href='http://www.baidu.com'>a</a>，如果没有，并且无法显示内容，
+    请照以下步骤操作，按F12，在第一排找到浏览器模式，选成“IE11”（千万不要选“XX兼容性视图”）,
+    同时，文档模式选择“标准”
+    </li>
+    <li>
+        预计到店是已经分配给具体的物流站点，应该在取衣的路上，如果超过2天仍没到店，请马上向洗来了客服反馈
+        可以在店铺备注处填入“华海之帮”录入的订单信息
+    </li>
+    <li>
+        待发回是已经确认收到的订单，在洗完后，确认洗涤效果，如果有问题可以写在备注并保存，点击“确认送回”
+    </li>
+    <li>
+        
+    </li>
+</div>
 <nav role="navigation">
 <ul class="nav nav-pills">
-    <li class="active" id='to_send-li'>
+    <li class="active" id='to_arrive-li'>
+        <a href="#">预计到店</a>
+    </li>
+    <li id='to_send-li'>
         <a href="#">待发回</a>
     </li>
     <li id='sent-li'>
@@ -36,6 +57,7 @@
 </nav>
 <table id="get_bills-tbl">
 </table>
+<div id="paginator"></div>
 
 <div class="dropdown" id='clothes-dp' style="display:none">
     <button id="dropdown_clothes-btn" class="btn btn-info dropdown-toggle"  type="button" data-toggle="dropdown" aria-expanded="false">
@@ -46,148 +68,7 @@
         <li role="presentation" style="display:none"></li>
     </ul>
 </div>
-<script>
-function get_bills(method, page){
-    if ('to_send' != method && 'sent' != method)
-        return;
-    i_page = parseInt(page || 1)
-    ajax_get_bills = jQuery.ajax({
-        url: '../../../laundry/get_bills',
-        type: 'POST',
-        data: {method: method, page: i_page},
-    });
-    ajax_get_bills.always( function(){
-        js_get_bills = JSON.parse(ajax_get_bills.responseText);
-        if (!'errno' in js_get_bills || js_get_bills['errno'] != 0){
-            bootbox.alert('发生了某些错误，请稍后重试');
-            return;
-        }
-        $('#get_bills-tbl').bootstrapTable('load', js_get_bills['data']);
-        if ('to_send' == method){
-        }
-    });
-}
-function make_clothes_btn(value, row, index){
-    if (!js_get_bills['data'][index]['clothes'])
-        return '';
-    clothes_dp = $('#clothes-dp[style="display:none"]').clone();
-    clothes_ul = clothes_dp.find('ul');
-    js_clothes = js_get_bills['data'][index]['clothes'];
-    for (clothe_idx in js_clothes){
-        it_cloth = js_clothes[clothe_idx];
-        clothes_li = clothes_dp.find('li[style="display:none"]').clone();
-        clothes_li.text(it_cloth['name'] + ' ￥' + it_cloth['price']
-                + '*' + it_cloth['number'] + '件 = ￥' + (it_cloth['price']*it_cloth['number']));
-        clothes_li.toggle();
-        clothes_ul.append(clothes_li);
-    }
-    return clothes_dp.html();
-}
-function make_confirm_btn(value, row, index){
-    if ($('li#to_send-li').hasClass('active'))
-        return '<button id="confirm_'+row.bid+'-btn"class="btn btn-success btn-success-lg" name="'+row.bid+'">确认送回</button>';
-    if ($('li#sent-li').hasClass('active'))
-        return '';
-        //return '<button id="confirm_'+row.bid+'-btn"class="btn btn-success btn-success-lg" name="'+row.bid+'">修改备注</button>';
-}
-
-$('ul.nav.nav-pills li').click( function(){
-    s_method = $(this).attr('id');
-    s_method = s_method.substring(s_method, s_method.length-3);
-    $('ul.nav.nav-pills li').removeClass('active');
-    $(this).addClass('active');
-    get_bills(s_method);
-});
-$(document).ready( function(){
-    get_bills('to_send');
-    $('#get_bills-tbl').bootstrapTable({
-        search: true,
-        columns: [
-        {
-            field: 'bid',
-            title: '订单号',
-            sortable: true,
-        },
-        {
-            field: 'shop_name',
-            title: '收到店铺',
-        },
-        {
-            field: 'get_time_0',
-            title: '取衣时间',
-            sortable: true,
-            searchable: false,
-        },
-        {
-            field: 'return_time_0',
-            title: '送衣时间',
-            sortable: true,
-            searchable: false,
-        },
-        {
-            field: 'real_name',
-            title: '客户姓名',
-        },
-        {
-            field: 'phone',
-            title: '客户电话',
-        },
-        {
-            field: 'address',
-            title: '客户地址',
-        },
-        {
-            field: 'shop_comment',
-            title: '店铺备注（洗后效果加在这里）',
-            editable: {
-                type: 'textarea',
-            },
-        },
-        {
-            field: 'total',
-            title: '总价',
-            sortable: true,
-            formatter: function(value, row, index){ return '￥'+value; },
-            searchable: false,
-        },
-        {
-            field: 'clothes',
-            title: '衣物详情',
-            searchable: false,
-            formatter: make_clothes_btn,
-        },
-        {
-            field: 'operate',
-            title: '操作',
-            searchable: false,
-            formatter: make_confirm_btn,
-        },
-        ],
-    });
-
-});
-
-$(s_method = 'table#get_bills-tbl').on('click', 'button[id^=confirm]', function(){
-    s_bid = $(this).attr('name');
-    s_shop_comment = $(this).parents('tr').find('[data-name=shop_comment]').text() || ''
-    ajax_confirm_return = jQuery.ajax({
-        url: '../../../laundry/confirm_return',
-        type: 'POST',
-        data: {bid: s_bid, shop_comment: s_shop_comment,},
-    });
-    ajax_confirm_return.always( function(){
-        js_confirm_return = JSON.parse(ajax_confirm_return.responseText);
-        if (!'errno' in js_confirm_return || js_confirm_return['errno'] != 0){
-            bootbox.alert('发生了某些错误，请稍后重试');
-            return;
-        }
-        bootbox.alert('确认送回成功！请稍后在已发订单中查看送回受理单号。');
-        s_method = $('ul.nav.nav-pills li.active').attr('id');
-        s_method = s_method.substring(s_method, s_method.length-3);
-        get_bills(s_method);
-    });
-});
-</script>
+<script>{% include "admin/WCLaundry/send_bill.js" %}</script>
 <style>
 li[role=presentation]{
     font-size: 24px;
