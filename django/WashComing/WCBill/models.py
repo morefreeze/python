@@ -303,9 +303,9 @@ class Bill(Mass_Clothes):
             it_orderqueue.status = OrderQueue.NO_DO_BUT_DONE
             it_orderqueue.save()
 # return coupon
-        if self.ext.get('use_mycoupon'):
+        if self.ext.get('use_coupon'):
             try:
-                mo_mycoupon = MyCoupon.objects.get(mcid=self.ext.get('use_mycoupon'))
+                mo_mycoupon = MyCoupon.objects.get(mcid=self.ext.get('use_coupon'))
                 if mo_mycoupon.used:
                     mo_mycoupon.used = False
                     mo_mycoupon.save()

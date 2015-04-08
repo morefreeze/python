@@ -203,6 +203,7 @@ try:
                 if 'bid' in js_adr_ret:
                     mo_bill = Bill.objects.get(bid=js_adr_ret['bid'])
                     mo_bill.payment = it_bill['payment']
+                    mo_bill.save()
             logger.info('%s success' %(it_bill['tid']))
 
         if len(js_ret['response']['trades']) < 50:
