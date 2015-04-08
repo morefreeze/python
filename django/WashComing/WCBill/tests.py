@@ -287,7 +287,7 @@ class BillTest(BillBaseTest):
         mo_cp = MyCoupon.objects.create(own=mo_user, start_time=dt_now, expire_time=dt_now_1hr, used=True)
         mo_bill = Bill.objects.create(get_time_0=dt_get_time_0, get_time_1=dt_get_time_1, \
             return_time_0=dt_return_time_0, return_time_1=dt_return_time_1, own=mo_user, \
-            ext={'use_mycoupon':mo_cp.pk})
+            ext={'use_coupon':mo_cp.pk})
         mo_bill.cancel()
         mo_cp = MyCoupon.objects.get(pk=mo_cp.pk)
         self.assertEqual(mo_cp.used, False)
@@ -295,7 +295,7 @@ class BillTest(BillBaseTest):
 # return do not exist coupon
         mo_bill = Bill.objects.create(get_time_0=dt_get_time_0, get_time_1=dt_get_time_1, \
             return_time_0=dt_return_time_0, return_time_1=dt_return_time_1, own=mo_user, \
-            ext={'use_mycoupon':999})
+            ext={'use_coupon':999})
         mo_bill.cancel()
         self.assertEqual(mo_bill.ext['error'], ['MyCoupon matching query does not exist.'])
 
