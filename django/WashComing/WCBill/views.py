@@ -121,8 +121,8 @@ def submit(request):
         OrderQueue.objects.create(bill=mo_bill, type=OrderQueue.AddFetchOrder,
                                   status=OrderQueue.TODO, time=dt_fetch_time)
         dt_import_time = mo_bill.return_time_0
-        OrderQueue.objects.create(bill=mo_bill, type=OrderQueue.AddReturnningFetchOrder,
-                                  status=OrderQueue.TODO, time=dt_import_time)
+        #OrderQueue.objects.create(bill=mo_bill, type=OrderQueue.AddReturnningFetchOrder,
+        #                          status=OrderQueue.TODO, time=dt_import_time)
 
     d_response = {
         'errno':0,
