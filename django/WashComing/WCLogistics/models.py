@@ -315,6 +315,8 @@ class RFD(models.Model):
         return d_res
 
     @classmethod
+# {"AssignTime":"2015/3/31 16:29:39","CellPhone":"1800xxxxx","DistributionId":"268",
+#"DistributionName":"北京宣武站","FetchMan":"刘xx","FetchOrderNo":"SL150331000037","FetchStatus":"已分配配送员"}
     def GetFetchOrderStation(cls, a_oid):
         a_oid = [x for x in a_oid if x and x[:2] == 'SL']
         if None == a_oid or len(a_oid) == 0:
@@ -341,7 +343,7 @@ class RFD(models.Model):
         s_soap_msg = t_soap.render(c_soap)
         logging.debug(s_soap_msg)
 
-        d_res = []
+        a_res = []
 # retry 5 times
         for i in range(5):
             try:
@@ -359,13 +361,13 @@ class RFD(models.Model):
                 xml_res = ET.fromstring(s_xmlres)
                 s_res = xml_res.find('.//{http://tempuri.org/}%sResult' %(s_method_name)).text
                 logging.debug(s_res)
-                d_res = json.loads(s_res)
-# if request multi order, and some order not found, len(d_res) always less than len(a_oid)
-                if len(a_oid) == len(d_res):
+                a_res = json.loads(s_res)
+# if request multi order, and some order not found, len(a_res) always less than len(a_oid)
+                if len(a_oid) == len(a_res):
                     break
             except (Exception) as e:
                 logging.error('%s' %(e))
-        return d_res
+        return a_res
 
     @classmethod
     def tryFindShop(cls, mo_bill):

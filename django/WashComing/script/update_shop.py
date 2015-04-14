@@ -1,16 +1,20 @@
 # coding=utf-8
 import base
+import os
 import datetime as dt
 import logging
+import re
+import json, base64
 
 from WCBill.models import Bill
 from WCLogistics.models import RFD
+from WeiXin.models import Fan, WX_API
 
 logger = logging.getLogger('update_shop')
 dt_today = dt.date.today()
 dt_today = dt.datetime(year=dt_today.year, month=dt_today.month, day=dt_today.day)
 
-a_to_get_bills = Bill.objects.filter(status__gte=Bill.WAITTING_GET, shop=None)
+a_to_get_bills = Bill.objects.filter(status__gte=Bill.WAITTING_GET, status__lt=Bill.WASHING, shop=None)
 for it_bill in a_to_get_bills:
     mo_lg = it_bill.lg
     if None == mo_lg:

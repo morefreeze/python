@@ -252,7 +252,7 @@ class Bill(Mass_Clothes):
 # coupon calc end
 
 # score calc
-            if self.score >= 0:
+            if self.score > 0:
                 if f_total - self.score * SCORE_RMB_RATE < 0:
                     self.add_error('score exceed total price')
                 else:

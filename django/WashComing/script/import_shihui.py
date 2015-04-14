@@ -74,6 +74,8 @@ d_cloth_map = {
 }
 
 i_cur_page = 1
+# just for except
+it_bill = None
 try:
     while True:
         d_api_param = {
@@ -176,7 +178,7 @@ try:
                     'return_time_1': '%s' %(dt_return1.strftime("%Y-%m-%d %H:%m:%S")),
                     'aid':      i_aid,
                     'payment':  'cash',
-                    'comment':  u'%s 有赞用户【%s】【%s】%s' %(it_bill['buyer_message'], it_bill['buyer_nick'], it_bill['tid'], s_coupon),
+                    'comment':  u'%s 有赞用户【%s】yz_uid[%s]【%s】%s' %(it_bill['buyer_message'], it_bill['buyer_nick'], it_bill['buyer_id'], it_bill['tid'], s_coupon),
                     'immediate': True,
                 }
                 if '' != s_coupon:
