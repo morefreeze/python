@@ -246,6 +246,8 @@ class Bill(Mass_Clothes):
                     f_cid_total -= mo_mycoupon.price_dst
                     self.ext['price_dst'] = mo_mycoupon.price_dst
                     f_total -= f_old_cid_total - f_cid_total
+                    if f_total < 0:
+                        f_total = 0.
                 except (ValueError, MyCoupon.DoesNotExist) as e:
                     self.add_error(e.__str__())
                     del self.ext['use_coupon']
