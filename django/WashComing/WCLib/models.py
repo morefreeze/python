@@ -6,6 +6,7 @@ from jsonfield import JSONField
 import hashlib
 import uuid
 import os
+import ConfigParser
 import datetime as dt
 
 def get_cloth_filename(instance, filename):
@@ -101,4 +102,20 @@ Area_Choice = (
 # for shihui user, if add address error, uncomment this
     #(CTY_BEIJING,           CTY_BEIJING),
 )
+
+class AbstractConf:
+    conf_name = '' # need reclaim this
+# in parent directory
+    conf_dir = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '../conf'))
+    config = ConfigParser.ConfigParser()
+
+    @classmethod
+    # a_pair = [{'section': 'common', 'name': 'url'}, ]
+    def read_conf(cls, a_pair):
+        a_ret = []
+        with open(os.path.join(cls.conf_dir, cls.conf_name), 'r') as wxconf:
+            cls.config.readfp(wxconf)
+            for it_pair in a_pair:
+                a_ret.append(cls.config.get(it_pair['section'], it_pair['name']))
+        return a_ret
 

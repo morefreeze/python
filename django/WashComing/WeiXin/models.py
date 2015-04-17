@@ -161,8 +161,8 @@ class WX_API:
 # damn character
         import re
         page = re.sub(ur'[\x0f\x0e\x0d\x0c\x0b\x0a]', '', page)
-        js_req = json.loads(page)
-        return js_req
+        js_ret = json.loads(page)
+        return js_ret
 
 class Fan(models.Model):
     openid = models.CharField(primary_key=True, max_length=63)
@@ -211,4 +211,39 @@ class Fan(models.Model):
         mo_ret.headimgurl = js_info.get('headimgurl')
         mo_ret.remark = js_info.get('remark')
         return mo_ret
+
+class YZ_API(AbstractConf):
+    conf_name = 'youzan.conf'
+
+    @classmethod
+    def do_send_api(cls, s_method, d_param=None):
+        dt_now = dt.datetime.now()
+        a_conf_pair = [
+            {'section': 'common',
+             'name':    'url',
+            },
+            {'section': 'common',
+             'name':    'app_id',
+            },
+            {'section': 'common',
+             'name':    'secret',
+            },
+        ]
+        [s_url, s_app_id, s_secret] = cls.read_conf(a_conf_pair)
+        d_api_param = {
+            'app_id': s_app_id,
+            'method': s_method,
+            'timestamp': '%s' %(dt_now.strftime("%Y-%m-%d %H:%M:%S")),
+            'v': '1.0',
+        }
+        if None != d_param:
+            d_api_param.update(d_param)
+        d_sort_param = sorted(d_api_param.iteritems())
+        s_md5 = hashlib.md5(s_secret+''.join(['%s%s' %(v[0],v[1]) for v in d_sort_param])+s_secret).hexdigest()
+        d_api_param['sign'] = s_md5
+        s_url_param = urllib.urlencode(d_api_param)
+        s_url = '%s?%s' %(s_url, s_url_param)
+        rq_ret = urllib2.urlopen(s_url)
+        js_ret = json.loads(rq_ret.read())
+        return js_ret
 
