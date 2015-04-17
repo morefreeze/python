@@ -17,7 +17,7 @@ from WCBill.models import Coupon
 import datetime as dt
 
 # Create your views here.
-@require_http_methods(['POST', 'GET'])
+@require_http_methods(['POST'])
 def register(request):
     fo_user = UserRegisterForm(dict(request.GET.items() + request.POST.items()))
     if not fo_user.is_valid():
@@ -52,7 +52,7 @@ def register(request):
     except IntegrityError as e:
         return JSONResponse({'errmsg':'username has been registered'})
 
-@require_http_methods(['POST', 'GET'])
+@require_http_methods(['POST'])
 def login(request):
     fo_user = UserLoginForm(dict(request.GET.items() + request.POST.items()))
     if not fo_user.is_valid():
@@ -69,7 +69,7 @@ def login(request):
     d_response['errno'] = 0
     return JSONResponse(d_response)
 
-@require_http_methods(['POST', 'GET'])
+@require_http_methods(['POST'])
 def info(request):
     fo_user = UserInfoForm(dict(request.GET.items() + request.POST.items()))
     if not fo_user.is_valid():
@@ -102,7 +102,7 @@ def info(request):
     d_response['errno'] = 0
     return JSONResponse(d_response)
 
-@require_http_methods(['POST', 'GET'])
+@require_http_methods(['POST'])
 def update(request):
     fo_user = UserUpdateForm(dict(request.GET.items() + request.POST.items()))
     if not fo_user.is_valid():
@@ -131,7 +131,7 @@ def update(request):
         mo_user.save()
     return JSONResponse(d_response)
 
-@require_http_methods(['POST', 'GET'])
+@require_http_methods(['POST'])
 def change_password(request):
     fo_user = UserChangePasswordForm(dict(request.GET.items() + request.POST.items()))
     if not fo_user.is_valid():
@@ -149,7 +149,7 @@ def change_password(request):
     return JSONResponse(d_response)
 
 # I forget why this func here
-@require_http_methods(['POST', 'GET'])
+@require_http_methods(['POST'])
 def resend_active(request):
     fo_user = UserResendActiveForm(dict(request.GET.items() + request.POST.items()))
     if not fo_user.is_valid():
@@ -171,7 +171,7 @@ def resend_active(request):
     d_response = {'errno':0}
     return JSONResponse(d_response)
 
-@require_http_methods(['POST', 'GET'])
+@require_http_methods(['POST'])
 def active(request):
     fo_user = UserActiveForm(dict(request.GET.items() + request.POST.items()))
     if not fo_user.is_valid():
@@ -200,7 +200,7 @@ def active(request):
 def reset_password(request):
     return render_to_response('reset/reset_password.html', {'form':UserResetPasswordForm})
 
-@require_http_methods(['POST', 'GET'])
+@require_http_methods(['POST'])
 def resend_reset(request):
     fo_user = UserResendResetForm(dict(request.GET.items() + request.POST.items()))
     if not fo_user.is_valid():
@@ -223,7 +223,7 @@ def resend_reset(request):
     #d_response = {'errno':0, 'html':s_html}
     #return JSONResponse(d_response)
 
-@require_http_methods(['POST', 'GET'])
+@require_http_methods(['POST'])
 def reset_password_confirm(request):
     #if request.method != 'GET':
         #return render(request, 'reset/reset_password_confirm.html', {'validlink':0})
@@ -264,7 +264,7 @@ def reset_password_confirm(request):
 def reset_password_complete(request):
     return render_to_response('reset/reset_password.html')
 
-@require_http_methods(['POST', 'GET'])
+@require_http_methods(['POST'])
 def feedback(request):
     fo_user = UserFeedbackForm(dict(request.GET.items() + request.POST.items()))
     if not fo_user.is_valid():
@@ -295,7 +295,7 @@ def upload_avatar(request):
     se_user = UserSerializer(mo_user)
     return JSONResponse({'avatar': se_user.data['avatar'], 'errno': 0})
 
-@require_http_methods(['POST', 'GET'])
+@require_http_methods(['POST'])
 def bind_email(request):
     fo_user = UserBindEmailForm(dict(request.GET.items() + request.POST.items()))
     if not fo_user.is_valid():
@@ -320,7 +320,7 @@ def bind_email(request):
     mo_user.save()
     return JSONResponse(d_response)
 
-@require_http_methods(['POST', 'GET'])
+@require_http_methods(['POST'])
 def third_bind(request):
     fo_user = UserThirdBindForm(dict(request.GET.items() + request.POST.items()))
     if not fo_user.is_valid():
@@ -365,7 +365,7 @@ def third_bind(request):
     se_user = UserSerializer(mo_user)
     return JSONResponse({'errno':0, 'uid':se_user.data['uid'], 'username':s_third_uid, 'third_token':se_user.data['third_token']})
 
-@require_http_methods(['POST', 'GET'])
+@require_http_methods(['POST'])
 def third_login(request):
     fo_user = UserThirdLoginForm(dict(request.GET.items() + request.POST.items()))
     if not fo_user.is_valid():
@@ -397,7 +397,7 @@ def third_login(request):
     return JSONResponse({'errno':0, 'uid':se_user.data['uid'], 'username':s_third_uid, 'third_token':se_user.data['third_token']})
 
 """
-@require_http_methods(['POST', 'GET'])
+@require_http_methods(['POST'])
 def admin_upload_avatar(request):
     form = UserUploadAvatarForm()
     mos = User.objects.exclude(avatar__exact='')
@@ -420,7 +420,7 @@ def admin_upload_avatar(request):
 """
 
 """ method template (11 lines)
-@require_http_methods(['POST', 'GET'])
+@require_http_methods(['POST'])
 def info(request):
     fo_user = UserXXXXXForm(dict(request.GET.items() + request.POST.items()))
     if not fo_user.is_valid():

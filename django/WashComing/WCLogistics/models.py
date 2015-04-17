@@ -5,6 +5,7 @@ from WCLib.models import *
 from WCLib.views import *
 from WCLib.serializers import *
 from WCCloth.models import Cloth
+from WeiXin.models import YZ_API
 import ConfigParser
 import OpenSSL.crypto as ct
 import sys, json, base64, hashlib, httplib
@@ -545,7 +546,7 @@ class RFD(models.Model):
             if i_type in [1, 2]:
                 if dt_operate_time < mo_rfd.get_operate_time:
                     d_ret['Ret'] = 0
-                    d_ret['Message'] = 'operate time passed(not error) time[%s]' %dt_operate_time
+                    d_ret['Message'] = 'operate time passed(not error) time[%s]' %(dt_operate_time)
                     return d_ret
                 mo_rfd.get_message = s_message
                 mo_rfd.get_way_no = s_waybill_no
@@ -560,7 +561,7 @@ class RFD(models.Model):
             elif i_type in [3,4]:
                 if dt_operate_time < mo_rfd.return_operate_time:
                     d_ret['Ret'] = 0
-                    d_ret['Message'] = 'operate time passed(not error) time[%s]' %dt_operate_time
+                    d_ret['Message'] = 'operate time passed(not error) time[%s]' %(dt_operate_time)
                     return d_ret
                 mo_rfd.return_message = s_message
                 mo_rfd.return_way_no = s_waybill_no
@@ -572,6 +573,11 @@ class RFD(models.Model):
                 if cls.SUCCESS == i_status:
                     mo_rfd.status = cls.CLIENT_SIGN
                     mo_bill.change_status(mo_bill.__class__.NEED_FEEDBACK)
+                # rfd give return way no, then we will push way no to youzan
+                if None != mo_bill.ext.get('yz_tid'):
+                    b_success = YZ_API.confirm_send(tid=mo_bill.ext.get('yz_tid'), b_no_exp=False, 
+                                                    exp_name='rfd', outer_tid=mo_bill.bid, out_sid=s_waybill_no)
+                    logging.info('update youzan logistics status[%s]' %(b_success))
             mo_rfd.save()
             mo_bill.save()
         except (Exception) as e:

@@ -7,7 +7,7 @@ from WCApp.serializers import AndroidSerializer
 from WCUser.models import User
 
 # Create your views here.
-@require_http_methods(['POST', 'GET'])
+@require_http_methods(['POST'])
 def get_newest_android(request):
     fo_app = AppGetNewestAndroidForm(dict(request.GET.items() + request.POST.items()))
     if not fo_app.is_valid():
