@@ -116,6 +116,9 @@ class AbstractConf:
         with open(os.path.join(cls.conf_dir, cls.conf_name), 'r') as wxconf:
             cls.config.readfp(wxconf)
             for it_pair in a_pair:
-                a_ret.append(cls.config.get(it_pair['section'], it_pair['name']))
+                try:
+                    a_ret.append(cls.config.get(it_pair['section'], it_pair['name']))
+                except (Exception) as e:
+                    logging.error('%s' %(e))
         return a_ret
 
