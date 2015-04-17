@@ -1,0 +1,48 @@
+# Compiled python files.
+*.py[cod]
+
+# C extensions.
+*.so
+
+# Packages.
+*.egg
+*.egg-info
+dist
+build
+eggs
+parts
+bin
+var
+sdist
+develop-eggs
+.installed.cfg
+lib
+lib64
+__pycache__
+/MANIFEST
+.tox
+
+# Installer logs.
+pip-log.txt
+
+# Temporary files.
+*~
+*.swp
+
+# Migrate
+migrations
+
+# RSA private key
+*.pem
+
+# nohup file output
+nohup.out
+
+# conf
+*.conf
+
+dj.pid
+log/
+*.sh
+dj.log*
+data/
