@@ -27,14 +27,14 @@ class BillBaseTest(TestCase):
 
     def setUp(self):
 # register
-        res = self.client.get(u'/user/register', {'password':self.passwd,'phone':self.phone})
+        res = self.client.post(u'/user/register', {'password':self.passwd,'phone':self.phone})
         self.assertEqual(res.status_code, 200)
         s_token = json.loads(res.content)["token"]
         self.assertEqual(json.loads(res.content)["token"], s_token)
         self.token = s_token
 
 # add address
-        res = self.client.get(
+        res = self.client.post(
             u'/address/add',
             {'username':self.username, 'token':self.token,
              'real_name':'unittest', 'phone':self.phone,
@@ -61,7 +61,7 @@ class BillTest(BillBaseTest):
         s_return_time_0 = self.return_time_0.strftime(FULL_DATETIME_FORMAT)
         s_return_time_1 = self.return_time_1.strftime(FULL_DATETIME_FORMAT)
 
-        res = self.client.get(
+        res = self.client.post(
             u'/bill/submit',
             {'username':self.username, 'token':self.token,
              'get_time_0':s_get_time_0, 'get_time_1':s_get_time_1,
@@ -78,7 +78,7 @@ class BillTest(BillBaseTest):
         s_return_time_0 = self.return_time_0.strftime(FULL_DATETIME_FORMAT)
         s_return_time_1 = self.return_time_1.strftime(FULL_DATETIME_FORMAT)
 
-        res = self.client.get(
+        res = self.client.post(
             u'/bill/submit',
             {'username':self.username, 'token':self.token,
              'get_time_0':s_get_time_0, 'get_time_1':s_get_time_1,
@@ -91,7 +91,7 @@ class BillTest(BillBaseTest):
         s_get_time_1 = (self.get_time_0 - dt.timedelta(hours=3)).strftime(FULL_DATETIME_FORMAT)
         s_return_time_0 = self.return_time_0.strftime(FULL_DATETIME_FORMAT)
         s_return_time_1 = self.return_time_1.strftime(FULL_DATETIME_FORMAT)
-        res = self.client.get(
+        res = self.client.post(
             u'/bill/submit',
             {'username':self.username, 'token':self.token,
              'get_time_0':s_get_time_0, 'get_time_1':s_get_time_1,
@@ -104,7 +104,7 @@ class BillTest(BillBaseTest):
         s_get_time_1 = self.get_time_1.strftime(FULL_DATETIME_FORMAT)
         s_return_time_0 = (self.return_time_0 - dt.timedelta(hours=3)).strftime(FULL_DATETIME_FORMAT)
         s_return_time_1 = self.return_time_1.strftime(FULL_DATETIME_FORMAT)
-        res = self.client.get(
+        res = self.client.post(
             u'/bill/submit',
             {'username':self.username, 'token':self.token,
              'get_time_0':s_get_time_0, 'get_time_1':s_get_time_1,
@@ -117,7 +117,7 @@ class BillTest(BillBaseTest):
         s_get_time_1 = self.get_time_1.strftime(FULL_DATETIME_FORMAT)
         s_return_time_0 = self.return_time_0.strftime(FULL_DATETIME_FORMAT)
         s_return_time_1 = (self.return_time_0 - dt.timedelta(hours=3)).strftime(FULL_DATETIME_FORMAT)
-        res = self.client.get(
+        res = self.client.post(
             u'/bill/submit',
             {'username':self.username, 'token':self.token,
              'get_time_0':s_get_time_0, 'get_time_1':s_get_time_1,
@@ -133,7 +133,7 @@ class BillTest(BillBaseTest):
         s_return_time_1 = self.return_time_1.strftime(FULL_DATETIME_FORMAT)
 
         i_aid = 9999
-        res = self.client.get(
+        res = self.client.post(
             u'/bill/submit',
             {'username':self.username, 'token':self.token,
              'get_time_0':s_get_time_0, 'get_time_1':s_get_time_1,
@@ -149,7 +149,7 @@ class BillTest(BillBaseTest):
         s_return_time_1 = self.return_time_1.strftime(FULL_DATETIME_FORMAT)
 
 # lost get_time_0
-        res = self.client.get(
+        res = self.client.post(
             u'/bill/submit',
             {'username':self.username, 'token':self.token,
              'get_time_1':s_get_time_1,
@@ -159,7 +159,7 @@ class BillTest(BillBaseTest):
         self.assertJSONEqual(res.content, {'errmsg': {'get_time_0': [u'这个字段是必填项。']}})
 
 # lost get_time_1
-        res = self.client.get(
+        res = self.client.post(
             u'/bill/submit',
             {'username':self.username, 'token':self.token,
              'get_time_0':s_get_time_0,
@@ -169,7 +169,7 @@ class BillTest(BillBaseTest):
         self.assertJSONEqual(res.content, {'errmsg': {'get_time_1': [u'这个字段是必填项。']}})
 
 # lost return_time_0
-        res = self.client.get(
+        res = self.client.post(
             u'/bill/submit',
             {'username':self.username, 'token':self.token,
              'get_time_0':s_get_time_0, 'get_time_1':s_get_time_1,
@@ -179,7 +179,7 @@ class BillTest(BillBaseTest):
         self.assertJSONEqual(res.content, {'errmsg': {'return_time_0': [u'这个字段是必填项。']}})
 
 # lost get_time_0
-        res = self.client.get(
+        res = self.client.post(
             u'/bill/submit',
             {'username':self.username, 'token':self.token,
              'get_time_0':s_get_time_0, 'get_time_1':s_get_time_1,
@@ -200,7 +200,7 @@ class BillTest(BillBaseTest):
 # c1 100 - 10
         mo_myco0 = MyCoupon.objects.create(own=mo_user, start_time=dt_now, cid_thd=self.c1, expire_time=dt_tomorrow, \
             percent_dst=0, price_thd=100, price_dst=10)
-        res = self.client.get(
+        res = self.client.post(
             u'/bill/submit',
             {'username':self.username, 'token':self.token,
              'get_time_0':s_get_time_0, 'get_time_1':s_get_time_1,
@@ -212,7 +212,7 @@ class BillTest(BillBaseTest):
 # all category 150 - 15
         mo_myco0 = MyCoupon.objects.create(own=mo_user, start_time=dt_now, cid_thd=None, expire_time=dt_tomorrow, \
             percent_dst=0, price_thd=150, price_dst=15)
-        res = self.client.get(
+        res = self.client.post(
             u'/bill/submit',
             {'username':self.username, 'token':self.token,
              'get_time_0':s_get_time_0, 'get_time_1':s_get_time_1,
@@ -224,7 +224,7 @@ class BillTest(BillBaseTest):
 # c1 250 - 20 but c1 not enough
         mo_myco0 = MyCoupon.objects.create(own=mo_user, start_time=dt_now, cid_thd=self.c1, expire_time=dt_tomorrow, \
             percent_dst=0, price_thd=250, price_dst=20)
-        res = self.client.get(
+        res = self.client.post(
             u'/bill/submit',
             {'username':self.username, 'token':self.token,
              'get_time_0':s_get_time_0, 'get_time_1':s_get_time_1,
@@ -307,7 +307,7 @@ class FeedbackTest(BillBaseTest):
         s_return_time_0 = self.return_time_0.strftime(FULL_DATETIME_FORMAT)
         s_return_time_1 = self.return_time_1.strftime(FULL_DATETIME_FORMAT)
 
-        res = self.client.get(
+        res = self.client.post(
             u'/bill/submit',
             {'username':self.username, 'token':self.token,
              'get_time_0':s_get_time_0, 'get_time_1':s_get_time_1,
@@ -321,7 +321,7 @@ class FeedbackTest(BillBaseTest):
         mo_bill.status = Bill.NEED_FEEDBACK
         mo_bill.save()
         dt_now = dt.datetime.now()
-        res = self.client.get(u'/bill/feedback', {'username':self.username, 'token':self.token,
+        res = self.client.post(u'/bill/feedback', {'username':self.username, 'token':self.token,
                                                   'bid':self.bid, 'rate':4, 'content':'feel good'})
         i_fid = json.loads(res.content)['fid']
         mo_fb = Feedback.objects.get(fid=i_fid)
@@ -334,7 +334,7 @@ class FeedbackTest(BillBaseTest):
         s_return_time_0 = self.return_time_0.strftime(FULL_DATETIME_FORMAT)
         s_return_time_1 = self.return_time_1.strftime(FULL_DATETIME_FORMAT)
 
-        res = self.client.get(
+        res = self.client.post(
             u'/bill/submit',
             {'username':self.username, 'token':self.token,
              'get_time_0':s_get_time_0, 'get_time_1':s_get_time_1,
@@ -348,14 +348,14 @@ class FeedbackTest(BillBaseTest):
         mo_bill.status = Bill.NEED_FEEDBACK
         mo_bill.save()
         dt_now = dt.datetime.now()
-        res = self.client.get(u'/bill/feedback', {'username':self.username, 'token':self.token,
+        res = self.client.post(u'/bill/feedback', {'username':self.username, 'token':self.token,
                                                   'bid':self.bid, 'rate':5, 'content':'feel good too'})
         i_fid = json.loads(res.content)['fid']
         self.assertJSONEqual(res.content, {'fid':i_fid, 'errno':0})
         mo_fb = Feedback.objects.get(bill_id=self.bid)
         se_fb = FeedbackSerializer(mo_fb)
         se_fb.data['errno'] = 0
-        res = self.client.get(u'/bill/get_feedback', {'username':self.username, 'token':self.token,
+        res = self.client.post(u'/bill/get_feedback', {'username':self.username, 'token':self.token,
                                                       'bid':self.bid})
         self.assertEqual(se_fb.data, json.loads(res.content))
 
@@ -365,7 +365,7 @@ class FeedbackTest(BillBaseTest):
         s_return_time_0 = self.return_time_0.strftime(FULL_DATETIME_FORMAT)
         s_return_time_1 = self.return_time_1.strftime(FULL_DATETIME_FORMAT)
 
-        res = self.client.get(
+        res = self.client.post(
             u'/bill/submit',
             {'username':self.username, 'token':self.token,
              'get_time_0':s_get_time_0, 'get_time_1':s_get_time_1,
@@ -382,7 +382,7 @@ class FeedbackTest(BillBaseTest):
             mo_bill = Bill.objects.get(bid=self.bid)
             mo_bill.status = it_status
             mo_bill.save()
-            res = self.client.get(u'/bill/feedback', {'username':self.username, 'token':self.token,
+            res = self.client.post(u'/bill/feedback', {'username':self.username, 'token':self.token,
                                                       'bid':self.bid, 'rate':1, 'content':'can not feedback'})
             self.assertJSONEqual(res.content, {"errmsg": "bill do not need feedback"})
 
@@ -390,12 +390,12 @@ class CartTest(BillBaseTest):
 
     def test_cart(self):
 # submit cart
-        res = self.client.get(u'/cart/submit', {'username':self.username, 'token':self.token,
+        res = self.client.post(u'/cart/submit', {'username':self.username, 'token':self.token,
             'clothes':self.clothes,})
         i_caid = json.loads(res.content)['caid']
         self.assertJSONEqual(res.content, {'caid':i_caid, 'errno':0})
 # list cart
-        res = self.client.get(u'/cart/list', {'username':self.username, 'token':self.token,})
+        res = self.client.post(u'/cart/list', {'username':self.username, 'token':self.token,})
         self.assertJSONEqual(res.content, {'data':json.loads(self.clothes), 'clothes':json.loads(self.clothes), 'errno':0})
 
     def test_remove_bill_clothes(self):
@@ -410,7 +410,7 @@ class CartTest(BillBaseTest):
         s_return_time_0 = self.return_time_0.strftime(FULL_DATETIME_FORMAT)
         s_return_time_1 = self.return_time_1.strftime(FULL_DATETIME_FORMAT)
 
-        res = self.client.get(
+        res = self.client.post(
             u'/bill/submit',
             {'username':self.username, 'token':self.token,
              'get_time_0':s_get_time_0, 'get_time_1':s_get_time_1,
@@ -424,7 +424,7 @@ class CartTest(BillBaseTest):
 # submit c1 to bill, it will del all c1 clothes
         mo_cart.clothes = d_clothes
         mo_cart.save()
-        res = self.client.get(
+        res = self.client.post(
             u'/bill/submit',
             {'username':self.username, 'token':self.token,
              'get_time_0':s_get_time_0, 'get_time_1':s_get_time_1,
@@ -464,7 +464,7 @@ class MyCouponTest(TestCase):
     def test_calc_mycoupon(self):
         s_clothes = json.dumps(self._bill.clothes)
         #print type(s_clothes)
-        res = self.client.get(u'/mycoupon/calc', {'username':self._user.name, 'token':'token', \
+        res = self.client.post(u'/mycoupon/calc', {'username':self._user.name, 'token':'token', \
                                                   'clothes':s_clothes, })
         #print res
         self.assertEqual(res.status_code, 200)

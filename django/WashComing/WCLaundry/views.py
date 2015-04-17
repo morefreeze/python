@@ -39,7 +39,7 @@ def laundry_bill_query(request):
     se_bill = BillSerializer(mo_bill)
     return JSONResponse(se_bill.data)
 
-@require_http_methods(['POST', 'GET'])
+@require_http_methods(['POST'])
 @login_required
 def laundry_own_shops(request):
     mo_duser = request.user
@@ -218,7 +218,7 @@ def laundry_confirm_return(request):
     return JSONResponse(d_response)
 
 """ method template (11 lines)
-@require_http_methods(['POST', 'GET'])
+@require_http_methods(['POST'])
 def info(request):
     fo_cloth = ClothXXXXXForm(dict(request.GET.items() + request.POST.items()))
     if not fo_cloth.is_valid():
