@@ -40,3 +40,11 @@ nohup.out
 
 # conf
 *.conf
+
+*.sh
+settings.py
+rfd_GetFetchOrderStation.py
+clean_cloth_img.py
+settings_online.py
+dj.pid
+log/
