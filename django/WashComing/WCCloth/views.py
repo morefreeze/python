@@ -9,7 +9,7 @@ from WCCloth.forms import ClothCategoryForm, ClothInfoForm, ClothSearchForm
 
 # Create your views here.
 
-@require_http_methods(['POST'])
+@require_http_methods(['POST', 'GET'])
 def category(request):
     fo_cloth = ClothCategoryForm(dict(request.GET.items() + request.POST.items()))
     if not fo_cloth.is_valid():
@@ -35,7 +35,7 @@ def category(request):
     d_response['errno'] = 0
     return JSONResponse(d_response)
 
-@require_http_methods(['POST'])
+@require_http_methods(['POST', 'GET'])
 def info(request):
     fo_cloth = ClothInfoForm(dict(request.GET.items() + request.POST.items()))
     if not fo_cloth.is_valid():
@@ -68,7 +68,7 @@ def info(request):
     d_response['errno'] = 0
     return JSONResponse(d_response)
 
-@require_http_methods(['POST'])
+@require_http_methods(['POST', 'GET'])
 def search(request):
     fo_cloth = ClothSearchForm(dict(request.GET.items() + request.POST.items()))
     if not fo_cloth.is_valid():
@@ -90,7 +90,7 @@ def search(request):
     return JSONResponse(d_response)
 
 """ method template (6 lines)
-@require_http_methods(['POST'])
+@require_http_methods(['POST', 'GET'])
 def info(request):
     fo_cloth = ClothXXXXXForm(dict(request.GET.items() + request.POST.items()))
     if not fo_cloth.is_valid():
