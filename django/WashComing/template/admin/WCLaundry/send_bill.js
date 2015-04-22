@@ -95,6 +95,7 @@ $(document).ready( function(){
             field: 'shop_name',
             title: '收到店铺',
             sortable: true,
+            searchable: false,
         },
         {
             field: 'get_time_0',
@@ -111,14 +112,17 @@ $(document).ready( function(){
         {
             field: 'real_name',
             title: '客户姓名',
+            searchable: true,
         },
         {
             field: 'phone',
             title: '客户电话',
+            searchable: true,
         },
         {
             field: 'address',
             title: '客户地址',
+            searchable: false,
         },
         {
             field: 'shop_comment',
@@ -126,10 +130,12 @@ $(document).ready( function(){
             editable: {
                 type: 'textarea',
             },
+            searchable: false,
         },
         {
             field: 'feedback',
             title: '客户评价',
+            searchable: false,
         },
         {
             field: 'total',
