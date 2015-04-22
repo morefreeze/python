@@ -575,7 +575,7 @@ class RFD(models.Model):
                     mo_bill.change_status(mo_bill.__class__.NEED_FEEDBACK)
                 # rfd give return way no, then we will push way no to youzan
                 if None != mo_bill.ext.get('yz_tid'):
-                    b_success = YZ_API.confirm_send(tid=mo_bill.ext.get('yz_tid'), b_no_exp=False, 
+                    b_success = YZ_API.confirm_send(tid=mo_bill.ext.get('yz_tid'), b_no_exp=False,
                                                     exp_name='rfd', outer_tid=mo_bill.bid, out_sid=s_waybill_no)
                     logging.info('update youzan logistics status[%s]' %(b_success))
             mo_rfd.save()
