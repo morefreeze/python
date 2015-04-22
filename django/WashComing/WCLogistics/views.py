@@ -14,7 +14,7 @@ import json
 # Create your views here.
 
 #============Address method
-@require_http_methods(['POST'])
+@require_http_methods(['POST', 'GET'])
 def add(request):
     fo_adr = AddressAddForm(dict(request.GET.items() + request.POST.items()))
     if not fo_adr.is_valid():
@@ -33,7 +33,7 @@ def add(request):
         mo_user.save()
     return JSONResponse({'errno':0, 'aid':mo_adr.aid})
 
-@require_http_methods(['POST'])
+@require_http_methods(['POST', 'GET'])
 def update(request):
     fo_adr = AddressUpdateForm(dict(request.GET.items() + request.POST.items()))
     if not fo_adr.is_valid():
@@ -63,7 +63,7 @@ def update(request):
     mo_adr.save()
     return JSONResponse({'errno':0})
 
-@require_http_methods(['POST'])
+@require_http_methods(['POST', 'GET'])
 def delete(request):
     fo_adr = AddressDeleteForm(dict(request.GET.items() + request.POST.items()))
     if not fo_adr.is_valid():
@@ -82,7 +82,7 @@ def delete(request):
     mo_adr.save()
     return JSONResponse({'errno':0})
 
-@require_http_methods(['POST'])
+@require_http_methods(['POST', 'GET'])
 def list(request):
     fo_adr = AddressListForm(dict(request.GET.items() + request.POST.items()))
     if not fo_adr.is_valid():
@@ -107,7 +107,7 @@ def list(request):
     d_response['errno'] = 0
     return JSONResponse(d_response)
 
-@require_http_methods(['POST'])
+@require_http_methods(['POST', 'GET'])
 def set_default(request):
     fo_adr = AddressSetDefaultForm(dict(request.GET.items() + request.POST.items()))
     if not fo_adr.is_valid():
@@ -126,7 +126,7 @@ def set_default(request):
     mo_user.save()
     return JSONResponse({'errno':0})
 
-@require_http_methods(['POST'])
+@require_http_methods(['POST', 'GET'])
 def info(request):
     fo_adr = AddressInfoForm(dict(request.GET.items() + request.POST.items()))
     if not fo_adr.is_valid():
@@ -149,7 +149,7 @@ def info(request):
     return JSONResponse(d_response)
 
 #==============RFD method
-@require_http_methods(['POST'])
+@require_http_methods(['POST', 'GET'])
 def list_lg(request):
     fo_adr = AddressXXXXXForm(dict(request.GET.items() + request.POST.items()))
     if not fo_adr.is_valid():
@@ -162,7 +162,7 @@ def list_lg(request):
         return JSONResponse({'errmsg':'username or password error'})
     # todo
 
-@require_http_methods(['POST'])
+@require_http_methods(['POST', 'GET'])
 def info_lg(request):
     fo_adr = AddressXXXXXForm(dict(request.GET.items() + request.POST.items()))
     if not fo_adr.is_valid():
@@ -185,7 +185,7 @@ def sign_data(js_data):
     s_res = s_json + ',' + base64.b64encode(ct.sign(pk_prikey, s_hash, 'sha1'))
     return s_res
 
-@require_http_methods(['POST'])
+@require_http_methods(['POST', 'GET'])
 def post_status(request):
     logging.debug(request.body)
     xml_res = ET.fromstring(request.body)
@@ -214,7 +214,7 @@ def post_status(request):
     return HttpResponse(js_xml['xml'],content_type="application/xhtml+xml")
 
 """
-@require_http_methods(['POST'])
+@require_http_methods(['POST', 'GET'])
 def submit(request):
     fo_adr = AddressXXXXXForm(dict(request.GET.items() + request.POST.items()))
     if not fo_adr.is_valid():

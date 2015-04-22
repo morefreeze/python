@@ -20,7 +20,7 @@ import sys
 import re
 
 # Create your views here.
-@require_http_methods(['POST'])
+@require_http_methods(['POST', 'GET'])
 def submit(request):
     fo_bill = BillSubmitForm(dict(request.GET.items() + request.POST.items()))
     if not fo_bill.is_valid():
@@ -142,7 +142,7 @@ def submit(request):
                 logging.error('save Pingpp_Charge failed')
     return JSONResponse(d_response)
 
-@require_http_methods(['POST'])
+@require_http_methods(['POST', 'GET'])
 def list(request):
     fo_bill = BillListForm(dict(request.GET.items() + request.POST.items()))
     if not fo_bill.is_valid():
@@ -182,7 +182,7 @@ def list(request):
     d_response['count'] = len(d_response['data'])
     return JSONResponse(d_response)
 
-@require_http_methods(['POST'])
+@require_http_methods(['POST', 'GET'])
 def info(request):
     fo_bill = BillInfoForm(dict(request.GET.items() + request.POST.items()))
     if not fo_bill.is_valid():
@@ -212,7 +212,7 @@ def info(request):
     se_bill.data['charge'] = mo_chr
     return JSONResponse(se_bill.data)
 
-@require_http_methods(['POST'])
+@require_http_methods(['POST', 'GET'])
 def cancel(request):
     fo_bill = BillCancelForm(dict(request.GET.items() + request.POST.items()))
     if not fo_bill.is_valid():
@@ -231,7 +231,7 @@ def cancel(request):
     mo_bill.cancel()
     return JSONResponse({'errno':0})
 
-@require_http_methods(['POST'])
+@require_http_methods(['POST', 'GET'])
 def feedback(request):
     fo_bill = BillFeedbackForm(dict(request.GET.items() + request.POST.items()))
     if not fo_bill.is_valid():
@@ -263,7 +263,7 @@ def feedback(request):
         mo_user.save()
     return JSONResponse({'fid':mo_fb.fid, 'errno':0})
 
-@require_http_methods(['POST'])
+@require_http_methods(['POST', 'GET'])
 def get_feedback(request):
     fo_bill = BillGetFeedbackForm(dict(request.GET.items() + request.POST.items()))
     if not fo_bill.is_valid():
@@ -283,7 +283,7 @@ def get_feedback(request):
     d_response['errno'] = 0
     return JSONResponse(d_response)
 
-@require_http_methods(['POST'])
+@require_http_methods(['POST', 'GET'])
 def submit_cart(request):
     fo_bill = CartSubmitForm(dict(request.GET.items() + request.POST.items()))
     if not fo_bill.is_valid():
@@ -302,7 +302,7 @@ def submit_cart(request):
         return JSONResponse({'errmsg':'some error happened, please contact admin'})
     return JSONResponse({'caid':mo_cart.caid, 'errno':0})
 
-@require_http_methods(['POST'])
+@require_http_methods(['POST', 'GET'])
 def list_cart(request):
     fo_bill = CartListForm(dict(request.GET.items() + request.POST.items()))
     if not fo_bill.is_valid():
@@ -321,7 +321,7 @@ def list_cart(request):
     d_response['clothes'] = mo_cart.clothes
     return JSONResponse(d_response)
 
-@require_http_methods(['POST'])
+@require_http_methods(['POST', 'GET'])
 def list_mycoupon(request):
     fo_mycoupon = MyCouponListForm(dict(request.GET.items() + request.POST.items()))
     if not fo_mycoupon.is_valid():
@@ -344,7 +344,7 @@ def list_mycoupon(request):
         d_response['data'].append(se_mycoupon.data)
     return JSONResponse(d_response)
 
-@require_http_methods(['POST'])
+@require_http_methods(['POST', 'GET'])
 def calc_mycoupon(request):
     fo_mycoupon = MyCouponCalcForm(dict(request.GET.items() + request.POST.items()))
     if not fo_mycoupon.is_valid():
@@ -372,7 +372,7 @@ def calc_mycoupon(request):
             d_response['data'].append(se_mycoupon.data)
     return JSONResponse(d_response)
 
-@require_http_methods(['POST'])
+@require_http_methods(['POST', 'GET'])
 def info_mycoupon(request):
     fo_mycoupon = MyCouponInfoForm(dict(request.GET.items() + request.POST.items()))
     if not fo_mycoupon.is_valid():
@@ -391,7 +391,7 @@ def info_mycoupon(request):
     se_mycoupon = MyCouponSerializer(mo_mycoupon)
     return JSONResponse(se_mycoupon.data)
 
-@require_http_methods(['POST'])
+@require_http_methods(['POST', 'GET'])
 def add_mycoupon(request):
     fo_mycoupon = MyCouponAddForm(dict(request.GET.items() + request.POST.items()))
     if not fo_mycoupon.is_valid():
@@ -421,7 +421,7 @@ def add_mycoupon(request):
     se_mycoupon.data['errno'] = 0
     return JSONResponse(se_mycoupon.data)
 
-@require_http_methods(['POST'])
+@require_http_methods(['POST', 'GET'])
 def ping_notify(request):
     try:
         js_notify = json.loads(request.body)
@@ -467,7 +467,7 @@ def ping_notify(request):
     return HttpResponse('fail')
 
 """ method template (12 lines)
-@require_http_methods(['POST'])
+@require_http_methods(['POST', 'GET'])
 def submit(request):
     fo_bill = BillXXXXXForm(dict(request.GET.items() + request.POST.items()))
     if not fo_bill.is_valid():
