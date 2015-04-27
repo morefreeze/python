@@ -22,6 +22,7 @@ class Access_Token(models.Model):
 # in parent directory
     conf_dir = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
     config = ConfigParser.ConfigParser()
+    WX_CONFIGNAME = 'weixin.conf'
 
     def __unicode__(self):
         return '%s [%s] [%s]' %(self.at_id, self.access_token, self.expire_time)
@@ -38,7 +39,7 @@ class Access_Token(models.Model):
             cls._expire_time = a_at[0].expire_time
             return cls._access_token
 # need get a new access token
-        with open(os.path.join(cls.conf_dir, 'weixin.conf'), 'r') as wxconf:
+        with open(os.path.join(cls.conf_dir, cls.WX_CONFIGNAME), 'r') as wxconf:
             cls.config.readfp(wxconf)
             s_appid = cls.config.get('common', 'appid')
             s_secret = cls.config.get('common', 'secret')
@@ -70,12 +71,13 @@ class WX_API:
 # in parent directory
     conf_dir = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
     config = ConfigParser.ConfigParser()
+    WX_CONFIGNAME = 'weixin.conf'
 
     @classmethod
 # limit=None for all users
 # wx return {'total':1421, 'count':1421, data:{'openid':['oP1a0txxxxxx', ...]}, 'next_openid':'oP1a0tyyyyyy'}
     def get_users(cls, limit=None):
-        with open(os.path.join(cls.conf_dir, 'weixin.conf'), 'r') as wxconf:
+        with open(os.path.join(cls.conf_dir, cls.WX_CONFIGNAME), 'r') as wxconf:
             cls.config.readfp(wxconf)
             s_get_users_url = cls.config.get('user', 'get_users_url')
         js_req = cls.do_send_api(s_get_users_url)
@@ -95,7 +97,7 @@ class WX_API:
 
     @classmethod
     def get_user_info(cls, openid):
-        with open(os.path.join(cls.conf_dir, 'weixin.conf'), 'r') as wxconf:
+        with open(os.path.join(cls.conf_dir, cls.WX_CONFIGNAME), 'r') as wxconf:
             cls.config.readfp(wxconf)
             s_get_user_info_url = cls.config.get('user', 'get_user_info_url')
         js_req = cls.do_send_api(s_get_user_info_url, {'openid': openid})
@@ -106,7 +108,7 @@ class WX_API:
 
     @classmethod
     def send_kf_msg(cls, openid, msg, kf_name=None):
-        with open(os.path.join(cls.conf_dir, 'weixin.conf'), 'r') as wxconf:
+        with open(os.path.join(cls.conf_dir, cls.WX_CONFIGNAME), 'r') as wxconf:
             cls.config.readfp(wxconf)
             s_custom_send_url = cls.config.get('msg', 'custom_send_url')
         d_body = {
@@ -129,7 +131,7 @@ class WX_API:
     @classmethod
     # param={'param1': {'value':'xxx', 'color':'#123456'}, ...}
     def send_template_msg(cls, openid, template_id, param, topcolor='#000000'):
-        with open(os.path.join(cls.conf_dir, 'weixin.conf'), 'r') as wxconf:
+        with open(os.path.join(cls.conf_dir, cls.WX_CONFIGNAME), 'r') as wxconf:
             cls.config.readfp(wxconf)
             s_template_send_url = cls.config.get('msg', 'template_send_url')
         d_body = {
@@ -213,7 +215,7 @@ class Fan(models.Model):
         return mo_ret
 
 class YZ_API(AbstractConf):
-    conf_name = 'youzan.conf'
+    YZ_CONFIGNAME = 'youzan.conf'
 
     @classmethod
     def do_send_api(cls, s_method, d_param=None):

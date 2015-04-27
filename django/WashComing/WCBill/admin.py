@@ -87,8 +87,8 @@ class BillAdmin(admin.ModelAdmin):
                 OrderQueue.objects.create(bill=mo_bill, type=OrderQueue.AddFetchOrder, \
                                           status=OrderQueue.TODO, time=dt_get_time)
                 dt_return_time = mo_bill.return_time_0
-                OrderQueue.objects.create(bill=mo_bill, type=OrderQueue.AddReturnningFetchOrder, \
-                                          status=OrderQueue.TODO, time=dt_return_time)
+                #OrderQueue.objects.create(bill=mo_bill, type=OrderQueue.AddReturnningFetchOrder, \
+                #                          status=OrderQueue.TODO, time=dt_return_time)
                 mo_bill.save()
                 messages.success(request, u'确认订单【%s】成功！' %(id))
             else:
