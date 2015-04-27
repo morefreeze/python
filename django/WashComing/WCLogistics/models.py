@@ -66,6 +66,7 @@ class RFD(models.Model):
 # in parent directory
     conf_dir = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
     config = ConfigParser.ConfigParser()
+    RFD_CONFIGNAME = 'rfd.conf'
 
     def __unicode__(self):
         if hasattr(self, 'bill_of'):
@@ -82,7 +83,7 @@ class RFD(models.Model):
         if None == mo_shop:
             return {'ResultCode':'ImportFailure', 'ResultMessage':'no shop info'}
         s_method_name = sys._getframe().f_code.co_name
-        with open(os.path.join(cls.conf_dir, 'rfd.conf'), 'r') as rfdconf:
+        with open(os.path.join(cls.conf_dir, cls.RFD_CONFIGNAME), 'r') as rfdconf:
             cls.config.readfp(rfdconf)
             s_url = cls.config.get('common', 'url')
             s_port = cls.config.get('common', 'port')
@@ -176,7 +177,7 @@ class RFD(models.Model):
         t_response = loader.get_template(s_template_file)
         c_response = Context(d_import_orders)
         s_xml = t_response.render(c_response).encode('utf-8')
-        s_req_xml = cls.send_api(s_url, s_xml)
+        s_req_xml = cls.do_send_api(s_url, s_xml)
         d_res = {}
         try:
             logging.debug(s_req_xml)
@@ -205,7 +206,7 @@ class RFD(models.Model):
             mo_bill.shop = mo_shop
             mo_bill.save()
         s_method_name = sys._getframe().f_code.co_name
-        with open(os.path.join(cls.conf_dir, 'rfd.conf'), 'r') as rfdconf:
+        with open(os.path.join(cls.conf_dir, cls.RFD_CONFIGNAME), 'r') as rfdconf:
             cls.config.readfp(rfdconf)
             s_pk_file = os.path.join(cls.conf_dir, cls.config.get('common', 'private_key'))
             s_url = cls.config.get('common', 'url')
@@ -323,7 +324,7 @@ class RFD(models.Model):
         if None == a_oid or len(a_oid) == 0:
             return []
         s_method_name = sys._getframe().f_code.co_name
-        with open(os.path.join(cls.conf_dir, 'rfd.conf'), 'r') as rfdconf:
+        with open(os.path.join(cls.conf_dir, cls.RFD_CONFIGNAME), 'r') as rfdconf:
             cls.config.readfp(rfdconf)
             s_pk_file = os.path.join(cls.conf_dir, cls.config.get('common', 'private_key'))
             s_url = cls.config.get('common', 'url')
@@ -394,7 +395,7 @@ class RFD(models.Model):
     # {'errno':0, 'xml':'...'}
     def PostStatus(cls, a_st):
         s_method_name = sys._getframe().f_code.co_name
-        with open(os.path.join(cls.conf_dir, 'rfd.conf'), 'r') as rfdconf:
+        with open(os.path.join(cls.conf_dir, cls.RFD_CONFIGNAME), 'r') as rfdconf:
             cls.config.readfp(rfdconf)
             s_url = cls.config.get('common', 'url')
             s_port = cls.config.get('common', 'port')
@@ -427,9 +428,9 @@ class RFD(models.Model):
         return {'errno':0, 'xml':t_response.render(c_response)}
 
     @classmethod
-    def send_api(cls, s_url, s_xml):
+    def do_send_api(cls, s_url, s_xml):
         logging.debug(s_xml)
-        with open(os.path.join(cls.conf_dir, 'rfd.conf'), 'r') as rfdconf:
+        with open(os.path.join(cls.conf_dir, cls.RFD_CONFIGNAME), 'r') as rfdconf:
             cls.config.readfp(rfdconf)
             s_company = cls.config.get('common', 'company')
             s_merchant_code = cls.config.get('common', 'merchant_code')
